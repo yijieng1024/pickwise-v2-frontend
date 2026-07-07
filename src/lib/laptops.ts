@@ -32,7 +32,7 @@ export interface Laptop {
   /** Performance, Portability, Battery, Display, Build Quality, Thermals (0–100) */
   radar: [number, number, number, number, number, number];
   xai: { perf: string; battery: string; match: string };
-  vendor: { name: string; stock: string; type: Vendor };
+  vendor: { name: string; type: Vendor };
   sentiment: { summary: string; reviews: Review[] };
   community?: { battery: string; cinebench: string; users: number };
   accessories?: { name: string; price: string; icon: string }[];
@@ -83,11 +83,7 @@ export const laptops: Laptop[] = [
       battery: "+25 points",
       match: "+53 points (Fits 'Creative' perfectly)",
     },
-    vendor: {
-      name: "Apple Store",
-      stock: "Low Stock (2 left)",
-      type: "official",
-    },
+    vendor: { name: "Apple Store", type: "official" },
     sentiment: {
       summary:
         "Universally praised for unmatched efficiency and display quality, though the display notch remains divisive.",
@@ -171,7 +167,7 @@ export const laptops: Laptop[] = [
       battery: "-10 points",
       match: "+60 points (Overpowered for needs)",
     },
-    vendor: { name: "ROG Store", stock: "In Stock", type: "official" },
+    vendor: { name: "ROG Store", type: "official" },
     sentiment: {
       summary:
         "The ultimate compact gaming machine, blending sleek CNC aesthetics with serious horsepower.",
@@ -244,7 +240,7 @@ export const laptops: Laptop[] = [
       battery: "+10 points",
       match: "+47 points (Slightly over budget)",
     },
-    vendor: { name: "Dell Store", stock: "In Stock", type: "official" },
+    vendor: { name: "Dell Store", type: "official" },
     sentiment: {
       summary:
         "Gorgeous futuristic design, but the invisible trackpad and touch-function row take getting used to.",
@@ -296,7 +292,7 @@ export const laptops: Laptop[] = [
       battery: "+15 points",
       match: "+61 points (Perfect budget fit)",
     },
-    vendor: { name: "Acer Store", stock: "In Stock", type: "official" },
+    vendor: { name: "Acer Store", type: "official" },
     sentiment: {
       summary:
         "Unbeatable value for an OLED screen, making it the perfect student or office companion.",
@@ -344,7 +340,7 @@ export const laptops: Laptop[] = [
       battery: "-15 points",
       match: "+66 points (Great for mixed use)",
     },
-    vendor: { name: "Lenovo Store", stock: "In Stock", type: "official" },
+    vendor: { name: "Lenovo Store", type: "official" },
     sentiment: {
       summary:
         "Stellar thermal management and great performance for the price, though slightly bulky.",
@@ -392,11 +388,7 @@ export const laptops: Laptop[] = [
       battery: "+20 points",
       match: "+45 points (Pricy for general use)",
     },
-    vendor: {
-      name: "Lenovo Store",
-      stock: "Low Stock (1 left)",
-      type: "official",
-    },
+    vendor: { name: "Lenovo Store", type: "official" },
     sentiment: {
       summary:
         "The gold standard for business laptops with an unparalleled typing experience.",

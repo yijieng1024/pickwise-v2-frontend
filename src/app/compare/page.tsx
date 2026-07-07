@@ -223,44 +223,31 @@ export default function ComparePage() {
       <div className="relative mx-auto max-w-6xl">
         <div className="sticky top-16 z-40 grid grid-cols-3 gap-4 border-b bg-background/90 py-4 backdrop-blur-md sm:gap-8">
           <div />
-          {[left, right].map((laptop) => {
-            const lowStock = laptop.vendor.stock.includes("Low");
-            return (
-              <div key={laptop.id} className="text-center">
-                <Image
-                  src={laptop.image}
-                  alt={laptop.name}
-                  width={400}
-                  height={260}
-                  className="mx-auto mb-4 h-32 object-contain"
-                />
-                <h4 className="text-lg font-semibold">{laptop.name}</h4>
-                <p className="mb-4 text-sm text-muted-foreground">
-                  {laptop.price}
-                </p>
-                <div className="flex flex-col gap-2">
-                  <span
-                    className={cn(
-                      "text-xs font-medium",
-                      lowStock ? "text-red-500" : "text-green-600",
-                    )}
-                  >
-                    {laptop.vendor.stock}
-                  </span>
-                  <a
-                    href="#"
-                    className={cn(
-                      "flex w-full items-center justify-center gap-2 rounded-full px-6 py-2 font-medium text-white transition-colors",
-                      vendorBgClass[laptop.vendor.type],
-                    )}
-                  >
-                    Buy on {laptop.vendor.name}
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </div>
-              </div>
-            );
-          })}
+          {[left, right].map((laptop) => (
+            <div key={laptop.id} className="text-center">
+              <Image
+                src={laptop.image}
+                alt={laptop.name}
+                width={400}
+                height={260}
+                className="mx-auto mb-4 h-32 object-contain"
+              />
+              <h4 className="text-lg font-semibold">{laptop.name}</h4>
+              <p className="mb-4 text-sm text-muted-foreground">
+                {laptop.price}
+              </p>
+              <a
+                href="#"
+                className={cn(
+                  "flex w-full items-center justify-center gap-2 rounded-full px-6 py-2 font-medium text-white transition-colors",
+                  vendorBgClass[laptop.vendor.type],
+                )}
+              >
+                Buy on {laptop.vendor.name}
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            </div>
+          ))}
         </div>
 
         {/* Pick Score row */}
