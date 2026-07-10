@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowDownNarrowWide, ArrowUpNarrowWide } from "lucide-react";
+import { Search } from "lucide-react";
 
 import { LaptopCard } from "@/components/laptop-card";
 import { laptops } from "@/lib/laptops";
@@ -9,16 +9,21 @@ import { cn } from "@/lib/utils";
 
 const brands = ["All", ...new Set(laptops.map((l) => l.brand))];
 
-type SortOrder = "default" | "asc" | "desc";
+type SortOrder = "reco" | "asc" | "desc";
 
 export default function LaptopsPage() {
   const [brand, setBrand] = useState("All");
-  const [sort, setSort] = useState<SortOrder>("default");
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortOrder>("reco");
 
   const visible = useMemo(() => {
-    const filtered =
-      brand === "All" ? [...laptops] : laptops.filter((l) => l.brand === brand);
-    if (sort !== "default") {
+    const q = query.trim().toLowerCase();
+    const filtered = laptops.filter((l) => {
+      const matchesBrand = brand === "All" || l.brand === brand;
+      const haystack = `${l.name} ${l.brand} ${Object.values(l.specs).join(" ")}`.toLowerCase();
+      return matchesBrand && haystack.includes(q);
+    });
+    if (sort !== "reco") {
       filtered.sort((a, b) =>
         sort === "asc"
           ? a.priceValue - b.priceValue
@@ -26,23 +31,30 @@ export default function LaptopsPage() {
       );
     }
     return filtered;
-  }, [brand, sort]);
-
-  function cycleSort() {
-    setSort((s) => (s === "default" ? "asc" : s === "asc" ? "desc" : "default"));
-  }
+  }, [brand, query, sort]);
 
   return (
-    <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 pb-24 sm:px-6 lg:px-8">
-      <div className="mb-10">
-        <h1 className="text-4xl font-semibold tracking-tight">All Laptops</h1>
-        <p className="mt-2 text-muted-foreground">
-          Browse every model in our catalog. Use the Needs Wizard for
-          personalized Pick Scores.
+    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 pb-24 sm:px-6 lg:px-8">
+      <div className="mb-7">
+        <h1 className="text-4xl font-bold tracking-tight">All laptops</h1>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          {visible.length} laptops · ask Pico anytime for a personalised
+          shortlist
         </p>
       </div>
 
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+      <div className="mb-7 flex flex-wrap items-center gap-3">
+        <div className="relative min-w-[240px] flex-1">
+          <Search className="absolute top-1/2 left-4 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by model, brand or spec…"
+            aria-label="Search laptops"
+            className="border-line bg-surface h-11.5 w-full rounded-full border py-0 pr-5 pl-10 text-[13.5px] outline-none transition-shadow focus:shadow-[0_0_0_3px_var(--brand-tint)]"
+          />
+        </div>
+
         <div className="flex flex-wrap gap-2">
           {brands.map((b) => (
             <button
@@ -50,10 +62,10 @@ export default function LaptopsPage() {
               type="button"
               onClick={() => setBrand(b)}
               className={cn(
-                "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
+                "rounded-full border px-4 py-2 text-xs font-semibold transition-colors",
                 brand === b
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "bg-background text-muted-foreground hover:border-primary hover:text-primary",
+                  ? "border-brand bg-brand text-white"
+                  : "border-line bg-surface text-muted-foreground hover:border-brand",
               )}
             >
               {b}
@@ -61,38 +73,23 @@ export default function LaptopsPage() {
           ))}
         </div>
 
-        <button
-          type="button"
-          onClick={cycleSort}
-          className={cn(
-            "flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
-            sort === "default"
-              ? "bg-background text-muted-foreground hover:border-primary hover:text-primary"
-              : "border-primary text-primary",
-          )}
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value as SortOrder)}
+          aria-label="Sort laptops"
+          className="border-line bg-surface h-11.5 rounded-full border px-4 text-[12.5px] font-semibold outline-none"
         >
-          {sort === "desc" ? (
-            <ArrowDownNarrowWide className="h-4 w-4" />
-          ) : (
-            <ArrowUpNarrowWide className="h-4 w-4" />
-          )}
-          {sort === "default"
-            ? "Sort by Price"
-            : sort === "asc"
-              ? "Price: Low to High"
-              : "Price: High to Low"}
-        </button>
+          <option value="reco">Sort: Recommended</option>
+          <option value="asc">Price: Low to High</option>
+          <option value="desc">Price: High to Low</option>
+        </select>
       </div>
 
-      <p className="mb-6 text-sm text-muted-foreground">
-        Showing {visible.length} of {laptops.length} models
-      </p>
-
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {visible.map((laptop, i) => (
           <div
             // Key includes the filter state so re-filtering replays the reveal
-            key={`${brand}-${sort}-${laptop.id}`}
+            key={`${brand}-${sort}-${query}-${laptop.id}`}
             className="motion-safe:animate-fade-in-up"
             style={{ animationDelay: `${i * 80}ms` }}
           >

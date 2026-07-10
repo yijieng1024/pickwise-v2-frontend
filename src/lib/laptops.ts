@@ -1,17 +1,23 @@
-export type Vendor = "official" | "retail" | "used";
-
-export interface VendorOffer {
+export interface XaiFactor {
   name: string;
-  price: string;
-  shipping: string;
-  voucher: string | null;
-  type: Vendor;
+  /** Point contribution toward the PickScore; positive or negative. */
+  value: number;
 }
 
-export interface Review {
-  source: string;
-  quote: string;
-  rating: string;
+export interface ReviewPoint {
+  /** Paraphrased reviewer point — never a verbatim quote. */
+  point: string;
+  channel: string;
+  timestampLabel: string;
+  /** true = strength ("what reviewers love"), false = weakness ("watch out for"). */
+  strength: boolean;
+}
+
+export interface Benchmark {
+  label: string;
+  sub: string;
+  /** 0–100, relative to the best laptop in the same budget band. */
+  pct: number;
 }
 
 export interface Laptop {
@@ -31,12 +37,13 @@ export interface Laptop {
   plainEnglish: { icon: string; text: string }[];
   /** Performance, Portability, Battery, Display, Build Quality, Thermals (0–100) */
   radar: [number, number, number, number, number, number];
-  xai: { perf: string; battery: string; match: string };
-  vendor: { name: string; type: Vendor };
-  sentiment: { summary: string; reviews: Review[] };
+  /** 8-factor PickScore breakdown shown in the XAI popover */
+  xaiFactors: XaiFactor[];
+  match: string;
+  sentiment: { summary: string; reviews: ReviewPoint[] };
   community?: { battery: string; cinebench: string; users: number };
   accessories?: { name: string; price: string; icon: string }[];
-  vendorList?: VendorOffer[];
+  benchmarks?: Benchmark[];
 }
 
 export const RADAR_AXES = [
@@ -78,25 +85,38 @@ export const laptops: Laptop[] = [
       },
     ],
     radar: [80, 85, 95, 95, 95, 80],
-    xai: {
-      perf: "+20 points",
-      battery: "+25 points",
-      match: "+53 points (Fits 'Creative' perfectly)",
-    },
-    vendor: { name: "Apple Store", type: "official" },
+    xaiFactors: [
+      { name: "Price", value: -8 },
+      { name: "CPU", value: 24 },
+      { name: "GPU", value: 9 },
+      { name: "RAM / Storage", value: 6 },
+      { name: "Portability", value: 16 },
+      { name: "Battery", value: 23 },
+      { name: "Screen", value: 19 },
+      { name: "Brand", value: 6 },
+    ],
+    match: "Perfect Match",
     sentiment: {
       summary:
         "Universally praised for unmatched efficiency and display quality, though the display notch remains divisive.",
       reviews: [
         {
-          source: "The Verge",
-          quote: "The battery life is practically magic, and the screen is gorgeous.",
-          rating: "9/10",
+          point: "Battery comfortably lasts a full day of creative work",
+          channel: "The Verge",
+          timestampLabel: "6:14",
+          strength: true,
         },
         {
-          source: "MKBHD",
-          quote: "Still the gold standard for creative professionals on the go.",
-          rating: "Highly Recommended",
+          point: "Still the benchmark for creative professionals who work on the move",
+          channel: "MKBHD",
+          timestampLabel: "3:02",
+          strength: true,
+        },
+        {
+          point: "The display notch interrupts full-screen video and menu bars",
+          channel: "Dave2D",
+          timestampLabel: "9:40",
+          strength: false,
         },
       ],
     },
@@ -106,35 +126,11 @@ export const laptops: Laptop[] = [
       { name: "Apple Magic Mouse", price: "RM 399", icon: "mouse" },
       { name: "Satechi Laptop Stand", price: "RM 189", icon: "monitor-up" },
     ],
-    vendorList: [
-      {
-        name: "Apple Official Store",
-        price: "RM 6,999",
-        shipping: "Free Delivery",
-        voucher: "Student Discount Valid",
-        type: "official",
-      },
-      {
-        name: "Machines (Premium Reseller)",
-        price: "RM 7,050",
-        shipping: "RM 15 Shipping",
-        voucher: "RM 150 OFF",
-        type: "retail",
-      },
-      {
-        name: "Harvey Norman",
-        price: "RM 7,499",
-        shipping: "Free Delivery",
-        voucher: null,
-        type: "retail",
-      },
-      {
-        name: "CompAsia (Refurbished)",
-        price: "RM 5,800",
-        shipping: "Free Delivery",
-        voucher: null,
-        type: "used",
-      },
+    benchmarks: [
+      { label: "Video export", sub: "4K ProRes timeline", pct: 97 },
+      { label: "Photo editing", sub: "Lightroom batch export", pct: 95 },
+      { label: "Multitasking", sub: "40 tabs + creative suite", pct: 90 },
+      { label: "Gaming", sub: "1080p medium", pct: 52 },
     ],
   },
   {
@@ -162,25 +158,38 @@ export const laptops: Laptop[] = [
       },
     ],
     radar: [95, 90, 60, 80, 85, 70],
-    xai: {
-      perf: "+35 points",
-      battery: "-10 points",
-      match: "+60 points (Overpowered for needs)",
-    },
-    vendor: { name: "ROG Store", type: "official" },
+    xaiFactors: [
+      { name: "Price", value: -6 },
+      { name: "CPU", value: 20 },
+      { name: "GPU", value: 32 },
+      { name: "RAM / Storage", value: 10 },
+      { name: "Portability", value: 12 },
+      { name: "Battery", value: -14 },
+      { name: "Screen", value: 11 },
+      { name: "Brand", value: 0 },
+    ],
+    match: "Good Match",
     sentiment: {
       summary:
         "The ultimate compact gaming machine, blending sleek CNC aesthetics with serious horsepower.",
       reviews: [
         {
-          source: "Dave2D",
-          quote: "They finally fixed the screen wobble. It's the perfect 14-inch gamer.",
-          rating: "Editor's Choice",
+          point: "Lenovo-style screen wobble is finally fixed on this generation",
+          channel: "Dave2D",
+          timestampLabel: "5:20",
+          strength: true,
         },
         {
-          source: "IGN",
-          quote: "Packs a tremendous punch without looking like a spaceship.",
-          rating: "8.5/10",
+          point: "Serious horsepower without looking like a gaming spaceship",
+          channel: "IGN",
+          timestampLabel: "2:48",
+          strength: true,
+        },
+        {
+          point: "Fan noise climbs quickly under sustained load",
+          channel: "Hardware Canucks",
+          timestampLabel: "8:12",
+          strength: false,
         },
       ],
     },
@@ -189,28 +198,11 @@ export const laptops: Laptop[] = [
       { name: "ROG Gladius III Mouse", price: "RM 359", icon: "mouse" },
       { name: "WD_Black 2TB NVMe", price: "RM 799", icon: "hard-drive" },
     ],
-    vendorList: [
-      {
-        name: "ROG Official Store",
-        price: "RM 7,299",
-        shipping: "Free Delivery",
-        voucher: null,
-        type: "official",
-      },
-      {
-        name: "TechStore Malaysia",
-        price: "RM 7,350",
-        shipping: "Free Delivery",
-        voucher: "RM 50 OFF",
-        type: "retail",
-      },
-      {
-        name: "Harvey Norman",
-        price: "RM 7,499",
-        shipping: "RM 20 Shipping",
-        voucher: "Free Backpack",
-        type: "retail",
-      },
+    benchmarks: [
+      { label: "Gaming", sub: "1440p high, RTX 4060", pct: 93 },
+      { label: "Code compile", sub: "Chromium build", pct: 88 },
+      { label: "Multitasking", sub: "40 tabs + IDE", pct: 86 },
+      { label: "Photo editing", sub: "Lightroom export", pct: 79 },
     ],
   },
   {
@@ -235,28 +227,53 @@ export const laptops: Laptop[] = [
       },
     ],
     radar: [75, 80, 70, 90, 90, 75],
-    xai: {
-      perf: "+15 points",
-      battery: "+10 points",
-      match: "+47 points (Slightly over budget)",
-    },
-    vendor: { name: "Dell Store", type: "official" },
+    xaiFactors: [
+      { name: "Price", value: -18 },
+      { name: "CPU", value: 14 },
+      { name: "GPU", value: 4 },
+      { name: "RAM / Storage", value: 9 },
+      { name: "Portability", value: 10 },
+      { name: "Battery", value: 11 },
+      { name: "Screen", value: 15 },
+      { name: "Brand", value: 2 },
+    ],
+    match: "Good Match",
     sentiment: {
       summary:
         "Gorgeous futuristic design, but the invisible trackpad and touch-function row take getting used to.",
       reviews: [
         {
-          source: "Engadget",
-          quote: "Looks like it came from the future, with a screen to match.",
-          rating: "88/100",
+          point: "Futuristic design with a screen that matches the styling",
+          channel: "Engadget",
+          timestampLabel: "4:05",
+          strength: true,
         },
         {
-          source: "Linus Tech Tips",
-          quote: "Form over function in some areas, but undeniably premium.",
-          rating: "Good",
+          point: "Zero-lattice keyboard feels premium once you adjust to it",
+          channel: "Linus Tech Tips",
+          timestampLabel: "6:33",
+          strength: true,
+        },
+        {
+          point: "The invisible haptic trackpad takes real getting used to",
+          channel: "Linus Tech Tips",
+          timestampLabel: "10:15",
+          strength: false,
+        },
+        {
+          point: "Touch-function row is easy to mis-tap without looking",
+          channel: "Engadget",
+          timestampLabel: "7:50",
+          strength: false,
         },
       ],
     },
+    benchmarks: [
+      { label: "Multitasking", sub: "40 tabs + office suite", pct: 84 },
+      { label: "Photo editing", sub: "Lightroom export", pct: 78 },
+      { label: "Code compile", sub: "Chromium build", pct: 75 },
+      { label: "Gaming", sub: "1080p medium", pct: 46 },
+    ],
   },
   {
     id: 4,
@@ -267,7 +284,7 @@ export const laptops: Laptop[] = [
     priceValue: 3299,
     score: 88,
     image:
-      "https://images.unsplash.com/photo-1593642702821-c823b2816291?auto=format&fit=crop&q=80&w=600",
+      "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?auto=format&fit=crop&q=80&w=600",
     badge: "Value Pick",
     badgeClass: "bg-green-100 text-green-800",
     specs: {
@@ -287,28 +304,47 @@ export const laptops: Laptop[] = [
       },
     ],
     radar: [60, 85, 75, 90, 80, 65],
-    xai: {
-      perf: "+12 points",
-      battery: "+15 points",
-      match: "+61 points (Perfect budget fit)",
-    },
-    vendor: { name: "Acer Store", type: "official" },
+    xaiFactors: [
+      { name: "Price", value: 26 },
+      { name: "CPU", value: 10 },
+      { name: "GPU", value: 3 },
+      { name: "RAM / Storage", value: 8 },
+      { name: "Portability", value: 14 },
+      { name: "Battery", value: 16 },
+      { name: "Screen", value: 13 },
+      { name: "Brand", value: -3 },
+    ],
+    match: "Perfect Match",
     sentiment: {
       summary:
         "Unbeatable value for an OLED screen, making it the perfect student or office companion.",
       reviews: [
         {
-          source: "Tom's Guide",
-          quote: "You simply won't find a better display at this price point.",
-          rating: "4/5 Stars",
+          point: "Unmatched OLED screen quality for the price bracket",
+          channel: "Tom's Guide",
+          timestampLabel: "3:18",
+          strength: true,
         },
         {
-          source: "Laptop Mag",
-          quote: "Excellent performance-per-dollar ratio.",
-          rating: "Highly Recommended",
+          point: "Excellent performance-per-ringgit for students and office work",
+          channel: "Laptop Mag",
+          timestampLabel: "5:02",
+          strength: true,
+        },
+        {
+          point: "Speakers are thin and best paired with headphones",
+          channel: "Tom's Guide",
+          timestampLabel: "8:44",
+          strength: false,
         },
       ],
     },
+    benchmarks: [
+      { label: "Multitasking", sub: "30 tabs + office suite", pct: 81 },
+      { label: "Code compile", sub: "Chromium build", pct: 74 },
+      { label: "Photo editing", sub: "Lightroom export", pct: 68 },
+      { label: "Gaming", sub: "1080p low", pct: 38 },
+    ],
   },
   {
     id: 5,
@@ -335,28 +371,47 @@ export const laptops: Laptop[] = [
       },
     ],
     radar: [85, 60, 65, 80, 85, 90],
-    xai: {
-      perf: "+28 points",
-      battery: "-15 points",
-      match: "+66 points (Great for mixed use)",
-    },
-    vendor: { name: "Lenovo Store", type: "official" },
+    xaiFactors: [
+      { name: "Price", value: 12 },
+      { name: "CPU", value: 22 },
+      { name: "GPU", value: 24 },
+      { name: "RAM / Storage", value: 7 },
+      { name: "Portability", value: -8 },
+      { name: "Battery", value: -16 },
+      { name: "Screen", value: 6 },
+      { name: "Brand", value: 1 },
+    ],
+    match: "Good Match",
     sentiment: {
       summary:
         "Stellar thermal management and great performance for the price, though slightly bulky.",
       reviews: [
         {
-          source: "Hardware Unboxed",
-          quote: "Lenovo's cooling solution here is class-leading.",
-          rating: "A Tier",
+          point: "Cooling stays composed even after long gaming sessions",
+          channel: "Hardware Unboxed",
+          timestampLabel: "6:50",
+          strength: true,
         },
         {
-          source: "PC Gamer",
-          quote: "A reliable workhorse that won't break the bank.",
-          rating: "86/100",
+          point: "Reliable 1440p performance without breaking the budget",
+          channel: "PC Gamer",
+          timestampLabel: "4:22",
+          strength: true,
+        },
+        {
+          point: "Battery drains fast once the discrete GPU kicks in",
+          channel: "Hardware Unboxed",
+          timestampLabel: "11:05",
+          strength: false,
         },
       ],
     },
+    benchmarks: [
+      { label: "Gaming", sub: "1440p medium, RTX 4060", pct: 90 },
+      { label: "Code compile", sub: "Chromium build", pct: 85 },
+      { label: "Multitasking", sub: "40 tabs + IDE", pct: 83 },
+      { label: "Photo editing", sub: "Lightroom export", pct: 74 },
+    ],
   },
   {
     id: 6,
@@ -383,25 +438,38 @@ export const laptops: Laptop[] = [
       },
     ],
     radar: [65, 95, 80, 70, 95, 75],
-    xai: {
-      perf: "+10 points",
-      battery: "+20 points",
-      match: "+45 points (Pricy for general use)",
-    },
-    vendor: { name: "Lenovo Store", type: "official" },
+    xaiFactors: [
+      { name: "Price", value: -22 },
+      { name: "CPU", value: 8 },
+      { name: "GPU", value: 2 },
+      { name: "RAM / Storage", value: 10 },
+      { name: "Portability", value: 20 },
+      { name: "Battery", value: 21 },
+      { name: "Screen", value: 6 },
+      { name: "Brand", value: 8 },
+    ],
+    match: "Good Match",
     sentiment: {
       summary:
         "The gold standard for business laptops with an unparalleled typing experience.",
       reviews: [
         {
-          source: "TechRadar",
-          quote: "Still the king of the corporate world. Keyboard is unmatched.",
-          rating: "4.5/5 Stars",
+          point: "Typing experience is still unmatched among ultrabooks",
+          channel: "TechRadar",
+          timestampLabel: "2:30",
+          strength: true,
         },
         {
-          source: "PCMag",
-          quote: "Lightweight, durable, and secure.",
-          rating: "Editors' Choice",
+          point: "Lightweight yet durable enough for daily business travel",
+          channel: "PCMag",
+          timestampLabel: "5:45",
+          strength: true,
+        },
+        {
+          point: "Integrated graphics struggle with anything beyond light editing",
+          channel: "TechRadar",
+          timestampLabel: "9:12",
+          strength: false,
         },
       ],
     },
@@ -410,28 +478,11 @@ export const laptops: Laptop[] = [
       { name: "ThinkPad Universal Dock", price: "RM 899", icon: "server" },
       { name: "Lenovo Go Wireless Mouse", price: "RM 159", icon: "mouse" },
     ],
-    vendorList: [
-      {
-        name: "Lenovo Malaysia",
-        price: "RM 8,599",
-        shipping: "Free Delivery",
-        voucher: "RM 200 OFF",
-        type: "official",
-      },
-      {
-        name: "Harvey Norman",
-        price: "RM 8,699",
-        shipping: "Free Delivery",
-        voucher: null,
-        type: "retail",
-      },
-      {
-        name: "CompAsia (Refurbished)",
-        price: "RM 7,200",
-        shipping: "Free Delivery",
-        voucher: null,
-        type: "used",
-      },
+    benchmarks: [
+      { label: "Multitasking", sub: "40 tabs + office suite", pct: 80 },
+      { label: "Code compile", sub: "Chromium build", pct: 70 },
+      { label: "Photo editing", sub: "Lightroom export", pct: 58 },
+      { label: "Gaming", sub: "1080p low", pct: 35 },
     ],
   },
 ];

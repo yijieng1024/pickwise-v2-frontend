@@ -13,6 +13,8 @@
   /* Motion */
   --animate-fade-in-up: fade-in-up 0.5s ease-out both;
   --animate-float: float 5s ease-in-out infinite;
+  --animate-shimmer: pw-shimmer 1.8s linear infinite;
+  --animate-bounce-dot: pw-bounce 1.4s ease-in-out infinite;
 
   @keyframes fade-in-up {
     from {
@@ -32,6 +34,54 @@
     }
     50% {
       transform: translateY(-10px);
+    }
+  }
+
+  @keyframes pw-shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  @keyframes pw-bounce {
+    0%,
+    80%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.4;
+    }
+    40% {
+      transform: translateY(-4px);
+      opacity: 1;
+    }
+  }
+
+  --animate-island-in: pw-island-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-island-pop: pw-island-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  @keyframes pw-island-in {
+    from {
+      opacity: 0;
+      transform: translateY(-72px) scale(0.88);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes pw-island-pop {
+    0% {
+      transform: scale(1);
+    }
+    40% {
+      transform: scale(1.06, 1.14);
+    }
+    100% {
+      transform: scale(1);
     }
   }
 }
@@ -77,6 +127,18 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Glassmorphism design system tokens — additive to the shadcn
+     tokens above. New components read these; existing shadcn-based UI is
+     untouched. */
+  --color-brand: var(--brand);
+  --color-brand-tint: var(--brand-tint);
+  --color-canvas: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-line: var(--line);
 }
 
 :root {
@@ -113,6 +175,19 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.308 0.101 256.5);
+
+  /* Glassmorphism system (light) */
+  --brand: var(--primary);
+  --brand-tint: #eaf1fa;
+  --bg: #fbfbfd;
+  --surface: #ffffff;
+  --surface-2: #f5f5f7;
+  --glass: rgba(255, 255, 255, 0.62);
+  --glass-edge: rgba(255, 255, 255, 0.55);
+  --shadow: rgba(4, 46, 97, 0.08);
+  --line: rgba(29, 29, 31, 0.07);
+  --positive: #1a7f4f;
+  --negative: #b42318;
 }
 
 .dark {
@@ -148,6 +223,19 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.55 0.13 256.5);
+
+  /* Glassmorphism system (dark) */
+  --brand: var(--primary);
+  --brand-tint: #0d2038;
+  --bg: #0b0f14;
+  --surface: #151a21;
+  --surface-2: #1c232c;
+  --glass: rgba(21, 26, 33, 0.58);
+  --glass-edge: rgba(255, 255, 255, 0.12);
+  --shadow: rgba(0, 0, 0, 0.4);
+  --line: rgba(242, 244, 247, 0.08);
+  --positive: #4ade80;
+  --negative: #f97066;
 }
 
 @layer base {

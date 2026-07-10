@@ -1,50 +1,110 @@
 import Link from "next/link";
-import { MonitorSmartphone } from "lucide-react";
+import { Globe } from "lucide-react";
 
-const footerLinks = [
-  { href: "/about", label: "About PickWise" },
-  { href: "/privacy", label: "Privacy Policy" },
-  { href: "/terms", label: "Terms of Service" },
-  { href: "/support", label: "Contact Support" },
+const productLinks = [
+  { href: "/laptops", label: "All laptops" },
+  { href: "/wizard", label: "Needs Wizard" },
+  { href: "/chat", label: "Ask Pico" },
+  { href: "/compare", label: "Compare" },
+];
+
+const companyLinks = [
+  { href: "#", label: "About" },
+  { href: "#", label: "How PickScore works" },
+  { href: "#", label: "Careers" },
+];
+
+const supportLinks = [
+  { href: "#", label: "Help Centre" },
+  { href: "#", label: "Contact us" },
+  { href: "#", label: "WhatsApp" },
 ];
 
 export function Footer() {
   return (
-    <footer className="mt-auto border-t bg-muted/50">
-      <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
-          <div className="flex items-center gap-2">
-            <MonitorSmartphone className="h-5 w-5 text-muted-foreground" />
-            <span className="text-lg font-semibold tracking-tight">
-              PickWise
-            </span>
+    <footer className="border-line bg-surface mt-auto border-t">
+      <div className="mx-auto w-full max-w-6xl px-6 pt-14 pb-7">
+        <div className="mb-11 grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
+          <div className="flex flex-col gap-3.5">
+            <div className="flex items-center gap-2">
+              <span className="bg-brand flex h-6.5 w-6.5 items-center justify-center rounded-lg text-[13px] font-bold text-white">
+                P
+              </span>
+              <span className="text-[16px] font-bold tracking-tight">
+                PickWise
+              </span>
+            </div>
+            <p className="max-w-[280px] text-[13px] leading-relaxed text-muted-foreground">
+              The laptop advisor that speaks your language. Personalised
+              PickScores for buyers in Malaysia — in English, Malay or
+              Chinese.
+            </p>
           </div>
 
-          <nav className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-sm font-medium text-muted-foreground">
-            {footerLinks.map(({ href, label }) => (
+          <nav className="flex flex-col gap-2.5">
+            <span className="mb-1 text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
+              Product
+            </span>
+            {productLinks.map(({ href, label }) => (
               <Link
-                key={href}
+                key={label}
                 href={href}
-                className="transition-colors hover:text-primary"
+                className="hover:text-brand text-[13px] text-foreground"
               >
                 {label}
               </Link>
             ))}
           </nav>
 
-          <p className="text-sm font-medium text-muted-foreground/70">
-            &copy; {new Date().getFullYear()} PickWise. All rights reserved.
-          </p>
+          <nav className="flex flex-col gap-2.5">
+            <span className="mb-1 text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
+              Company
+            </span>
+            {companyLinks.map(({ href, label }) => (
+              <a
+                key={label}
+                href={href}
+                className="hover:text-brand text-[13px] text-foreground"
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
+
+          <nav className="flex flex-col gap-2.5">
+            <span className="mb-1 text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
+              Support
+            </span>
+            {supportLinks.map(({ href, label }) => (
+              <a
+                key={label}
+                href={href}
+                className="hover:text-brand text-[13px] text-foreground"
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
         </div>
 
-        <p className="mx-auto mt-8 max-w-3xl text-center text-[11px] leading-relaxed text-muted-foreground/70">
-          PickWise is an AI-powered smart laptop recommendation and price
-          comparison platform. Prices, specifications, and availability are
-          subject to change based on real-time vendor data. Our AI Pick Score is
-          dynamically calculated based on hardware benchmarks and user
-          preferences, but you should always verify specific requirements before
-          making a purchase.
-        </p>
+        <div className="border-line flex flex-wrap items-center justify-between gap-4 border-t pt-5.5">
+          <span className="text-xs text-muted-foreground">
+            &copy; {new Date().getFullYear()} PickWise Sdn Bhd. All prices in
+            Malaysian Ringgit.
+          </span>
+          <div className="flex items-center gap-4.5 text-xs">
+            <a href="#" className="hover:text-brand text-muted-foreground">
+              Terms
+            </a>
+            <a href="#" className="hover:text-brand text-muted-foreground">
+              Privacy
+            </a>
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <Globe className="h-3 w-3" />
+              English (MY)
+            </span>
+          </div>
+        </div>
       </div>
     </footer>
   );

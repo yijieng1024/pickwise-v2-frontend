@@ -4,10 +4,10 @@ import { Heart } from "lucide-react";
 export default function SavedPage() {
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col items-center justify-center px-4 py-24 text-center sm:px-6">
-      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+      <div className="bg-brand-tint text-brand mb-6 flex h-16 w-16 items-center justify-center rounded-full">
         <Heart className="h-8 w-8" />
       </div>
-      <h1 className="mb-2 text-3xl font-semibold tracking-tight">
+      <h1 className="mb-2 text-3xl font-bold tracking-tight">
         No saved laptops yet
       </h1>
       <p className="mb-8 max-w-md text-muted-foreground">
@@ -15,10 +15,10 @@ export default function SavedPage() {
         will sync across devices.
       </p>
       <Link
-        href="/results"
-        className="rounded-full bg-primary px-6 py-3 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+        href="/laptops"
+        className="bg-brand rounded-full px-6 py-3 font-medium text-white transition-opacity hover:opacity-90"
       >
-        Browse Recommendations
+        Browse laptops
       </Link>
     </main>
   );

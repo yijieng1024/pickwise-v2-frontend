@@ -1,200 +1,261 @@
-import Link from "next/link";
-import {
-  ArrowUp,
-  Bot,
-  Download,
-  Menu,
-  MessageSquare,
-  MoreHorizontal,
-  Paperclip,
-  Plus,
-  Trash2,
-} from "lucide-react";
+"use client";
 
+import { useState } from "react";
+import { Bot, Check, MessageSquare, MoreHorizontal, Plus, Send } from "lucide-react";
+
+import { LaptopCard } from "@/components/laptop-card";
+import { GlassSurface } from "@/components/glass-surface";
+import { topPicks } from "@/lib/laptops";
 import { cn } from "@/lib/utils";
 
 const historyGroups = [
-  {
-    label: "Today",
-    chats: [{ title: "Creative Work RM 7k", active: true }],
-  },
+  { label: "Today", chats: [{ title: "Coding laptop under RM 4,500", active: true }] },
   {
     label: "Previous 7 Days",
     chats: [
-      { title: "Gaming Laptop Research", active: false },
-      { title: "Budget Office PC", active: false },
+      { title: "Best OLED screen under RM 4k", active: false },
+      { title: "MacBook Air vs Zenbook 14", active: false },
     ],
   },
 ];
 
+const activityChips = [
+  { label: "Checked laptops that fit your budget", detail: "12 candidates" },
+  { label: "Looked up what reviewers say", detail: "38 review points" },
+];
+
+const quickReplies = ["Yes, show gaming options", "No, this is fine"];
+
 export default function ChatPage() {
+  const [checked, setChecked] = useState<Record<number, boolean>>({
+    [topPicks[0].id]: true,
+    [topPicks[1].id]: true,
+  });
+  const [weights, setWeights] = useState({ perf: 40, port: 35, batt: 25 });
+  const [reply, setReply] = useState<string | null>(null);
+
+  const compareCount = Object.values(checked).filter(Boolean).length;
+  const total = weights.perf + weights.port + weights.batt || 1;
+  const pct = (n: number) => Math.round((n / total) * 100);
+
   return (
-    <main className="mx-auto flex h-[calc(100vh-9rem)] w-full max-w-6xl flex-1 gap-6 px-4 py-6 sm:px-6">
-      {/* Chat history sidebar */}
-      <aside className="hidden w-72 flex-col rounded-3xl border bg-muted/30 p-4 md:flex">
+    <main className="mx-auto grid h-[calc(100vh-96px)] w-full max-w-6xl flex-1 grid-cols-1 gap-0 px-0 md:grid-cols-[272px_1fr] md:px-6">
+      {/* Sidebar */}
+      <aside className="border-line bg-surface hidden flex-col gap-5 border-r p-4 md:flex">
         <button
           type="button"
-          className="mb-6 flex w-full items-center justify-center gap-2 rounded-full bg-primary py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+          className="border-line bg-canvas flex items-center justify-center gap-2 rounded-full border py-2.5 text-[13px] font-semibold transition-colors hover:border-brand hover:text-brand"
         >
-          <Plus className="h-4 w-4" /> New Conversation
+          <Plus className="h-3.5 w-3.5" /> New Conversation
         </button>
-
-        <div className="flex-1 space-y-6 overflow-y-auto">
-          {historyGroups.map((group) => (
-            <div key={group.label}>
-              <h3 className="mb-2 px-2 text-[11px] font-bold tracking-wider text-muted-foreground/70 uppercase">
-                {group.label}
-              </h3>
-              <ul className="space-y-1">
-                {group.chats.map((chat) => (
-                  <li key={chat.title}>
-                    <button
-                      type="button"
-                      className={cn(
-                        "group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all",
-                        chat.active
-                          ? "border bg-background shadow-sm"
-                          : "text-muted-foreground hover:bg-muted",
-                      )}
-                    >
-                      <span className="flex items-center gap-2 truncate pr-2">
-                        <MessageSquare
-                          className={cn(
-                            "h-4 w-4 shrink-0",
-                            chat.active
-                              ? "text-primary"
-                              : "text-muted-foreground/60",
-                          )}
-                        />
-                        {chat.title}
-                      </span>
-                      <MoreHorizontal className="h-4 w-4 shrink-0 text-muted-foreground/60 opacity-0 transition-opacity group-hover:opacity-100" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
+        {historyGroups.map((group) => (
+          <div key={group.label} className="flex flex-col gap-1">
+            <span className="px-2.5 pb-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+              {group.label}
+            </span>
+            {group.chats.map((chat) => (
+              <button
+                key={chat.title}
+                type="button"
+                className={cn(
+                  "group flex items-center justify-between truncate rounded-[10px] px-3 py-2.5 text-left text-[13px] font-medium transition-colors",
+                  chat.active
+                    ? "bg-brand-tint text-brand"
+                    : "hover:bg-surface-2 text-foreground",
+                )}
+              >
+                <span className="flex min-w-0 items-center gap-2 truncate">
+                  <MessageSquare className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">{chat.title}</span>
+                </span>
+                <MoreHorizontal className="h-3.5 w-3.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+              </button>
+            ))}
+          </div>
+        ))}
       </aside>
 
-      {/* Main chat area */}
-      <div className="relative flex flex-1 flex-col overflow-hidden rounded-3xl border bg-card shadow-xl motion-safe:animate-fade-in-up">
-        {/* Chat header */}
-        <div className="sticky top-0 z-10 flex items-center gap-4 border-b bg-background/80 px-6 py-4 backdrop-blur">
-          <button
-            type="button"
-            className="text-muted-foreground hover:text-foreground md:hidden"
-            aria-label="Open chat history"
-          >
-            <Menu className="h-6 w-6" />
-          </button>
-          <div className="relative">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-primary">
-              <Bot className="h-5 w-5" />
+      {/* Thread */}
+      <section className="flex max-h-[calc(100vh-96px)] flex-col">
+        <div className="flex-1 overflow-y-auto px-4 pt-8 pb-4 sm:px-8">
+          <div className="mx-auto flex max-w-[760px] flex-col gap-5">
+            <div className="text-center text-[11.5px] font-medium text-muted-foreground">
+              Today, 14:22
             </div>
-            <span className="absolute right-0 bottom-0 h-3 w-3 rounded-full border-2 border-background bg-green-500" />
+
+            {/* User message */}
+            <div className="flex justify-end">
+              <div className="bg-brand max-w-[70%] rounded-[20px] rounded-br-[4px] px-4.5 py-3 text-[14.5px] leading-relaxed text-white">
+                I need a light laptop for college under RM 4,500, mostly for
+                coding
+              </div>
+            </div>
+
+            {/* Activity chips */}
+            <div className="flex flex-col items-start gap-2 pl-11">
+              {activityChips.map((chip) => (
+                <GlassSurface
+                  key={chip.label}
+                  cornerRadius={999}
+                  className="flex items-center gap-2 px-3.5 py-1.5 text-xs text-muted-foreground"
+                >
+                  <Check className="text-positive h-3 w-3" strokeWidth={2.6} />
+                  {chip.label} ·{" "}
+                  <span className="font-medium text-foreground">{chip.detail}</span>
+                </GlassSurface>
+              ))}
+              <div className="motion-safe:animate-shimmer flex items-center gap-2 rounded-full border border-line bg-[linear-gradient(100deg,var(--glass)_40%,var(--brand-tint)_50%,var(--glass)_60%)] bg-[length:200%_100%] px-3.5 py-1.5 text-xs text-muted-foreground shadow-[0_4px_16px_var(--shadow)]">
+                <span className="border-brand-tint border-t-brand h-3 w-3 animate-spin rounded-full border-2" />
+                Working out the prices…
+              </div>
+            </div>
+
+            {/* Pico reply */}
+            <div className="flex items-start gap-3">
+              <div className="bg-brand mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-full text-white">
+                <Bot className="h-4 w-4" />
+              </div>
+              <div className="flex max-w-[82%] flex-col gap-1.5">
+                <span className="text-[11.5px] font-semibold text-muted-foreground">
+                  Pico
+                </span>
+                <div className="bg-surface-2 rounded-[20px] rounded-bl-[4px] px-4.5 py-3.5 text-[14.5px] leading-relaxed">
+                  Good brief — light, under RM 4,500, and comfortable for
+                  coding. I found three that fit well. All three stay under
+                  1.4 kg and handle IDEs and containers without strain.
+                  Here&apos;s how they score against your needs:
+                </div>
+              </div>
+            </div>
+
+            {/* Pro tuning */}
+            <div className="bg-surface-2 ml-11 flex flex-col gap-3 rounded-2xl px-5 py-4">
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  Pro tuning
+                </span>
+                <span className="text-[11.5px] text-muted-foreground">
+                  Adjust what the PickScore rewards
+                </span>
+              </div>
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+                {(
+                  [
+                    { key: "perf", label: "Performance" },
+                    { key: "port", label: "Portability" },
+                    { key: "batt", label: "Battery" },
+                  ] as const
+                ).map(({ key, label }) => (
+                  <label key={key} className="flex flex-col gap-1.5 text-xs font-medium">
+                    <span className="flex justify-between">
+                      <span>{label}</span>
+                      <span className="text-brand font-semibold tabular-nums">
+                        {pct(weights[key])}%
+                      </span>
+                    </span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={weights[key]}
+                      onChange={(e) =>
+                        setWeights((w) => ({ ...w, [key]: Number(e.target.value) }))
+                      }
+                      className="accent-brand w-full"
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Compare pill */}
+            <div className="ml-11 flex justify-end">
+              <span
+                className={cn(
+                  "rounded-full px-4.5 py-2 text-xs font-semibold",
+                  compareCount >= 2
+                    ? "bg-brand text-white"
+                    : "bg-surface-2 text-muted-foreground",
+                )}
+              >
+                Compare Selected ({compareCount})
+              </span>
+            </div>
+
+            {/* Result cards */}
+            <div className="ml-11 flex flex-col gap-4">
+              {topPicks.map((laptop) => (
+                <LaptopCard
+                  key={laptop.id}
+                  laptop={laptop}
+                  showScore
+                  compareChecked={!!checked[laptop.id]}
+                  onCompareChange={(v) =>
+                    setChecked((c) => ({ ...c, [laptop.id]: v }))
+                  }
+                />
+              ))}
+            </div>
+
+            {/* Clarifying question */}
+            <div className="flex items-start gap-3">
+              <div className="bg-brand mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-full text-white">
+                <Bot className="h-4 w-4" />
+              </div>
+              <div className="flex max-w-[82%] flex-col gap-2.5">
+                <div className="bg-surface-2 rounded-[20px] rounded-bl-[4px] border border-dashed border-line px-4.5 py-3.5 text-[14.5px] leading-relaxed">
+                  One thing to check — these all use integrated graphics. If
+                  you also game after class, I can look at options with a
+                  dedicated GPU, though they&apos;ll be heavier.
+                </div>
+                {reply ? (
+                  <div className="bg-brand w-fit rounded-[20px] rounded-br-[4px] px-4.5 py-3 text-[13.5px] text-white">
+                    {reply}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {quickReplies.map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setReply(r)}
+                        className="border-brand text-brand hover:bg-brand-tint rounded-full border px-4 py-2 text-[13px] font-medium"
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-          <div>
-            <h2 className="font-semibold">Pico</h2>
-            <p className="text-[11px] font-medium text-muted-foreground">
-              PickWise AI Assistant
+        </div>
+
+        {/* Composer */}
+        <div className="px-4 pt-3 pb-3.5 sm:px-8">
+          <div className="mx-auto max-w-[760px]">
+            <GlassSurface cornerRadius={999} fullWidth>
+              <div className="relative">
+                <input
+                  placeholder="Reply to Pico…"
+                  aria-label="Message Pico"
+                  className="h-[54px] w-full rounded-full py-0 pr-16 pl-6 text-[14.5px] outline-none"
+                />
+                <button
+                  type="button"
+                  aria-label="Send"
+                  className="bg-brand absolute top-[7px] right-[7px] flex h-10 w-10 items-center justify-center rounded-full text-white transition-transform hover:scale-105"
+                >
+                  <Send className="h-4 w-4" />
+                </button>
+              </div>
+            </GlassSurface>
+            <p className="mt-2 text-center text-[10.5px] text-muted-foreground">
+              Pico can make mistakes. Consider verifying important specs.
             </p>
           </div>
-          <div className="ml-auto flex items-center gap-3 text-muted-foreground/60">
-            <button
-              type="button"
-              className="transition-colors hover:text-foreground"
-              title="Export Chat"
-            >
-              <Download className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              className="transition-colors hover:text-red-500"
-              title="Delete Chat"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
         </div>
-
-        {/* Messages */}
-        <div className="flex flex-1 flex-col space-y-6 overflow-y-auto p-6">
-          <div className="my-2 text-center text-xs font-medium text-muted-foreground/50">
-            Today, 14:22
-          </div>
-
-          {/* Pico message */}
-          <div className="flex max-w-[85%] items-end gap-2">
-            <div className="mb-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <Bot className="h-4 w-4" />
-            </div>
-            <div className="rounded-2xl rounded-bl-sm bg-muted px-5 py-3.5 text-sm leading-relaxed">
-              Hey there! Pico here, your friendly tech guide from PickWise! 👋
-              <br />
-              <br />
-              Awesome to connect with you! I&apos;m all geared up to help you
-              find that perfect laptop.
-              <br />
-              <br />
-              So, what kind of machine are you dreaming of? Are you looking for
-              something for gaming, work, creative stuff, or just everyday
-              browsing? And any budget in mind? Let me know, and we&apos;ll get
-              this laptop hunt started! 😊
-            </div>
-          </div>
-
-          {/* User message */}
-          <div className="flex max-w-[85%] items-end justify-end gap-2 self-end">
-            <div className="rounded-2xl rounded-br-sm bg-primary px-5 py-3.5 text-sm leading-relaxed text-primary-foreground shadow-sm">
-              Hi Pico! I need a laptop mainly for creative work like video
-              editing and 3D design. My budget is around RM 7000. I prefer
-              something that isn&apos;t too heavy.
-            </div>
-          </div>
-
-          {/* Typing indicator */}
-          <div className="flex max-w-[85%] items-end gap-2">
-            <div className="mb-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <Bot className="h-4 w-4" />
-            </div>
-            <div className="flex h-10 w-16 items-center gap-1.5 rounded-2xl rounded-bl-sm bg-muted px-5 py-4">
-              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60" />
-              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:150ms]" />
-              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:300ms]" />
-            </div>
-          </div>
-        </div>
-
-        {/* Input */}
-        <div className="border-t bg-card p-4">
-          <div className="relative flex items-center">
-            <button
-              type="button"
-              className="absolute left-4 text-muted-foreground/60 transition-colors hover:text-primary"
-              aria-label="Attach file"
-            >
-              <Paperclip className="h-5 w-5" />
-            </button>
-            <input
-              type="text"
-              placeholder="Reply to Pico..."
-              className="w-full rounded-full border bg-muted/40 py-3.5 pr-14 pl-12 transition-all focus:border-primary focus:ring-2 focus:ring-primary/30 focus:outline-none"
-            />
-            <Link
-              href="/results"
-              aria-label="Send message"
-              className="absolute right-2 flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
-            >
-              <ArrowUp className="h-5 w-5" />
-            </Link>
-          </div>
-          <p className="mt-3 text-center text-[10px] font-medium text-muted-foreground/60">
-            Pico can make mistakes. Consider verifying important specs.
-          </p>
-        </div>
-      </div>
+      </section>
     </main>
   );
 }
