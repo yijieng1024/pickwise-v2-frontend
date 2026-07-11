@@ -7,6 +7,7 @@ import { Cpu, Monitor, RectangleEllipsis, Zap } from "lucide-react";
 import { DataIcon } from "@/components/icon-map";
 import { XaiPopover } from "@/components/xai-popover";
 import type { Laptop } from "@/lib/laptops";
+import { cn } from "@/lib/utils";
 
 const specIcons: Record<string, typeof Cpu> = {
   cpu: Cpu,
@@ -53,9 +54,11 @@ export function LaptopCard({
 
       <div className="flex flex-1 flex-col gap-2.5 p-5">
         <div className="flex items-start justify-between gap-3">
-          <span className="bg-brand-tint text-brand w-fit rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase">
-            {laptop.tags[0]}
-          </span>
+          {laptop.tags[0] && (
+            <span className="bg-brand-tint text-brand w-fit rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase">
+              {laptop.tags[0]}
+            </span>
+          )}
           {showScore && (
             <div className="relative z-20 -mt-1">
               <XaiPopover
@@ -105,7 +108,14 @@ export function LaptopCard({
         </div>
 
         <div className="mt-1 flex items-center justify-between gap-3">
-          <span className="text-xl font-bold tracking-tight tabular-nums">
+          <span
+            className={cn(
+              "tracking-tight tabular-nums",
+              laptop.priceValue > 0
+                ? "text-xl font-bold"
+                : "text-[13px] font-medium text-muted-foreground italic",
+            )}
+          >
             {laptop.price}
           </span>
           {showScore && onCompareChange ? (

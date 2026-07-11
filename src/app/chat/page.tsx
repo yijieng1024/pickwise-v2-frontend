@@ -27,7 +27,7 @@ const activityChips = [
 const quickReplies = ["Yes, show gaming options", "No, this is fine"];
 
 export default function ChatPage() {
-  const [checked, setChecked] = useState<Record<number, boolean>>({
+  const [checked, setChecked] = useState<Record<string, boolean>>({
     [topPicks[0].id]: true,
     [topPicks[1].id]: true,
   });

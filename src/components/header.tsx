@@ -194,7 +194,11 @@ export function Header() {
               >
                 Log In
               </Link>
-              <Button render={<Link href="/login" />} className="rounded-full">
+              <Button
+                render={<Link href="/login" />}
+                nativeButton={false}
+                className="rounded-full"
+              >
                 Sign Up
               </Button>
             </div>
@@ -228,7 +232,7 @@ export function Header() {
                 ))}
               </nav>
               <SheetFooter>
-                <Button render={<Link href="/login" />}>
+                <Button render={<Link href="/login" />} nativeButton={false}>
                   Register to Get Recommendations
                 </Button>
               </SheetFooter>

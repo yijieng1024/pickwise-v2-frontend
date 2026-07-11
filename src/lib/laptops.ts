@@ -21,7 +21,8 @@ export interface Benchmark {
 }
 
 export interface Laptop {
-  id: number;
+  /** Backend IDs are UUID strings; mock IDs are string literals for consistency. */
+  id: string;
   slug: string;
   name: string;
   brand: string;
@@ -57,7 +58,7 @@ export const RADAR_AXES = [
 
 export const laptops: Laptop[] = [
   {
-    id: 1,
+    id: "1",
     slug: "macbook-pro-14",
     name: "MacBook Pro 14-inch",
     brand: "Apple",
@@ -134,7 +135,7 @@ export const laptops: Laptop[] = [
     ],
   },
   {
-    id: 2,
+    id: "2",
     slug: "rog-zephyrus-g14",
     name: "ROG Zephyrus G14",
     brand: "Asus",
@@ -206,7 +207,7 @@ export const laptops: Laptop[] = [
     ],
   },
   {
-    id: 3,
+    id: "3",
     slug: "dell-xps-14",
     name: "XPS 14",
     brand: "Dell",
@@ -276,7 +277,7 @@ export const laptops: Laptop[] = [
     ],
   },
   {
-    id: 4,
+    id: "4",
     slug: "acer-swift-go-14",
     name: "Acer Swift Go 14",
     brand: "Acer",
@@ -347,7 +348,7 @@ export const laptops: Laptop[] = [
     ],
   },
   {
-    id: 5,
+    id: "5",
     slug: "legion-slim-5",
     name: "Legion Slim 5",
     brand: "Lenovo",
@@ -414,7 +415,7 @@ export const laptops: Laptop[] = [
     ],
   },
   {
-    id: 6,
+    id: "6",
     slug: "thinkpad-x1-carbon",
     name: "ThinkPad X1 Carbon",
     brand: "Lenovo",
@@ -487,7 +488,7 @@ export const laptops: Laptop[] = [
   },
 ];
 
-export function getLaptop(id: number): Laptop | undefined {
+export function getLaptop(id: string): Laptop | undefined {
   return laptops.find((l) => l.id === id);
 }
 
