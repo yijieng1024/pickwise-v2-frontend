@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -15,6 +14,7 @@ import {
 import { PriceHistory } from "@/components/charts/price-history";
 import { DataIcon } from "@/components/icon-map";
 import { FullSpecs } from "@/components/full-specs";
+import { LaptopGallery } from "@/components/laptop-gallery";
 import { apiFetch, ApiError } from "@/lib/api/client";
 import { mapBackendLaptop } from "@/lib/api/adapters";
 import type {
@@ -71,7 +71,6 @@ export default async function LaptopDetailsPage({
       : 0;
 
   const images = raw.image_urls.length > 0 ? raw.image_urls : [laptop.image];
-  const thumbnails = images.slice(0, 4);
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-12 pb-24 sm:px-6">
@@ -94,44 +93,7 @@ export default async function LaptopDetailsPage({
 
       {/* Hero: gallery + summary */}
       <div className="mb-16 grid grid-cols-1 gap-6 motion-safe:animate-fade-in-up lg:grid-cols-[1.15fr_1fr]">
-        <div className="flex flex-col gap-3">
-          <div className="group bg-surface-2 relative flex min-h-[360px] flex-1 items-center justify-center overflow-hidden rounded-3xl p-12">
-            <Image
-              src={laptop.image}
-              alt={laptop.name}
-              width={600}
-              height={600}
-              priority
-              className="h-full w-full object-contain mix-blend-multiply drop-shadow-2xl transition-transform duration-700 group-hover:scale-105 dark:mix-blend-normal motion-safe:animate-float"
-            />
-          </div>
-          <div className="grid grid-cols-4 gap-3">
-            {thumbnails.map((src, i) => (
-              <div
-                key={src}
-                className={
-                  i === 0
-                    ? "border-brand aspect-square rounded-2xl border-[1.5px] bg-surface p-2"
-                    : "bg-surface-2 border-line aspect-square rounded-2xl border"
-                }
-              >
-                <Image
-                  src={src}
-                  alt=""
-                  width={150}
-                  height={150}
-                  className="h-full w-full object-contain mix-blend-multiply dark:mix-blend-normal"
-                />
-              </div>
-            ))}
-            {Array.from({ length: Math.max(0, 4 - thumbnails.length) }).map((_, i) => (
-              <div
-                key={`empty-${i}`}
-                className="bg-surface-2 border-line aspect-square rounded-2xl border"
-              />
-            ))}
-          </div>
-        </div>
+        <LaptopGallery images={images} name={laptop.name} />
 
         <div className="border-line bg-surface flex flex-col gap-4.5 rounded-3xl border p-8">
           <div>
