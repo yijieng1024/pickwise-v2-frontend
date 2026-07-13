@@ -23,7 +23,7 @@ const SPRING = "cubic-bezier(0.34, 1.56, 0.64, 1)";
 
 const navLinks = [
   { href: "/", label: "Home" },
-  { href: "/laptops", label: "Browse" },
+  { href: "/laptops", label: "Laptops" },
   { href: "/wizard", label: "Needs Wizard" },
   { href: "/chat", label: "Chat" },
   { href: "/compare", label: "Compare" },

@@ -74,7 +74,7 @@ export default async function LaptopDetailsPage({
   const thumbnails = images.slice(0, 4);
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-8 pb-24 sm:px-6">
+    <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-12 pb-24 sm:px-6">
       <div className="mb-8 flex items-center justify-between">
         <Link
           href="/laptops"
@@ -238,7 +238,7 @@ export default async function LaptopDetailsPage({
         </section>
 
         {/* Accessories fallback */}
-        {!laptop.accessories && (
+        {/* {!laptop.accessories && (
           <section className="border-line bg-surface rounded-3xl border p-7 md:col-span-6">
             <h2 className="mb-2 flex items-center gap-2 text-base font-semibold tracking-tight">
               <Layers className="text-brand h-4 w-4" /> Recommended accessories
@@ -270,7 +270,7 @@ export default async function LaptopDetailsPage({
               ))}
             </div>
           </section>
-        )}
+        )} */}
       </div>
     </main>
   );

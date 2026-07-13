@@ -27,6 +27,7 @@ export function mapBackendLaptop(
     priceValue: raw.price_rm,
     score: 0,
     image: raw.image_urls[0] ?? FALLBACK_IMAGE,
+    images: raw.image_urls.length > 0 ? raw.image_urls : [FALLBACK_IMAGE],
     badge: "",
     badgeClass: "",
     specs: {

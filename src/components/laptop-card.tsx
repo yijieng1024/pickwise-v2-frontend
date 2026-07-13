@@ -8,6 +8,7 @@ import { DataIcon } from "@/components/icon-map";
 import { XaiPopover } from "@/components/xai-popover";
 import type { Laptop } from "@/lib/laptops";
 import { cn } from "@/lib/utils";
+import { Carousel, CarouselContent, CarouselDots, CarouselItem } from "./ui/carousel";
 
 const specIcons: Record<string, typeof Cpu> = {
   cpu: Cpu,
@@ -31,6 +32,7 @@ export function LaptopCard({
   onCompareChange,
 }: LaptopCardProps) {
   const specEntries = Object.entries(laptop.specs);
+  const images = laptop.images?.length ? laptop.images : [laptop.image];
 
   return (
     <div className="group border-line bg-surface relative flex flex-col rounded-3xl border transition-all duration-300 hover:shadow-xl motion-safe:hover:-translate-y-1.5">
@@ -42,14 +44,23 @@ export function LaptopCard({
         className="absolute inset-0 z-10 rounded-3xl"
       />
 
-      <div className="bg-surface-2 relative flex h-44 items-center justify-center overflow-hidden rounded-t-3xl p-8">
-        <Image
-          src={laptop.image}
-          alt={laptop.name}
-          width={600}
-          height={400}
-          className="h-full w-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105 dark:mix-blend-normal"
-        />
+      <div className="relative w-full h-80 overflow-hidden rounded-t-3xl bg-white">
+        <Carousel className="h-full w-full">
+          <CarouselContent className="h-full">
+            {images.map((img, index) => (
+              <CarouselItem key={index} className="h-full">
+                <Image
+                  src={img}
+                  alt={`${laptop.name} ${index + 1}`}
+                  width={600}
+                  height={400}
+                  className="h-full w-full object-cover mix-blend-multiply transition-transform duration-500 group-hover:scale-105 dark:mix-blend-normal"
+                />
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselDots className="absolute bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-full border-[var(--glass-edge)] bg-[color-mix(in_srgb,var(--glass)_50%,transparent)] px-2.5 py-1 shadow-[inset_0_1px_0_var(--glass-edge)] backdrop-blur-[20px] backdrop-saturate-[1.8]" />
+        </Carousel>
       </div>
 
       <div className="flex flex-1 flex-col gap-2.5 p-5">

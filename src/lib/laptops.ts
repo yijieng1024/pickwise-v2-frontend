@@ -30,6 +30,8 @@ export interface Laptop {
   priceValue: number;
   score: number;
   image: string;
+  /** All product photos (first one = `image`). Backend-fed; mock laptops omit it, so fall back to `[image]`. */
+  images?: string[];
   badge: string;
   badgeClass: string;
   specs: { cpu: string; ram: string; display?: string; gpu?: string };
