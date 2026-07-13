@@ -21,6 +21,8 @@ interface LaptopCardProps {
   laptop: Laptop;
   /** Rich mode: PickScore ring + XAI popover + plain-English highlights. Off for generic/trending listings. */
   showScore?: boolean;
+  /** "grid" (default): vertical card. "list": horizontal row — image left, content right. */
+  layout?: "grid" | "list";
   compareChecked?: boolean;
   onCompareChange?: (checked: boolean) => void;
 }
@@ -28,6 +30,7 @@ interface LaptopCardProps {
 export function LaptopCard({
   laptop,
   showScore = true,
+  layout = "grid",
   compareChecked,
   onCompareChange,
 }: LaptopCardProps) {
@@ -35,7 +38,12 @@ export function LaptopCard({
   const images = laptop.images?.length ? laptop.images : [laptop.image];
 
   return (
-    <div className="group border-line bg-surface relative flex flex-col rounded-3xl border transition-all duration-300 hover:shadow-xl motion-safe:hover:-translate-y-1.5">
+    <div
+      className={cn(
+        "group border-line bg-surface relative flex rounded-3xl border transition-all duration-300 hover:shadow-xl motion-safe:hover:-translate-y-1.5",
+        layout === "list" ? "flex-row" : "flex-col",
+      )}
+    >
       {/* Stretched link: makes the whole card open the details page while
           the buttons below sit on a higher layer and keep their own actions */}
       <Link
@@ -44,7 +52,14 @@ export function LaptopCard({
         className="absolute inset-0 z-10 rounded-3xl"
       />
 
-      <div className="relative w-full h-80 overflow-hidden rounded-t-3xl bg-white">
+      <div
+        className={cn(
+          "relative overflow-hidden bg-white",
+          layout === "list"
+            ? "w-40 shrink-0 rounded-l-3xl sm:w-64"
+            : "h-75 w-full rounded-t-3xl",
+        )}
+      >
         <Carousel className="h-full w-full">
           <CarouselContent className="h-full">
             {images.map((img, index) => (
@@ -54,7 +69,7 @@ export function LaptopCard({
                   alt={`${laptop.name} ${index + 1}`}
                   width={600}
                   height={400}
-                  className="h-full w-full object-cover mix-blend-multiply transition-transform duration-500 group-hover:scale-105 dark:mix-blend-normal"
+                  className="h-full w-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105 dark:mix-blend-normal"
                 />
               </CarouselItem>
             ))}
