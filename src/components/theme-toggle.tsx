@@ -11,7 +11,7 @@ export function ThemeToggle() {
       type="button"
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
       aria-label="Toggle theme"
-      className="border-line bg-surface hover:border-brand hover:text-brand flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium whitespace-nowrap text-muted-foreground transition-colors"
+      className="border-line bg-glass hover:border-brand hover:text-brand flex items-center gap-1.5 rounded-full px-2.5 py-2.5 text-xs font-medium whitespace-nowrap text-muted-foreground transition-colors"
     >
       {/* Both icons render; CSS shows the one matching the active theme,
           so no mounted-state check is needed to avoid hydration mismatch. */}
