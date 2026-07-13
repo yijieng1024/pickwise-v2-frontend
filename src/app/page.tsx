@@ -10,7 +10,7 @@ export default function Home() {
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 sm:px-6 lg:px-8">
       <section className="flex flex-col items-center pt-24 pb-0 text-center md:pt-32">
         <div className="bg-brand-tint text-brand mb-9 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium motion-safe:animate-fade-in-up">
-          <Sparkles className="h-4 w-4" /> PickWise AI V2 is live
+          <Sparkles className="h-4 w-4" /> Welcome to PickWise! Pico is waiting for you!
         </div>
 
         <h1 className="mb-10 max-w-[760px] text-5xl leading-[1.03] font-bold tracking-tighter text-balance motion-safe:animate-fade-in-up motion-safe:[animation-delay:100ms] md:text-[72px]">

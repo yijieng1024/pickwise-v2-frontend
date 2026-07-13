@@ -8,16 +8,13 @@ const productLinks = [
   { href: "/compare", label: "Compare" },
 ];
 
-const companyLinks = [
+const aboutLinks = [
   { href: "#", label: "About" },
-  { href: "#", label: "How PickScore works" },
-  { href: "#", label: "Careers" },
+  { href: "#", label: "FAQ" },
 ];
 
 const supportLinks = [
-  { href: "#", label: "Help Centre" },
   { href: "#", label: "Contact us" },
-  { href: "#", label: "WhatsApp" },
 ];
 
 export function Footer() {
@@ -35,15 +32,13 @@ export function Footer() {
               </span>
             </div>
             <p className="max-w-[280px] text-[13px] leading-relaxed text-muted-foreground">
-              The laptop advisor that speaks your language. Personalised
-              PickScores for buyers in Malaysia — in English, Malay or
-              Chinese.
+              The agent that recommends the best laptop for your needs, budget, and preferences.
             </p>
           </div>
 
           <nav className="flex flex-col gap-2.5">
             <span className="mb-1 text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
-              Product
+              Pages
             </span>
             {productLinks.map(({ href, label }) => (
               <Link
@@ -58,9 +53,9 @@ export function Footer() {
 
           <nav className="flex flex-col gap-2.5">
             <span className="mb-1 text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
-              Company
+              About
             </span>
-            {companyLinks.map(({ href, label }) => (
+            {aboutLinks.map(({ href, label }) => (
               <a
                 key={label}
                 href={href}
@@ -71,7 +66,7 @@ export function Footer() {
             ))}
           </nav>
 
-          <nav className="flex flex-col gap-2.5">
+          {/* <nav className="flex flex-col gap-2.5">
             <span className="mb-1 text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
               Support
             </span>
@@ -84,13 +79,12 @@ export function Footer() {
                 {label}
               </a>
             ))}
-          </nav>
+          </nav> */}
         </div>
 
         <div className="border-line flex flex-wrap items-center justify-between gap-4 border-t pt-5.5">
           <span className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} PickWise Sdn Bhd. All prices in
-            Malaysian Ringgit.
+            &copy; {new Date().getFullYear()} PickWise. All prices in Malaysian Ringgit.
           </span>
           <div className="flex items-center gap-4.5 text-xs">
             <a href="#" className="hover:text-brand text-muted-foreground">
@@ -99,10 +93,6 @@ export function Footer() {
             <a href="#" className="hover:text-brand text-muted-foreground">
               Privacy
             </a>
-            <span className="flex items-center gap-1.5 text-muted-foreground">
-              <Globe className="h-3 w-3" />
-              English (MY)
-            </span>
           </div>
         </div>
       </div>
