@@ -59,7 +59,7 @@ export function LaptopCard({
               </CarouselItem>
             ))}
           </CarouselContent>
-          <CarouselDots className="absolute bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-full border-[var(--glass-edge)] bg-[color-mix(in_srgb,var(--glass)_50%,transparent)] px-2.5 py-1 shadow-[inset_0_1px_0_var(--glass-edge)] backdrop-blur-[20px] backdrop-saturate-[1.8]" />
+          <CarouselDots className="absolute bottom-2 left-1/2 z-20 -translate-x-1/2 rounded-full border-[var(--glass-edge)] bg-[color-mix(in_srgb,var(--glass)_50%,transparent)] px-4 py-2 shadow-[inset_0_1px_0_var(--glass-edge)] backdrop-blur-[20px] backdrop-saturate-[1.8]" />
         </Carousel>
       </div>
 
