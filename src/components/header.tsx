@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogOut, MenuIcon, Settings, User } from "lucide-react";
 
 import { GlassSurface } from "@/components/glass-surface";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { UserAvatar } from "@/components/user-avatar";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -17,6 +17,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
 const SPRING = "cubic-bezier(0.34, 1.56, 0.64, 1)";
@@ -29,12 +30,9 @@ const navLinks = [
   { href: "/compare", label: "Compare" },
 ];
 
-// Placeholder until real authentication is wired up; the avatar only
-// shows for logged-in users, everyone else gets the sign-up button.
-const isAuthenticated: boolean = false;
-
 export function Header() {
   const pathname = usePathname();
+  const { user, isLoading, logout } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [entered, setEntered] = useState(false);
@@ -116,21 +114,19 @@ export function Header() {
             <ThemeToggle />
           </div>
 
-          {isAuthenticated ? (
+          {isLoading ? null : user ? (
             <div className="relative">
               <button
                 type="button"
                 aria-label="Account"
                 aria-expanded={userMenuOpen}
                 onClick={() => setUserMenuOpen((o) => !o)}
-                className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border-0 bg-gradient-to-br from-brand to-primary text-[13px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] transition-transform hover:scale-105"
+                className="relative flex h-9 w-9 items-center justify-center rounded-full border-0 bg-transparent transition-transform hover:scale-105"
               >
-                <Image
-                  src="https://i.pravatar.cc/100?img=33"
-                  alt="User avatar"
-                  width={36}
-                  height={36}
-                  className="h-full w-full object-cover"
+                <UserAvatar
+                  userId={user.id}
+                  username={user.username}
+                  className="h-9 w-9 text-[13px]"
                 />
                 <span className="absolute right-0 bottom-0 h-2.5 w-2.5 rounded-full border-2 border-surface bg-positive" />
               </button>
@@ -142,28 +138,39 @@ export function Header() {
                     onClick={() => setUserMenuOpen(false)}
                   />
                   <div className="motion-safe:animate-fade-in-up absolute top-11 right-0 z-50 w-56">
-                    <GlassSurface cornerRadius={18} className="p-2">
+                    <GlassSurface
+                      cornerRadius={18}
+                      className="p-2"
+                      // More opaque than the default glass fill so menu text
+                      // stays readable over any page content behind it.
+                      style={{
+                        background:
+                          "color-mix(in oklab, var(--surface) 92%, transparent)",
+                      }}
+                    >
                       <div className="mb-1.5 flex items-center gap-2.5 border-b border-line px-2 pt-1 pb-3">
-                        <span className="flex h-8.5 w-8.5 flex-none items-center justify-center rounded-full bg-gradient-to-br from-brand to-primary text-xs font-bold text-white">
-                          J
-                        </span>
+                        <UserAvatar
+                          userId={user.id}
+                          username={user.username}
+                          className="h-8.5 w-8.5 text-xs"
+                        />
                         <span className="min-w-0">
                           <span className="block truncate text-[13px] font-semibold">
-                            Jack Ng
+                            {user.username}
                           </span>
                           <span className="block truncate text-[11.5px] text-muted-foreground">
-                            jack.ng@gmail.com
+                            {user.email}
                           </span>
                         </span>
                       </div>
-                      <button
-                        type="button"
+                      <Link
+                        href="/profile"
                         onClick={() => setUserMenuOpen(false)}
                         className="flex w-full items-center gap-2.5 rounded-[10px] border-none bg-transparent px-3 py-2 text-left text-[13px] font-medium hover:bg-surface-2"
                       >
                         <User className="h-3.5 w-3.5" />
                         Profile
-                      </button>
+                      </Link>
                       <button
                         type="button"
                         onClick={() => setUserMenuOpen(false)}
@@ -175,7 +182,10 @@ export function Header() {
                       <div className="my-1.5 h-px bg-line" />
                       <button
                         type="button"
-                        onClick={() => setUserMenuOpen(false)}
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          logout();
+                        }}
                         className="flex w-full items-center gap-2.5 rounded-[10px] border-none bg-transparent px-3 py-2 text-left text-[13px] font-medium text-negative hover:bg-negative/10"
                       >
                         <LogOut className="h-3.5 w-3.5" />
@@ -231,11 +241,13 @@ export function Header() {
                   </SheetClose>
                 ))}
               </nav>
-              <SheetFooter>
-                <Button render={<Link href="/login" />} nativeButton={false}>
-                  Register to Get Recommendations
-                </Button>
-              </SheetFooter>
+              {!user && (
+                <SheetFooter>
+                  <Button render={<Link href="/login" />} nativeButton={false}>
+                    Register to Get Recommendations
+                  </Button>
+                </SheetFooter>
+              )}
             </SheetContent>
           </Sheet>
         </div>

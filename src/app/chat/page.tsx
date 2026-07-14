@@ -39,7 +39,7 @@ export default function ChatPage() {
   const pct = (n: number) => Math.round((n / total) * 100);
 
   return (
-    <main className="mx-auto grid h-[calc(100vh-96px)] w-full max-w-6xl flex-1 grid-cols-1 gap-0 px-0 md:grid-cols-[272px_1fr] md:px-6">
+    <main className="mx-auto grid h-[calc(100vh-120px)] w-full max-w-6xl flex-1 grid-cols-1 gap-0 px-0 md:grid-cols-[272px_1fr] md:px-6">
       {/* Sidebar */}
       <aside className="border-line bg-surface hidden flex-col gap-5 border-r p-4 md:flex">
         <button
@@ -76,7 +76,7 @@ export default function ChatPage() {
       </aside>
 
       {/* Thread */}
-      <section className="flex max-h-[calc(100vh-96px)] flex-col">
+      <section className="flex max-h-[calc(100vh-120px)] flex-col">
         <div className="flex-1 overflow-y-auto px-4 pt-8 pb-4 sm:px-8">
           <div className="mx-auto flex max-w-[760px] flex-col gap-5">
             <div className="text-center text-[11.5px] font-medium text-muted-foreground">

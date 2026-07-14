@@ -119,7 +119,7 @@ export default function WizardPage() {
   }
 
   return (
-    <main className="flex min-h-[calc(100vh-140px)] flex-1 items-start justify-center px-4 py-16 sm:px-6">
+    <main className="flex min-h-[calc(100vh-164px)] flex-1 items-start justify-center px-4 py-16 sm:px-6">
       <div className="border-line bg-surface w-full max-w-[680px] rounded-3xl border p-8 shadow-[0_16px_48px_var(--shadow)] motion-safe:animate-fade-in-up sm:p-11">
         <div className="mb-2.5 flex items-center justify-between">
           <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">

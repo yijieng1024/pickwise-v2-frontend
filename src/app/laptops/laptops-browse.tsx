@@ -50,7 +50,7 @@ export function LaptopsBrowse({ laptops }: { laptops: Laptop[] }) {
   return (
     <>
       <div className="mb-7">
-        <h1 className="pt-6 text-4xl font-bold tracking-tight">All laptops</h1>
+        <h1 className="text-4xl font-bold tracking-tight">All laptops</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
           {visible.length} laptops · ask Pico anytime for a personalised
           shortlist
