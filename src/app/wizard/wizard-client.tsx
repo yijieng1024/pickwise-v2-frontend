@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Banknote,
@@ -11,6 +10,7 @@ import {
   Cpu,
   Film,
   Gamepad2,
+  Loader2,
   Monitor,
   Tag,
   Weight,
@@ -72,11 +72,25 @@ interface WizardClientProps {
 
 export function WizardClient({ questions, brands }: WizardClientProps) {
   const router = useRouter();
-  const { token } = useAuth();
+  const { user, token, isLoading, markPreferencesSaved } = useAuth();
   const [step, setStep] = useState(0);
   const [selections, setSelections] = useState<Record<string, Selection>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Auth-gated page: preferences save to the account, so anonymous visitors
+  // are bounced to /login before answering anything.
+  useEffect(() => {
+    if (!isLoading && !user) router.replace("/login");
+  }, [isLoading, user, router]);
+
+  if (isLoading || !user || !token) {
+    return (
+      <main className="flex w-full flex-1 items-center justify-center py-24">
+        <Loader2 className="h-6 w-6 text-muted-foreground motion-safe:animate-spin" />
+      </main>
+    );
+  }
 
   const current = questions[step];
   const options = displayOptions(current, brands);
@@ -118,20 +132,18 @@ export function WizardClient({ questions, brands }: WizardClientProps) {
   }
 
   async function next() {
-    if (!stepComplete || submitting) return;
+    // token is guaranteed by the auth gate above; re-checked for narrowing.
+    if (!stepComplete || submitting || !token) return;
     if (step < questions.length - 1) {
       setStep((s) => s + 1);
       return;
     }
 
-    if (!token) {
-      setError("sign-in");
-      return;
-    }
     setSubmitting(true);
     setError(null);
     try {
       await updatePreferences(token, buildPreferences(questions, brands, selections));
+      markPreferencesSaved();
       router.push("/chat");
     } catch (err) {
       setError(
@@ -216,20 +228,10 @@ export function WizardClient({ questions, brands }: WizardClientProps) {
           })}
         </div>
 
-        {error === "sign-in" ? (
-          <p className="bg-brand-tint text-brand mt-6 rounded-xl px-4 py-3 text-[12.5px] font-medium">
-            Sign in so Pico can remember your preferences —{" "}
-            <Link href="/login" className="underline underline-offset-2">
-              go to sign in
-            </Link>
-            . Your answers stay right here.
+        {error && (
+          <p className="bg-negative/10 mt-6 rounded-xl px-4 py-3 text-[12.5px] font-medium text-negative">
+            {error}
           </p>
-        ) : (
-          error && (
-            <p className="bg-negative/10 mt-6 rounded-xl px-4 py-3 text-[12.5px] font-medium text-negative">
-              {error}
-            </p>
-          )
         )}
 
         <div className="mt-8 flex items-center justify-between">

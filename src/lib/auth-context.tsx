@@ -10,8 +10,10 @@ import {
 
 import {
   type AuthUser,
+  getPreferences,
   getProfile,
   googleLogin,
+  hasAnyPreferences,
   login as apiLogin,
 } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
@@ -30,6 +32,14 @@ interface AuthContextValue {
   loginWithGoogle: (idToken: string) => Promise<void>;
   /** Replaces the cached profile after a server-confirmed update. */
   updateUser: (user: AuthUser) => void;
+  /**
+   * Whether the account has saved needs-wizard preferences. `null` while
+   * signed out or until the check resolves; drives the "Needs Wizard" nav
+   * entry, which hides once preferences exist.
+   */
+  hasPreferences: boolean | null;
+  /** Flips `hasPreferences` on after the wizard saves successfully. */
+  markPreferencesSaved: () => void;
   /**
    * Bumped after an avatar upload/removal; appended to the avatar URL as a
    * query param so the browser re-fetches past the gateway's 5-min cache.
@@ -100,6 +110,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateUser = useCallback((next: AuthUser) => setUser(next), []);
 
+  // Checked once per session whenever a token lands (restore or login);
+  // logout resets it below. A failed check stays null — treated as "not
+  // confirmed saved", so the wizard nav entry keeps showing.
+  const [hasPreferences, setHasPreferences] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    getPreferences(token)
+      .then((prefs) => {
+        if (!cancelled) setHasPreferences(hasAnyPreferences(prefs));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+  const markPreferencesSaved = useCallback(() => setHasPreferences(true), []);
+
   const [avatarVersion, setAvatarVersion] = useState(0);
   const bumpAvatarVersion = useCallback(
     () => setAvatarVersion((v) => v + 1),
@@ -110,6 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem(TOKEN_KEY);
     setToken(null);
     setUser(null);
+    setHasPreferences(null);
   }, []);
 
   return (
@@ -121,6 +150,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         loginWithGoogle,
         updateUser,
+        hasPreferences,
+        markPreferencesSaved,
         avatarVersion,
         bumpAvatarVersion,
         logout,

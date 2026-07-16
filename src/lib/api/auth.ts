@@ -108,6 +108,22 @@ export interface UserPreferences {
   tech_savviness: string | null;
 }
 
+/**
+ * True when any preference field is set — i.e. the needs wizard (or a chat
+ * flow) has saved a record for this account.
+ */
+export function hasAnyPreferences(prefs: UserPreferences): boolean {
+  return Boolean(
+    prefs.budget ||
+      prefs.purpose?.length ||
+      Object.keys(prefs.priorities ?? {}).length ||
+      prefs.screen_size?.length ||
+      prefs.portability ||
+      prefs.brand_preferences?.length ||
+      prefs.tech_savviness,
+  );
+}
+
 export function getPreferences(token: string): Promise<UserPreferences> {
   return apiFetch<UserPreferences>("/auth/me/preferences", {
     token,

@@ -32,7 +32,14 @@ const navLinks = [
 
 export function Header() {
   const pathname = usePathname();
-  const { user, isLoading, logout } = useAuth();
+  const { user, isLoading, logout, hasPreferences } = useAuth();
+
+  // Once the account has saved wizard preferences, the nav entry goes away —
+  // preference changes happen from the profile's "Laptop preferences" card.
+  // Guests and unconfirmed states (null) keep the entry.
+  const visibleLinks = navLinks.filter(
+    ({ href }) => href !== "/wizard" || hasPreferences !== true,
+  );
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [entered, setEntered] = useState(false);
@@ -90,7 +97,7 @@ export function Header() {
         </Link>
 
         <nav className="hidden items-center gap-1 overflow-x-auto md:flex">
-          {navLinks.map(({ href, label }) => {
+          {visibleLinks.map(({ href, label }) => {
             const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
             return (
               <Link
@@ -171,14 +178,14 @@ export function Header() {
                         <User className="h-3.5 w-3.5" />
                         Profile
                       </Link>
-                      <button
-                        type="button"
+                      <Link
+                        href="/profile#preferences"
                         onClick={() => setUserMenuOpen(false)}
                         className="flex w-full items-center gap-2.5 rounded-[10px] border-none bg-transparent px-3 py-2 text-left text-[13px] font-medium hover:bg-surface-2"
                       >
                         <Settings className="h-3.5 w-3.5" />
-                        Settings
-                      </button>
+                        Preferences
+                      </Link>
                       <div className="my-1.5 h-px bg-line" />
                       <button
                         type="button"
@@ -227,7 +234,7 @@ export function Header() {
             <SheetContent side="right">
               <SheetTitle className="sr-only">PickWise navigation</SheetTitle>
               <nav className="flex flex-col gap-1 px-4 pt-4">
-                {navLinks.map(({ href, label }) => (
+                {visibleLinks.map(({ href, label }) => (
                   <SheetClose
                     key={href}
                     render={

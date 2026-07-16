@@ -18,6 +18,7 @@ import {
   type UserPreferences,
   deleteAvatar,
   getPreferences,
+  hasAnyPreferences,
   updateProfile,
   uploadAvatar,
 } from "@/lib/api/auth";
@@ -343,19 +344,14 @@ function PreferencesCard({ token }: { token: string }) {
     };
   }, [token]);
 
-  const hasPrefs =
-    prefs &&
-    (prefs.budget ||
-      (prefs.purpose?.length ?? 0) > 0 ||
-      Object.keys(prefs.priorities ?? {}).length > 0 ||
-      (prefs.screen_size?.length ?? 0) > 0 ||
-      prefs.portability ||
-      (prefs.brand_preferences?.length ?? 0) > 0 ||
-      prefs.tech_savviness);
+  const hasPrefs = prefs !== null && hasAnyPreferences(prefs);
 
   return (
     <section
-      className="border-line bg-surface rounded-[24px] border p-7 motion-safe:animate-fade-in-up"
+      id="preferences"
+      // scroll-mt clears the floating nav island when the account menu's
+      // "Preferences" link deep-links to this card.
+      className="border-line bg-surface scroll-mt-28 rounded-[24px] border p-7 motion-safe:animate-fade-in-up"
       style={{ animationDelay: "180ms" }}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">

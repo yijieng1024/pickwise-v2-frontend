@@ -46,9 +46,11 @@ Next.js **16.2.10** (App Router) with React 19, TypeScript (strict), and Tailwin
 - Chart colors are dataviz-validated (CVD-safe, contrast-checked) — radar pair `#3b6db4`/`#9333ea`, price-history pair `#3b6db4`/`#c2571b` (second series dashed); single-series charts use `#3b6db4` alone. Charts read surface colors from CSS vars (`var(--border)` etc.) so they follow the theme.
 - Prices, scores, and other data numbers use the `tabular-nums` utility class for column alignment.
 
-## Auth (placeholder)
+## Auth
 
-No authentication is wired up in the frontend yet (the backend has JWT bearer auth — OAuth2 form-encoded login — but nothing here calls it). `isAuthenticated` in `components/header.tsx` is a hardcoded flag: `false` shows Log In + Sign Up, `true` shows the avatar + dropdown menu. `/login` (tabbed sign-in/create-account) is unwired UI; `/signup` redirects to it.
+Live against the backend's JWT bearer auth. `src/lib/auth-context.tsx` (`useAuth`) owns the session: token in localStorage (`pickwise_token`), trusted only after `GET /auth/me/profile` succeeds; login is OAuth2 form-encoded (`username` field accepts username or email), plus Google sign-in via GIS ID token. `src/lib/api/auth.ts` has the API surface (profile, preferences, avatar). `/login` is the tabbed sign-in/create-account page; registration requires email verification before login works. `/profile` and `/wizard` are auth-gated client-side (redirect to `/login`).
+
+The auth context also tracks `hasPreferences` (fetched from `GET /auth/me/preferences` per session, `null` = signed out/unknown): the header hides the "Needs Wizard" nav entry once it's `true` — after completing the wizard, preference updates happen via the account menu's "Preferences" item → the profile page's "Laptop preferences" card, which links back to `/wizard`. The wizard flips the flag via `markPreferencesSaved()` on save.
 
 ## Next.js 16 differs from training data
 
