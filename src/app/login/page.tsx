@@ -297,7 +297,14 @@ export default function LoginPage() {
 
           <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
             By continuing you agree to PickWise&apos;s{" "}
-            <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.
+            <Link href="/terms" className="underline underline-offset-2">
+              Terms
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="underline underline-offset-2">
+              Privacy Policy
+            </Link>
+            .
           </p>
         </div>
       </div>

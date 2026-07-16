@@ -87,12 +87,12 @@ export function Footer() {
             &copy; {new Date().getFullYear()} PickWise. All prices in Malaysian Ringgit.
           </span>
           <div className="flex items-center gap-4.5 text-xs">
-            <a href="#" className="hover:text-brand text-muted-foreground">
+            <Link href="/terms" className="hover:text-brand text-muted-foreground">
               Terms
-            </a>
-            <a href="#" className="hover:text-brand text-muted-foreground">
+            </Link>
+            <Link href="/privacy" className="hover:text-brand text-muted-foreground">
               Privacy
-            </a>
+            </Link>
           </div>
         </div>
       </div>
