@@ -116,6 +116,22 @@ export function getPreferences(token: string): Promise<UserPreferences> {
 }
 
 /**
+ * Writes preference fields (partial — backend applies `exclude_unset`, so
+ * omit fields you don't want to touch, e.g. tech_savviness from the wizard).
+ */
+export function updatePreferences(
+  token: string,
+  prefs: Partial<UserPreferences>,
+): Promise<UserPreferences> {
+  return apiFetch<UserPreferences>("/auth/me/preferences", {
+    method: "PUT",
+    token,
+    body: JSON.stringify(prefs),
+    next: { revalidate: 0 },
+  });
+}
+
+/**
  * Public URL serving a user's avatar bytes from the backend gateway.
  * Responds 404 when the user has no avatar — callers need an error fallback.
  */
