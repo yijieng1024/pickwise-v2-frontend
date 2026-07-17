@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { useTheme } from "next-themes";
-import { Check } from "lucide-react";
+import { Check, Eye, EyeOff } from "lucide-react";
 
 import { register } from "@/lib/api/auth";
 import { useAuth } from "@/lib/auth-context";
@@ -14,9 +14,9 @@ import { cn } from "@/lib/utils";
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
 const perks = [
-  "Saved conversations and comparisons",
-  "Price-drop alerts on your shortlist",
-  "PickScores that remember your preferences",
+  "An agent that asks before it recommends",
+  "PickScores personalized to your budget and priorities",
+  "Conversations that pick up where you left off",
 ];
 
 const inputClass =
@@ -33,6 +33,7 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -84,6 +85,7 @@ export default function LoginPage() {
     setTab(next);
     setError(null);
     setNotice(null);
+    setShowPassword(false);
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -127,11 +129,12 @@ export default function LoginPage() {
             </span>
           </div>
           <h2 className="mt-6 text-[30px] leading-tight font-bold tracking-tight text-balance">
-            The laptop advisor that speaks your language.
+            Meet Pico, your laptop recommendation agent.
           </h2>
           <p className="text-sm leading-relaxed opacity-85">
-            Chat with Pico in English, Malay or Chinese. Get PickScores tuned
-            to your needs — not the retailer&apos;s margin.
+            Tell Pico what you need — in English, Malay or Chinese. It
+            searches the Malaysian market, weighs every match with PickScore,
+            and explains why each one fits you.
           </p>
           <div className="mt-auto flex flex-col gap-3 text-[13px]">
             {perks.map((perk) => (
@@ -245,15 +248,29 @@ export default function LoginPage() {
                   </Link>
                 )}
               </span>
-              <input
-                type="password"
-                autoComplete={isLogin ? "current-password" : "new-password"}
-                placeholder="••••••••"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={inputClass}
-              />
+              <span className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  autoComplete={isLogin ? "current-password" : "new-password"}
+                  placeholder="••••••••"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={cn(inputClass, "w-full pr-11")}
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute top-1/2 right-3.5 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" strokeWidth={1.8} />
+                  ) : (
+                    <Eye className="h-4 w-4" strokeWidth={1.8} />
+                  )}
+                </button>
+              </span>
               {!isLogin && (
                 <span className="font-normal text-[11.5px] text-muted-foreground">
                   At least 8 characters, with an uppercase, a lowercase and a

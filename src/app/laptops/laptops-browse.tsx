@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { LayoutGrid, List, Search } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { LayoutGrid, List, Loader2, Search } from "lucide-react";
 
 import { LaptopCard } from "@/components/laptop-card";
 import {
@@ -23,12 +23,31 @@ const sortOptions: { value: SortOrder; label: string }[] = [
 ];
 type ViewMode = "grid" | "list";
 
+/** Cards rendered initially and added per scroll-to-bottom batch. */
+const BATCH_SIZE = 24;
+
 export function LaptopsBrowse({ laptops }: { laptops: Laptop[] }) {
   const brands = useMemo(() => ["All", ...new Set(laptops.map((l) => l.brand))], [laptops]);
   const [brand, setBrand] = useState("All");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortOrder>("reco");
   const [view, setView] = useState<ViewMode>("grid");
+
+  // Lazy rendering: only `limit` cards are in the DOM; an IntersectionObserver
+  // sentinel below the grid raises it as the user approaches the bottom. The
+  // data itself still arrives in the one upfront fetch — this only defers DOM
+  // and image work for ~250 carousel cards.
+  const [limit, setLimit] = useState(BATCH_SIZE);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Reset the window when the result set changes (filter/search/sort/view) —
+  // the "adjust state during render" pattern, not an effect.
+  const filterSig = `${brand}|${query}|${sort}|${view}`;
+  const [prevSig, setPrevSig] = useState(filterSig);
+  if (filterSig !== prevSig) {
+    setPrevSig(filterSig);
+    setLimit(BATCH_SIZE);
+  }
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -46,6 +65,28 @@ export function LaptopsBrowse({ laptops }: { laptops: Laptop[] }) {
     }
     return filtered;
   }, [laptops, brand, query, sort]);
+
+  const shown = visible.slice(0, limit);
+  const hasMore = visible.length > limit;
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setLimit((l) => l + BATCH_SIZE);
+        }
+      },
+      // Start loading the next batch well before the sentinel is visible.
+      { rootMargin: "600px 0px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+    // Recreate per batch so a sentinel still inside the viewport after a fast
+    // scroll immediately triggers the next load (no new crossing event
+    // otherwise).
+  }, [limit, hasMore]);
 
   return (
     <>
@@ -159,16 +200,28 @@ export function LaptopsBrowse({ laptops }: { laptops: Laptop[] }) {
               : "flex flex-col gap-4",
           )}
         >
-          {visible.map((laptop, i) => (
+          {shown.map((laptop, i) => (
             <div
               // Key includes the filter/view state so re-filtering replays the reveal
               key={`${view}-${brand}-${sort}-${query}-${laptop.id}`}
               className="motion-safe:animate-fade-in-up"
-              style={{ animationDelay: `${i * 80}ms` }}
+              // Stagger within each batch only — appended batches replay a
+              // short cascade instead of inheriting a huge absolute delay.
+              style={{ animationDelay: `${(i % BATCH_SIZE) * 60}ms` }}
             >
               <LaptopCard laptop={laptop} showScore={false} layout={view} />
             </div>
           ))}
+        </div>
+      )}
+
+      {hasMore && (
+        <div
+          ref={sentinelRef}
+          className="flex items-center justify-center gap-2 py-10 text-xs text-muted-foreground"
+        >
+          <Loader2 className="text-brand h-4 w-4 animate-spin" />
+          Loading more laptops…
         </div>
       )}
     </>
