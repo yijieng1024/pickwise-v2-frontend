@@ -3,9 +3,23 @@ import { ChevronRight, Sparkles } from "lucide-react";
 
 import { LaptopCard } from "@/components/laptop-card";
 import { Omnibar } from "@/components/omnibar";
+import { mapRankedLaptop } from "@/lib/api/adapters";
+import { getPickScoreRanking } from "@/lib/api/pickscore";
 import { featuredLaptops } from "@/lib/laptops";
 
-export default function Home() {
+export default async function Home() {
+  // Trending = top stored general-use PickScores from the live catalog;
+  // mocks only as a fallback if the API is unreachable or scores are empty.
+  let trending = featuredLaptops;
+  try {
+    const ranking = await getPickScoreRanking("general_use", 3);
+    if (ranking.results.length > 0) {
+      trending = ranking.results.map(mapRankedLaptop);
+    }
+  } catch {
+    // Keep the mock fallback.
+  }
+
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 sm:px-6 lg:px-8">
       <section className="flex flex-col items-center pt-24 pb-0 text-center md:pt-32">
@@ -48,7 +62,7 @@ export default function Home() {
             </Link>
           </div>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            {featuredLaptops.map((laptop, i) => (
+            {trending.map((laptop, i) => (
               <div
                 key={laptop.id}
                 className="motion-safe:animate-fade-in-up"

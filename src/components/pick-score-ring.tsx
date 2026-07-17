@@ -58,16 +58,16 @@ export function PickScoreRing({
           {caption === "inside" && (
             <span
               className="mt-0.5 font-semibold tracking-wide text-muted-foreground uppercase"
-              style={{ fontSize: size * 0.11 }}
+              style={{ fontSize: size * 0.08 }}
             >
-              PickScore
+              Pick Score
             </span>
           )}
         </span>
       </span>
       {caption === "below" && (
-        <span className="text-[9.5px] font-semibold tracking-wide text-muted-foreground uppercase">
-          PickScore
+        <span className="text-[9px] font-semibold tracking-wide text-muted-foreground uppercase">
+          Pick Score
         </span>
       )}
     </div>

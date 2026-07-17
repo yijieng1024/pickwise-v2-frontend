@@ -1,4 +1,5 @@
 import type { Laptop } from "@/lib/laptops";
+import type { RankedLaptopPickScore } from "@/lib/api/pickscore";
 import type { BackendBrand, BackendLaptop } from "@/lib/api/types";
 
 /** Used only when a laptop has no image_urls — doesn't happen in current live data, but the field isn't guaranteed. */
@@ -36,6 +37,36 @@ export function mapBackendLaptop(
       display: `${raw.display_size_inch}"`,
       gpu: raw.gpu_model,
     },
+    tags: [],
+    plainEnglish: [],
+    radar: [0, 0, 0, 0, 0, 0],
+    xaiFactors: [],
+    match: "",
+    sentiment: { summary: "", reviews: [] },
+  };
+}
+
+/**
+ * Maps a pick-scores ranking row onto `Laptop` for card rendering. The
+ * ranking payload is a slim projection (no spec fields), so `specs` is empty
+ * and the same placeholder caveats as `mapBackendLaptop` apply — card use
+ * with showScore={false} only. `score` IS real here (the stored general-mode
+ * PickScore for the ranked use case).
+ */
+export function mapRankedLaptop(row: RankedLaptopPickScore): Laptop {
+  return {
+    id: row.laptop_id,
+    slug: row.laptop_id,
+    name: row.product_name,
+    brand: row.brand_name,
+    price: row.price_rm > 0 ? `RM ${row.price_rm.toLocaleString()}` : "Price not available",
+    priceValue: row.price_rm,
+    score: row.score,
+    image: row.image_urls[0] ?? FALLBACK_IMAGE,
+    images: row.image_urls.length > 0 ? row.image_urls : [FALLBACK_IMAGE],
+    badge: "",
+    badgeClass: "",
+    specs: {} as Laptop["specs"],
     tags: [],
     plainEnglish: [],
     radar: [0, 0, 0, 0, 0, 0],
