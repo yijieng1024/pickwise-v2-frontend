@@ -84,7 +84,12 @@ export function Header() {
           gap: scrolled ? 20 : 32,
           height: scrolled ? 52 : 64,
           padding: scrolled ? "0 12px 0 24px" : "0 16px 0 32px",
-          transition: `gap 0.5s ${SPRING}, height 0.5s ${SPRING}, padding 0.5s ${SPRING}`,
+          // Layered island shadow: contact line + ambient + wide diffuse
+          // falloff — deepens a touch once the page scrolls under it.
+          boxShadow: scrolled
+            ? "0 1px 3px var(--shadow), 0 10px 24px -6px var(--shadow), 0 32px 64px -18px var(--shadow), inset 0 1px 0 var(--glass-edge)"
+            : "0 1px 2px var(--shadow), 0 6px 16px -6px var(--shadow), 0 20px 48px -20px var(--shadow), inset 0 1px 0 var(--glass-edge)",
+          transition: `gap 0.5s ${SPRING}, height 0.5s ${SPRING}, padding 0.5s ${SPRING}, box-shadow 0.5s ease`,
         }}
       >
         <Link href="/" className="flex items-center gap-2">
