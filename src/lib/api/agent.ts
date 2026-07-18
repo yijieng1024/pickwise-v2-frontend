@@ -7,6 +7,8 @@ export interface AgentLaptopCard {
   price_rm: number | null;
   pick_score: number | null;
   similarity_score: number | null;
+  /** First catalog photo; optional so a not-yet-redeployed backend still parses. */
+  image_url?: string | null;
 }
 
 export interface ConversationSummary {
@@ -54,6 +56,8 @@ export interface AgentStreamCallbacks {
   onMeta?: (conversationId: string) => void;
   /** One streamed token of the assistant reply. */
   onToken?: (text: string) => void;
+  /** One delta of the model's internal reasoning (thinking flow). */
+  onThinking?: (text: string) => void;
   /** The streamed text so far was an internal tool-call turn — discard it. */
   onTurnReset?: () => void;
   /** A tool call started (activity indicator). */
@@ -65,7 +69,7 @@ export interface AgentStreamCallbacks {
 }
 
 interface AgentStreamEvent {
-  type: "meta" | "token" | "turn_reset" | "tool" | "done" | "error";
+  type: "meta" | "token" | "thinking" | "turn_reset" | "tool" | "done" | "error";
   conversation_id?: string;
   text?: string;
   name?: string;
@@ -118,6 +122,9 @@ export async function streamAgentChat(
         break;
       case "token":
         if (ev.text) callbacks.onToken?.(ev.text);
+        break;
+      case "thinking":
+        if (ev.text) callbacks.onThinking?.(ev.text);
         break;
       case "turn_reset":
         callbacks.onTurnReset?.();

@@ -6,6 +6,8 @@ import { Cpu, Monitor, RectangleEllipsis, Zap } from "lucide-react";
 
 import { DataIcon } from "@/components/icon-map";
 import { XaiPopover } from "@/components/xai-popover";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { Laptop } from "@/lib/laptops";
 import { cn } from "@/lib/utils";
 import { Carousel, CarouselContent, CarouselDots, CarouselItem } from "./ui/carousel";
@@ -81,9 +83,9 @@ export function LaptopCard({
       <div className="flex flex-1 flex-col gap-2.5 p-5">
         <div className="flex items-start justify-between gap-3">
           {laptop.tags[0] && (
-            <span className="bg-brand-tint text-brand w-fit rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase">
+            <Badge className="bg-brand-tint text-brand h-auto rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase">
               {laptop.tags[0]}
-            </span>
+            </Badge>
           )}
           {showScore && (
             <div className="relative z-20 -mt-1">
@@ -122,13 +124,13 @@ export function LaptopCard({
           {specEntries.map(([key, value]) => {
             const Icon = specIcons[key] ?? Cpu;
             return (
-              <span
+              <Badge
                 key={key}
-                className="bg-surface-2 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] text-muted-foreground"
+                className="bg-surface-2 text-muted-foreground h-auto gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-normal [&>svg]:size-2.5!"
               >
-                <Icon className="h-2.5 w-2.5" />
+                <Icon />
                 {value}
-              </span>
+              </Badge>
             );
           })}
         </div>
@@ -146,11 +148,10 @@ export function LaptopCard({
           </span>
           {showScore && onCompareChange ? (
             <label className="relative z-20 flex cursor-pointer items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <input
-                type="checkbox"
-                checked={compareChecked}
-                onChange={(e) => onCompareChange(e.target.checked)}
-                className="accent-brand h-3.5 w-3.5 cursor-pointer"
+              <Checkbox
+                checked={compareChecked ?? false}
+                onCheckedChange={(checked) => onCompareChange(checked === true)}
+                className="size-3.5 cursor-pointer"
               />
               Compare
             </label>

@@ -3,8 +3,21 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BadgeCheck, Loader2, MailWarning, Wand2 } from "lucide-react";
+import {
+  BadgeCheck,
+  Calendar as CalendarIcon,
+  Loader2,
+  MailWarning,
+  Wand2,
+} from "lucide-react";
 
+import { Calendar } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -24,9 +37,20 @@ import {
 } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
+import { cn } from "@/lib/utils";
 
+// Restyles the shadcn Input to the app's form-field look; the focus-visible
+// overrides mute the component's default ring in favor of the brand-tint glow.
 const inputClass =
-  "border-line bg-canvas h-11.5 rounded-xl border px-4 text-[13.5px] outline-none transition-shadow focus:shadow-[0_0_0_3px_var(--brand-tint)]";
+  "border-line bg-canvas dark:bg-canvas h-11.5 rounded-xl border px-4 text-[13.5px] md:text-[13.5px] transition-shadow focus:shadow-[0_0_0_3px_var(--brand-tint)] focus-visible:border-line focus-visible:ring-0";
+
+/** yyyy-mm-dd (the backend's date format) ↔ local Date for the calendar. */
+const dateFromIso = (iso: string) =>
+  iso ? new Date(`${iso}T00:00:00`) : undefined;
+const isoFromDate = (d?: Date) =>
+  d
+    ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+    : "";
 
 /** Sentinel for "no gender set" — the Select needs a non-empty value. */
 const GENDER_UNSET = "unset";
@@ -249,12 +273,34 @@ function PersonalDetailsCard({
       >
         <label className="flex flex-col gap-1.5 text-xs font-semibold">
           Birthday
-          <input
-            type="date"
-            value={birthday}
-            onChange={(e) => setBirthday(e.target.value)}
-            className={inputClass}
-          />
+          <Popover>
+            <PopoverTrigger
+              className={cn(
+                inputClass,
+                "flex w-full cursor-pointer items-center justify-between gap-2 font-normal",
+                !birthday && "text-muted-foreground",
+              )}
+            >
+              {birthday
+                ? dateFromIso(birthday)!.toLocaleDateString("en-MY", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })
+                : "Pick a date"}
+              <CalendarIcon className="size-4 text-muted-foreground" />
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={dateFromIso(birthday)}
+                onSelect={(d) => setBirthday(isoFromDate(d))}
+                defaultMonth={dateFromIso(birthday)}
+                captionLayout="dropdown"
+                disabled={{ after: new Date() }}
+              />
+            </PopoverContent>
+          </Popover>
         </label>
 
         <label className="flex flex-col gap-1.5 text-xs font-semibold">
@@ -289,7 +335,7 @@ function PersonalDetailsCard({
 
         <label className="flex flex-col gap-1.5 text-xs font-semibold sm:col-span-2">
           Occupation
-          <input
+          <Input
             type="text"
             placeholder="e.g. Software engineer, student, designer…"
             value={occupation}

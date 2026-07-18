@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { LayoutGrid, List, Loader2, Search } from "lucide-react";
 
 import { LaptopCard } from "@/components/laptop-card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -101,12 +102,12 @@ export function LaptopsBrowse({ laptops }: { laptops: Laptop[] }) {
       <div className="mb-7 flex flex-wrap items-center gap-3">
         <div className="relative min-w-[240px] flex-1">
           <Search className="absolute top-1/2 left-4 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <input
+          <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search by model, brand or spec…"
             aria-label="Search laptops"
-            className="border-line bg-surface h-11.5 w-full rounded-full border py-0 pr-5 pl-10 text-[13.5px] outline-none transition-shadow focus:shadow-[0_0_0_3px_var(--brand-tint)]"
+            className="border-line bg-surface dark:bg-surface h-11.5 rounded-full py-0 pr-5 pl-10 text-[13.5px] md:text-[13.5px] transition-shadow focus:shadow-[0_0_0_3px_var(--brand-tint)] focus-visible:border-line focus-visible:ring-0"
           />
         </div>
 

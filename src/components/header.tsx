@@ -10,6 +10,13 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { UserAvatar } from "@/components/user-avatar";
 import { Button } from "@/components/ui/button";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Sheet,
   SheetClose,
   SheetContent,
@@ -40,7 +47,6 @@ export function Header() {
   const visibleLinks = navLinks.filter(
     ({ href }) => href !== "/wizard" || hasPreferences !== true,
   );
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [entered, setEntered] = useState(false);
   const [popping, setPopping] = useState(false);
@@ -127,12 +133,9 @@ export function Header() {
           </div>
 
           {isLoading ? null : user ? (
-            <div className="relative">
-              <button
-                type="button"
+            <DropdownMenu>
+              <DropdownMenuTrigger
                 aria-label="Account"
-                aria-expanded={userMenuOpen}
-                onClick={() => setUserMenuOpen((o) => !o)}
                 className="relative flex h-9 w-9 items-center justify-center rounded-full border-0 bg-transparent transition-transform hover:scale-105"
               >
                 <UserAvatar
@@ -141,73 +144,64 @@ export function Header() {
                   className="h-9 w-9 text-[13px]"
                 />
                 <span className="absolute right-0 bottom-0 h-2.5 w-2.5 rounded-full border-2 border-surface bg-positive" />
-              </button>
+              </DropdownMenuTrigger>
 
-              {userMenuOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setUserMenuOpen(false)}
-                  />
-                  <div className="motion-safe:animate-fade-in-up absolute top-11 right-0 z-50 w-56">
-                    <GlassSurface
-                      cornerRadius={18}
-                      className="p-2"
-                      // More opaque than the default glass fill so menu text
-                      // stays readable over any page content behind it.
-                      style={{
-                        background:
-                          "color-mix(in oklab, var(--surface) 92%, transparent)",
-                      }}
-                    >
-                      <div className="mb-1.5 flex items-center gap-2.5 border-b border-line px-2 pt-1 pb-3">
-                        <UserAvatar
-                          userId={user.id}
-                          username={user.username}
-                          className="h-8.5 w-8.5 text-xs"
-                        />
-                        <span className="min-w-0">
-                          <span className="block truncate text-[13px] font-semibold">
-                            {user.username}
-                          </span>
-                          <span className="block truncate text-[11.5px] text-muted-foreground">
-                            {user.email}
-                          </span>
-                        </span>
-                      </div>
-                      <Link
-                        href="/profile"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="flex w-full items-center gap-2.5 rounded-[10px] border-none bg-transparent px-3 py-2 text-left text-[13px] font-medium hover:bg-surface-2"
-                      >
-                        <User className="h-3.5 w-3.5" />
-                        Profile
-                      </Link>
-                      <Link
-                        href="/profile#preferences"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="flex w-full items-center gap-2.5 rounded-[10px] border-none bg-transparent px-3 py-2 text-left text-[13px] font-medium hover:bg-surface-2"
-                      >
-                        <Settings className="h-3.5 w-3.5" />
-                        Preferences
-                      </Link>
-                      <div className="my-1.5 h-px bg-line" />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setUserMenuOpen(false);
-                          logout();
-                        }}
-                        className="flex w-full items-center gap-2.5 rounded-[10px] border-none bg-transparent px-3 py-2 text-left text-[13px] font-medium text-negative hover:bg-negative/10"
-                      >
-                        <LogOut className="h-3.5 w-3.5" />
-                        Log out
-                      </button>
-                    </GlassSurface>
+              <DropdownMenuContent
+                align="end"
+                sideOffset={8}
+                className="w-56 bg-transparent p-0 shadow-none ring-0"
+              >
+                <GlassSurface
+                  cornerRadius={18}
+                  className="p-2"
+                  // More opaque than the default glass fill so menu text
+                  // stays readable over any page content behind it.
+                  style={{
+                    background:
+                      "color-mix(in oklab, var(--surface) 92%, transparent)",
+                  }}
+                >
+                  <div className="mb-1.5 flex items-center gap-2.5 border-b border-line px-2 pt-1 pb-3">
+                    <UserAvatar
+                      userId={user.id}
+                      username={user.username}
+                      className="h-8.5 w-8.5 text-xs"
+                    />
+                    <span className="min-w-0">
+                      <span className="block truncate text-[13px] font-semibold">
+                        {user.username}
+                      </span>
+                      <span className="block truncate text-[11.5px] text-muted-foreground">
+                        {user.email}
+                      </span>
+                    </span>
                   </div>
-                </>
-              )}
-            </div>
+                  <DropdownMenuItem
+                    render={<Link href="/profile" />}
+                    className="cursor-pointer gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium focus:bg-surface-2"
+                  >
+                    <User className="size-3.5" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    render={<Link href="/profile#preferences" />}
+                    className="cursor-pointer gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium focus:bg-surface-2"
+                  >
+                    <Settings className="size-3.5" />
+                    Preferences
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="mx-0 my-1.5 bg-line" />
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={logout}
+                    className="cursor-pointer gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium data-[variant=destructive]:text-negative data-[variant=destructive]:focus:bg-negative/10 data-[variant=destructive]:focus:text-negative"
+                  >
+                    <LogOut className="size-3.5" />
+                    Log out
+                  </DropdownMenuItem>
+                </GlassSurface>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <div className="hidden items-center gap-2 sm:flex">
               <Link

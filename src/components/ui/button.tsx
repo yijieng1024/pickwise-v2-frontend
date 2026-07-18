@@ -45,8 +45,7 @@ function Button({
   variant = "default",
   size = "default",
   ...props
-}: React.ComponentPropsWithoutRef<typeof ButtonPrimitive> &
-  VariantProps<typeof buttonVariants>) {
+}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
   return (
     <ButtonPrimitive
       data-slot="button"

@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Bot,
+  Brain,
   Calculator,
   Check,
+  ChevronDown,
   Loader2,
   MessageSquare,
   Plus,
@@ -19,6 +22,15 @@ import {
 
 import { GlassSurface } from "@/components/glass-surface";
 import { PickScoreRing } from "@/components/pick-score-ring";
+import { Input } from "@/components/ui/input";
+import {
+  MessageScroller,
+  MessageScrollerButton,
+  MessageScrollerContent,
+  MessageScrollerItem,
+  MessageScrollerProvider,
+  MessageScrollerViewport,
+} from "@/components/ui/message-scroller";
 import {
   type AgentLaptopCard,
   type ConversationSummary,
@@ -71,6 +83,9 @@ interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   isError?: boolean;
+  /** Reasoning trace streamed during this turn — only present for turns
+   * generated in this session; persisted history doesn't store it. */
+  thinking?: string;
 }
 
 interface ActivityChip {
@@ -108,14 +123,32 @@ const splitTableRow = (line: string) =>
 /**
  * Minimal markdown for agent replies (headings, **bold**, bullets, tables) —
  * enough for Pico's formatting without a markdown dependency or raw HTML.
+ *
+ * With `animate`, every word is wrapped in a fade-in span. Index keys keep
+ * already-rendered words' DOM stable as streamed text appends, so the
+ * animation only plays on newly arrived words (the growing last word updates
+ * in place without replaying).
  */
-function renderMarkdownLite(text: string) {
+function renderMarkdownLite(text: string, animate = false) {
+  const words = (s: string) =>
+    animate
+      ? s.split(/(?<=\s)/).map((w, i) => (
+          <span key={i} className="motion-safe:animate-token-in">
+            {w}
+          </span>
+        ))
+      : s;
+
   const bold = (line: string, key: number) => {
     const parts = line.split(/\*\*(.+?)\*\*/g);
     return (
       <span key={key}>
         {parts.map((p, i) =>
-          i % 2 === 1 ? <strong key={i}>{p}</strong> : p,
+          i % 2 === 1 ? (
+            <strong key={i}>{words(p)}</strong>
+          ) : (
+            <span key={i}>{words(p)}</span>
+          ),
         )}
       </span>
     );
@@ -215,6 +248,64 @@ function renderMarkdownLite(text: string) {
   return out;
 }
 
+/** Live reasoning trace for the in-flight turn — auto-follows the newest text. */
+function ThinkingFlow({ text, active }: { text: string; active: boolean }) {
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight });
+  }, [text]);
+
+  return (
+    <div className="border-line bg-surface-2 w-full rounded-2xl border px-4 py-3">
+      <div className="flex items-center gap-2 text-[11.5px] font-semibold text-muted-foreground">
+        <Brain className="text-brand h-3.5 w-3.5" />
+        Thinking
+        {active && (
+          <span className="border-brand-tint border-t-brand h-3 w-3 animate-spin rounded-full border-2" />
+        )}
+      </div>
+      <div
+        ref={bodyRef}
+        className="mt-2 max-h-36 overflow-y-auto text-xs leading-relaxed whitespace-pre-wrap text-muted-foreground"
+      >
+        {text.split(/(?<=\s)/).map((w, i) => (
+          <span key={i} className="motion-safe:animate-token-in">
+            {w}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Collapsed reasoning trace attached to a finished assistant message. */
+function ThinkingDisclosure({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex items-center gap-1.5 self-start text-[11.5px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <Brain className="h-3.5 w-3.5" />
+        Thinking
+        <ChevronDown
+          className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-180")}
+        />
+      </button>
+      {open && (
+        <div className="border-line bg-surface-2 max-h-48 overflow-y-auto rounded-2xl border px-4 py-3 text-xs leading-relaxed whitespace-pre-wrap text-muted-foreground">
+          {text}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function formatPrice(price: number | null) {
   if (price == null || price <= 0) return "Price not on record";
   return `RM ${Math.round(price).toLocaleString("en-MY")}`;
@@ -227,6 +318,17 @@ function ResultCard({ laptop }: { laptop: AgentLaptopCard }) {
       href={`/laptops/${laptop.laptop_id}`}
       className="group border-line bg-surface-2 flex items-center gap-3.5 rounded-2xl border px-4 py-3 transition-all duration-300 hover:shadow-lg motion-safe:hover:scale-[1.02]"
     >
+      {laptop.image_url && (
+        <div className="flex h-11 w-14 flex-none items-center justify-center overflow-hidden rounded-lg bg-white">
+          <Image
+            src={laptop.image_url}
+            alt={laptop.product_name}
+            width={112}
+            height={88}
+            className="h-full w-full object-contain mix-blend-multiply dark:mix-blend-normal"
+          />
+        </div>
+      )}
       {laptop.pick_score != null && (
         <PickScoreRing score={laptop.pick_score} size={42} caption="none" />
       )}
@@ -269,11 +371,12 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamText, setStreamText] = useState("");
+  const [thinkingText, setThinkingText] = useState("");
   const [activity, setActivity] = useState<ActivityChip[]>([]);
 
   const streamTextRef = useRef("");
+  const thinkingRef = useRef("");
   const abortRef = useRef<AbortController | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
   const chipId = useRef(0);
 
   // Auth-gated page: bounce anonymous visitors to /login.
@@ -298,11 +401,6 @@ export default function ChatPage() {
 
   // Abort an in-flight stream when leaving the page.
   useEffect(() => () => abortRef.current?.abort(), []);
-
-  // Keep the newest message in view while streaming.
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-  }, [messages, streamText, activity, laptops, threadLoading]);
 
   const refreshConversations = () => {
     if (!token) return;
@@ -361,7 +459,9 @@ export default function ChatPage() {
     setLaptops([]);
     setActivity([]);
     setStreamText("");
+    setThinkingText("");
     streamTextRef.current = "";
+    thinkingRef.current = "";
     setIsStreaming(true);
 
     const finishChips = () =>
@@ -369,10 +469,20 @@ export default function ChatPage() {
 
     const finalize = (content: string, isError = false) => {
       if (content) {
-        setMessages((ms) => [...ms, { role: "assistant", content, isError }]);
+        setMessages((ms) => [
+          ...ms,
+          {
+            role: "assistant",
+            content,
+            isError,
+            thinking: thinkingRef.current || undefined,
+          },
+        ]);
       }
       setStreamText("");
+      setThinkingText("");
       streamTextRef.current = "";
+      thinkingRef.current = "";
       finishChips();
       setIsStreaming(false);
     };
@@ -389,6 +499,10 @@ export default function ChatPage() {
             finishChips();
             streamTextRef.current += t;
             setStreamText(streamTextRef.current);
+          },
+          onThinking: (t) => {
+            thinkingRef.current += t;
+            setThinkingText(thinkingRef.current);
           },
           onTurnReset: () => {
             streamTextRef.current = "";
@@ -525,9 +639,12 @@ export default function ChatPage() {
             )}
           </div>
 
-          {/* Messages */}
-          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pt-6 pb-4 sm:px-6">
-            <div className="mx-auto flex max-w-[680px] flex-col gap-5">
+          {/* Messages — MessageScroller follows streamed output at the live
+              edge but stops when the user scrolls up to read. */}
+          <MessageScrollerProvider autoScroll defaultScrollPosition="end">
+            <MessageScroller className="flex-1">
+              <MessageScrollerViewport className="px-4 pt-6 pb-4 sm:px-6">
+                <MessageScrollerContent className="mx-auto w-full max-w-[680px] gap-5">
               {showEmptyState && (
                 <div className="flex flex-col items-center gap-5 pt-14 text-center">
                   <div className="bg-brand flex h-12 w-12 items-center justify-center rounded-full text-white">
@@ -563,13 +680,16 @@ export default function ChatPage() {
 
               {messages.map((m, i) =>
                 m.role === "user" ? (
-                  <div key={i} className="flex justify-end">
-                    <div className="bg-brand max-w-[70%] rounded-[20px] rounded-br-[4px] px-4.5 py-3 text-[14.5px] leading-relaxed text-white">
-                      {m.content}
+                  <MessageScrollerItem key={i} messageId={`m-${i}`} scrollAnchor>
+                    <div className="flex justify-end">
+                      <div className="bg-brand max-w-[70%] rounded-[20px] rounded-br-[4px] px-4.5 py-3 text-[14.5px] leading-relaxed text-white">
+                        {m.content}
+                      </div>
                     </div>
-                  </div>
+                  </MessageScrollerItem>
                 ) : (
-                  <div key={i} className="flex items-start gap-3">
+                  <MessageScrollerItem key={i} messageId={`m-${i}`}>
+                    <div className="flex items-start gap-3">
                     <div className="bg-brand mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-full text-white">
                       <Bot className="h-4 w-4" />
                     </div>
@@ -577,6 +697,7 @@ export default function ChatPage() {
                       <span className="text-[11.5px] font-semibold text-muted-foreground">
                         Pico
                       </span>
+                      {m.thinking && <ThinkingDisclosure text={m.thinking} />}
                       <div
                         className={cn(
                           "bg-surface-2 rounded-[20px] rounded-bl-[4px] px-4.5 py-3.5 text-[14.5px] leading-relaxed",
@@ -586,13 +707,20 @@ export default function ChatPage() {
                         {renderMarkdownLite(m.content)}
                       </div>
                     </div>
-                  </div>
+                    </div>
+                  </MessageScrollerItem>
                 ),
               )}
 
-              {/* Tool activity for the in-flight turn */}
+              {/* Thinking flow + tool activity for the in-flight turn */}
               {isStreaming && (
-                <div className="flex flex-col items-start gap-2 pl-11">
+                <MessageScrollerItem
+                  messageId="live-activity"
+                  className="flex flex-col items-start gap-2 pl-11"
+                >
+                  {thinkingText && (
+                    <ThinkingFlow text={thinkingText} active={!streamText} />
+                  )}
                   {activity.map((chip) =>
                     chip.done ? (
                       <GlassSurface
@@ -613,18 +741,21 @@ export default function ChatPage() {
                       </div>
                     ),
                   )}
-                  {activity.length === 0 && !streamText && (
+                  {activity.length === 0 && !streamText && !thinkingText && (
                     <div className="motion-safe:animate-shimmer flex items-center gap-2 rounded-full border border-line bg-[linear-gradient(100deg,var(--glass)_40%,var(--brand-tint)_50%,var(--glass)_60%)] bg-[length:200%_100%] px-3.5 py-1.5 text-xs text-muted-foreground shadow-[0_4px_16px_var(--shadow)]">
                       <span className="border-brand-tint border-t-brand h-3 w-3 animate-spin rounded-full border-2" />
                       Pico is thinking…
                     </div>
                   )}
-                </div>
+                </MessageScrollerItem>
               )}
 
               {/* Streaming reply bubble */}
               {isStreaming && streamText && (
-                <div className="flex items-start gap-3">
+                <MessageScrollerItem
+                  messageId="live-reply"
+                  className="flex items-start gap-3"
+                >
                   <div className="bg-brand mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-full text-white">
                     <Bot className="h-4 w-4" />
                   </div>
@@ -633,18 +764,26 @@ export default function ChatPage() {
                       Pico
                     </span>
                     <div className="bg-surface-2 rounded-[20px] rounded-bl-[4px] px-4.5 py-3.5 text-[14.5px] leading-relaxed">
-                      {renderMarkdownLite(streamText)}
+                      {renderMarkdownLite(streamText, true)}
                     </div>
                   </div>
-                </div>
+                </MessageScrollerItem>
               )}
 
               {/* Shortlist inline — only when the rail is hidden (< lg) */}
               {laptops.length > 0 && (
-                <div className="ml-11 flex flex-col gap-3 lg:hidden">{shortlist}</div>
+                <MessageScrollerItem
+                  messageId="shortlist"
+                  className="ml-11 flex flex-col gap-3 lg:hidden"
+                >
+                  {shortlist}
+                </MessageScrollerItem>
               )}
-            </div>
-          </div>
+                </MessageScrollerContent>
+              </MessageScrollerViewport>
+              <MessageScrollerButton className="rounded-full" />
+            </MessageScroller>
+          </MessageScrollerProvider>
 
           {/* Composer */}
           <div className="px-4 pt-2 pb-4 sm:px-6">
@@ -657,13 +796,13 @@ export default function ChatPage() {
                     send();
                   }}
                 >
-                  <input
+                  <Input
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     placeholder={isStreaming ? "Pico is replying…" : "Message Pico…"}
                     aria-label="Message Pico"
                     disabled={isStreaming}
-                    className="h-[52px] w-full rounded-full py-0 pr-16 pl-6 text-[14.5px] outline-none disabled:opacity-60"
+                    className="h-[52px] rounded-full border-0 bg-transparent py-0 pr-16 pl-6 text-[14.5px] md:text-[14.5px] focus-visible:ring-0 disabled:bg-transparent disabled:opacity-60 dark:bg-transparent dark:disabled:bg-transparent"
                   />
                   <button
                     type="submit"

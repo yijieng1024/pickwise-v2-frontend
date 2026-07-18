@@ -7,6 +7,9 @@ import Script from "next/script";
 import { useTheme } from "next-themes";
 import { Check, Eye, EyeOff } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { register } from "@/lib/api/auth";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
@@ -19,8 +22,13 @@ const perks = [
   "Conversations that pick up where you left off",
 ];
 
+// Restyles the shadcn Input to the app's form-field look; the focus-visible
+// overrides mute the component's default ring in favor of the brand-tint glow.
 const inputClass =
-  "border-line bg-canvas h-11.5 rounded-xl border px-4 text-[13.5px] outline-none transition-shadow focus:shadow-[0_0_0_3px_var(--brand-tint)]";
+  "border-line bg-canvas dark:bg-canvas h-11.5 rounded-xl border px-4 text-[13.5px] md:text-[13.5px] transition-shadow focus:shadow-[0_0_0_3px_var(--brand-tint)] focus-visible:border-line focus-visible:ring-0";
+
+const tabTriggerClass =
+  "h-auto flex-1 rounded-full py-2.5 text-[13px] font-semibold text-muted-foreground transition-all data-active:bg-surface data-active:text-foreground dark:data-active:border-transparent dark:data-active:bg-surface group-data-[variant=default]/tabs-list:data-active:shadow-[0_2px_8px_var(--shadow)]";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -148,32 +156,19 @@ export default function LoginPage() {
 
         {/* Form panel */}
         <div className="flex flex-col gap-4.5 px-10 py-10">
-          <div className="bg-surface-2 flex rounded-full p-1">
-            <button
-              type="button"
-              onClick={() => switchTab("login")}
-              className={cn(
-                "flex-1 rounded-full py-2.5 text-[13px] font-semibold transition-all",
-                isLogin
-                  ? "bg-surface shadow-[0_2px_8px_var(--shadow)]"
-                  : "text-muted-foreground",
-              )}
-            >
-              Sign in
-            </button>
-            <button
-              type="button"
-              onClick={() => switchTab("register")}
-              className={cn(
-                "flex-1 rounded-full py-2.5 text-[13px] font-semibold transition-all",
-                !isLogin
-                  ? "bg-surface shadow-[0_2px_8px_var(--shadow)]"
-                  : "text-muted-foreground",
-              )}
-            >
-              Create account
-            </button>
-          </div>
+          <Tabs
+            value={tab}
+            onValueChange={(v) => switchTab(v as "login" | "register")}
+          >
+            <TabsList className="w-full rounded-full bg-surface-2 p-1 group-data-horizontal/tabs:h-auto">
+              <TabsTrigger value="login" className={tabTriggerClass}>
+                Sign in
+              </TabsTrigger>
+              <TabsTrigger value="register" className={tabTriggerClass}>
+                Create account
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
           <div>
             <h1 className="mt-1 mb-1 text-2xl font-bold tracking-tight">
@@ -201,7 +196,7 @@ export default function LoginPage() {
             {isLogin ? (
               <label className="flex flex-col gap-1.5 text-xs font-semibold">
                 Email or username
-                <input
+                <Input
                   type="text"
                   autoComplete="username"
                   placeholder="you@example.com"
@@ -215,7 +210,7 @@ export default function LoginPage() {
               <>
                 <label className="flex flex-col gap-1.5 text-xs font-semibold">
                   Username
-                  <input
+                  <Input
                     type="text"
                     autoComplete="username"
                     placeholder="aiman_rahim"
@@ -227,7 +222,7 @@ export default function LoginPage() {
                 </label>
                 <label className="flex flex-col gap-1.5 text-xs font-semibold">
                   Email
-                  <input
+                  <Input
                     type="email"
                     autoComplete="email"
                     placeholder="you@example.com"
@@ -249,14 +244,14 @@ export default function LoginPage() {
                 )}
               </span>
               <span className="relative">
-                <input
+                <Input
                   type={showPassword ? "text" : "password"}
                   autoComplete={isLogin ? "current-password" : "new-password"}
                   placeholder="••••••••"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className={cn(inputClass, "w-full pr-11")}
+                  className={cn(inputClass, "pr-11")}
                 />
                 <button
                   type="button"
@@ -278,10 +273,10 @@ export default function LoginPage() {
                 </span>
               )}
             </label>
-            <button
+            <Button
               type="submit"
               disabled={submitting}
-              className="bg-brand rounded-full py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+              className="h-auto w-full rounded-full bg-brand py-3.5 text-sm font-semibold text-white transition-opacity hover:bg-brand hover:opacity-90 disabled:opacity-60"
             >
               {submitting
                 ? isLogin
@@ -290,7 +285,7 @@ export default function LoginPage() {
                 : isLogin
                   ? "Sign in"
                   : "Create account"}
-            </button>
+            </Button>
           </form>
 
           {GOOGLE_CLIENT_ID && (

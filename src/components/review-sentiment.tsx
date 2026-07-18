@@ -4,6 +4,12 @@ import { useState } from "react";
 import { Check, X } from "lucide-react";
 
 import { GlassSurface } from "@/components/glass-surface";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { ReviewPoint } from "@/lib/laptops";
 
 export function ReviewSentiment({ reviews }: { reviews: ReviewPoint[] }) {
@@ -60,28 +66,29 @@ export function ReviewSentiment({ reviews }: { reviews: ReviewPoint[] }) {
         </>
       )}
 
-      {open && (
-        <div
-          className="motion-safe:animate-fade-in-up fixed inset-0 z-80 flex items-center justify-center bg-black/30 p-8"
-          onClick={() => setOpen(null)}
+      <Dialog
+        open={open !== null}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setOpen(null);
+        }}
+      >
+        <DialogContent
+          showCloseButton={false}
+          overlayClassName="bg-black/30 supports-backdrop-filter:backdrop-blur-none"
+          className="w-full bg-transparent p-0 shadow-none ring-0 sm:max-w-md"
         >
-          <div
-            className="w-full max-w-md"
-            onClick={(e) => e.stopPropagation()}
-          >
+          {open && (
             <GlassSurface cornerRadius={24} className="flex flex-col gap-3.5 p-7">
               <div className="flex items-start justify-between gap-4">
-                <h3 className="text-[17px] font-semibold tracking-tight">
+                <DialogTitle className="font-sans text-[17px] font-semibold tracking-tight">
                   {open.point}
-                </h3>
-                <button
-                  type="button"
+                </DialogTitle>
+                <DialogClose
                   aria-label="Close"
-                  onClick={() => setOpen(null)}
                   className="bg-surface-2 flex h-7 w-7 flex-none items-center justify-center rounded-full text-muted-foreground"
                 >
                   <X className="h-3 w-3" />
-                </button>
+                </DialogClose>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="font-semibold text-muted-foreground">
@@ -92,9 +99,9 @@ export function ReviewSentiment({ reviews }: { reviews: ReviewPoint[] }) {
                 </span>
               </div>
             </GlassSurface>
-          </div>
-        </div>
-      )}
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
