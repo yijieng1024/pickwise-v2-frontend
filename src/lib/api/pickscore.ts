@@ -55,9 +55,53 @@ export interface UseCaseRankingResponse {
   results: RankedLaptopPickScore[];
 }
 
+export interface PersonalPickScore {
+  product_id: string;
+  score: number;
+  /** "personalized" when a wizard preference row was found, else "general". */
+  mode: string;
+  breakdown: PickScoreFactor[];
+  flags: Record<string, unknown>;
+}
+
 /** Precomputed general-mode PickScores of one laptop (all five use cases). */
 export function getLaptopPickScores(laptopId: string) {
   return apiFetch<LaptopPickScoresResponse>(`/laptops/${laptopId}/pick-scores`);
+}
+
+/**
+ * Live personalized PickScore — weights from the user's wizard answers
+ * (priorities, budget ceiling, purpose, portability, screen size, brands).
+ * Falls back to mode "general" server-side if no preference row exists.
+ */
+export function calculatePersonalScore(
+  laptopId: string,
+  userId: string,
+  token: string,
+) {
+  return apiFetch<PersonalPickScore>("/laptops/calculate-score", {
+    method: "POST",
+    body: JSON.stringify({ laptop_id: laptopId, user_id: userId }),
+    token,
+    cache: "no-store",
+  });
+}
+
+/** Batch variant — one call scores a whole shortlist with shared range data. */
+export function calculatePersonalScoreBatch(
+  laptopIds: string[],
+  userId: string,
+  token: string,
+) {
+  return apiFetch<{ results: PersonalPickScore[] }>(
+    "/laptops/calculate-score/batch",
+    {
+      method: "POST",
+      body: JSON.stringify({ laptop_ids: laptopIds, user_id: userId }),
+      token,
+      cache: "no-store",
+    },
+  );
 }
 
 /** Top laptops for a use case by stored PickScore (price breaks ties). */

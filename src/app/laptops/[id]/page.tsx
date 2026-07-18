@@ -7,10 +7,7 @@ import {
   Cpu,
   Feather,
   HardDrive,
-  Heart,
-  Layers,
   Monitor,
-  PlusCircle,
   RectangleEllipsis,
   Share,
   Sparkles,
@@ -19,11 +16,11 @@ import {
 } from "lucide-react";
 
 import { PriceHistory } from "@/components/charts/price-history";
-import { DataIcon } from "@/components/icon-map";
 import { FullSpecs } from "@/components/full-specs";
 import { LaptopGallery } from "@/components/laptop-gallery";
+import { PersonalPickScoreRing } from "@/components/personal-pick-score-ring";
 import { PickScoreCard } from "@/components/pick-score-card";
-import { PickScoreRing } from "@/components/pick-score-ring";
+import { SaveButton } from "@/components/save-button";
 import { apiFetch, ApiError } from "@/lib/api/client";
 import { mapBackendLaptop } from "@/lib/api/adapters";
 import { getLaptopPickScores, labelForUseCase } from "@/lib/api/pickscore";
@@ -84,11 +81,9 @@ export default async function LaptopDetailsPage({
 
   const images = raw.image_urls.length > 0 ? raw.image_urls : [laptop.image];
 
-  // Hero summary data: general-use PickScore + best-fit use case (when
-  // scores exist) and the quick-facts grid built from the raw spec sheet.
-  const generalScore =
-    pickScores?.scores.find((s) => s.use_case === "general_use") ??
-    pickScores?.scores[0];
+  // Hero summary data: best-fit use case (highest general-mode score — also
+  // the hero ring's fallback until the personal score resolves) and the
+  // quick-facts grid built from the raw spec sheet.
   const bestFit = pickScores?.scores.length
     ? [...pickScores.scores].sort((a, b) => b.score - a.score)[0]
     : undefined;
@@ -141,9 +136,7 @@ export default async function LaptopDetailsPage({
           <button type="button" aria-label="Share">
             <Share className="h-4 w-4 transition-colors hover:text-foreground" />
           </button>
-          <button type="button" aria-label="Save to favorites">
-            <Heart className="h-4 w-4 transition-colors hover:text-red-500" />
-          </button>
+          <SaveButton laptopId={laptop.id} />
         </div>
       </div>
 
@@ -172,9 +165,10 @@ export default async function LaptopDetailsPage({
                 {laptop.name}
               </h1>
             </div>
-            {generalScore && (
-              <PickScoreRing
-                score={generalScore.score}
+            {bestFit && (
+              <PersonalPickScoreRing
+                laptopId={laptop.id}
+                fallbackScore={bestFit.score}
                 size={64}
                 caption="below"
                 className="flex-none"
@@ -222,20 +216,12 @@ export default async function LaptopDetailsPage({
               )}
             </div>
 
-            <div className="flex gap-2.5">
-              <Link
-                href="/chat"
-                className="bg-brand flex flex-1 items-center justify-center gap-2 rounded-full py-3.5 text-[13.5px] font-semibold text-white transition hover:opacity-90"
-              >
-                <Bot className="h-4 w-4" /> Ask Pico about this laptop
-              </Link>
-              <a
-                href="#"
-                className="border-line flex flex-1 items-center justify-center rounded-full border py-3.5 text-[13.5px] font-semibold transition hover:border-brand hover:text-brand"
-              >
-                View retailer options
-              </a>
-            </div>
+            <Link
+              href="/chat"
+              className="bg-brand flex items-center justify-center gap-2 rounded-full py-3.5 text-[13.5px] font-semibold text-white transition hover:opacity-90"
+            >
+              <Bot className="h-4 w-4" /> Ask Pico about this laptop
+            </Link>
           </div>
         </div>
       </div>
@@ -244,7 +230,7 @@ export default async function LaptopDetailsPage({
       <div className="grid grid-cols-1 gap-6 md:grid-cols-6">
         {/* PickScore per use case (hidden until scores are generated) */}
         {pickScores && pickScores.scores.length > 0 && (
-          <PickScoreCard scores={pickScores.scores} />
+          <PickScoreCard laptopId={laptop.id} scores={pickScores.scores} />
         )}
 
         {/* Full specs */}

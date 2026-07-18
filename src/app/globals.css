@@ -18,6 +18,17 @@
   /* Streamed-word entrance: opacity only — transforms don't apply to inline
      boxes, and per-word blur/compositing is too heavy at chat scale. */
   --animate-token-in: pw-token-in 0.4s ease-out both;
+  /* Indeterminate progress: half-width indicator sweeping across its track. */
+  --animate-progress-slide: pw-progress-slide 1.2s ease-in-out infinite;
+
+  @keyframes pw-progress-slide {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(200%);
+    }
+  }
 
   @keyframes pw-token-in {
     from {

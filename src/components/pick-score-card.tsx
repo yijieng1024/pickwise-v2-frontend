@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BadgeCheck,
   Battery,
@@ -9,16 +9,20 @@ import {
   HardDrive,
   Monitor,
   Sparkles,
+  UserRound,
   Wallet,
   Zap,
 } from "lucide-react";
 
 import { PickScoreRing } from "@/components/pick-score-ring";
+import { Progress } from "@/components/ui/progress";
 import {
   type UseCasePickScore,
   USE_CASES,
+  calculatePersonalScore,
   labelForUseCase,
 } from "@/lib/api/pickscore";
+import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
 const factorMeta: Record<string, { label: string; icon: typeof Cpu }> = {
@@ -32,12 +36,27 @@ const factorMeta: Record<string, { label: string; icon: typeof Cpu }> = {
   brand: { label: "Brand", icon: BadgeCheck },
 };
 
+/** Sentinel slug for the personalized tab — never collides with backend use cases. */
+const PERSONAL = "personal";
+
 /**
  * Details-page bento tile: the laptop's precomputed general-mode PickScore
  * per use case, with the full deterministic 8-factor breakdown. Data comes
  * from GET /laptops/{id}/pick-scores — no LLM, no user context.
+ *
+ * Signed-in users who completed the Needs Wizard additionally get a
+ * "For you" tab: a live POST /laptops/calculate-score with their own
+ * factor weights, budget ceiling, and brand/screen preferences. It's
+ * auto-selected once loaded so the wizard visibly changes the product.
  */
-export function PickScoreCard({ scores }: { scores: UseCasePickScore[] }) {
+export function PickScoreCard({
+  laptopId,
+  scores,
+}: {
+  laptopId: string;
+  scores: UseCasePickScore[];
+}) {
+  const { user, token, hasPreferences } = useAuth();
   // Keep the backend's known display order; unknown slugs go last.
   const order = USE_CASES.map((u) => u.slug as string);
   const ordered = [...scores].sort((a, b) => {
@@ -46,15 +65,67 @@ export function PickScoreCard({ scores }: { scores: UseCasePickScore[] }) {
     return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
   });
   const [selected, setSelected] = useState(ordered[0]?.use_case ?? "");
-  const current = ordered.find((s) => s.use_case === selected) ?? ordered[0];
+  const [personal, setPersonal] = useState<UseCasePickScore | null>(null);
+  const [personalFailed, setPersonalFailed] = useState(false);
+
+  // Drop the personal tab on sign-out (state-adjust-during-render — the
+  // set-state-in-effect lint forbids the effect version).
+  const [prevUser, setPrevUser] = useState(user);
+  if (prevUser !== user) {
+    setPrevUser(user);
+    if (!user) {
+      setPersonal(null);
+      if (selected === PERSONAL) setSelected(ordered[0]?.use_case ?? "");
+    }
+  }
+
+  useEffect(() => {
+    if (!user || !token || hasPreferences !== true) return;
+    let cancelled = false;
+    calculatePersonalScore(laptopId, user.id, token)
+      .then((res) => {
+        // "general" would mean no preference row after all — no tab then.
+        if (cancelled || res.mode !== "personalized") return;
+        setPersonal({
+          use_case: PERSONAL,
+          score: res.score,
+          breakdown: res.breakdown,
+          flags: res.flags,
+          updated_at: "",
+        });
+        setSelected(PERSONAL);
+      })
+      .catch(() => {
+        // Best-effort — the general tabs are always there.
+        if (!cancelled) setPersonalFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, token, hasPreferences, laptopId]);
+
+  // Derived, not effect-set: the personal fetch is in flight while the
+  // conditions to run it hold and it has neither resolved nor failed.
+  const calculating = Boolean(
+    user && token && hasPreferences === true && !personal && !personalFailed,
+  );
+
+  const tabs = personal ? [...ordered, personal] : ordered;
+  const current = tabs.find((s) => s.use_case === selected) ?? ordered[0];
 
   if (!current) return null;
+
+  const tabLabel = (slug: string) =>
+    slug === PERSONAL ? "For you" : labelForUseCase(slug);
+  const isPersonal = current.use_case === PERSONAL;
 
   const factors = [...current.breakdown].sort(
     (a, b) => b.contribution - a.contribution,
   );
   const gpuProxied = Boolean(current.flags?.gpu_score_is_proxy);
-  const best = [...ordered].sort((a, b) => b.score - a.score)[0];
+  // Includes the personal score when present — "Best fit: For you" means the
+  // user's own weighting beats every generic use-case profile.
+  const best = [...tabs].sort((a, b) => b.score - a.score)[0];
   const topFactors = factors.slice(0, 3).map(
     (f) => factorMeta[f.factor]?.label ?? f.factor,
   );
@@ -76,14 +147,13 @@ export function PickScoreCard({ scores }: { scores: UseCasePickScore[] }) {
 
       {/* Screen-reader summary of the selected breakdown */}
       <p className="sr-only" aria-live="polite">
-        PickScore {current.score} out of 100 for{" "}
-        {labelForUseCase(current.use_case)}. Top contributing factors:{" "}
-        {topFactors.join(", ")}.
+        PickScore {current.score} out of 100 for {tabLabel(current.use_case)}.
+        Top contributing factors: {topFactors.join(", ")}.
       </p>
 
-      {/* Use-case segmented control */}
+      {/* Use-case segmented control (+ "For you" when preferences exist) */}
       <div className="bg-surface-2 mb-7 inline-flex flex-wrap gap-1 rounded-2xl p-1">
-        {ordered.map((s) => {
+        {tabs.map((s) => {
           const active = s.use_case === current.use_case;
           return (
             <button
@@ -98,7 +168,10 @@ export function PickScoreCard({ scores }: { scores: UseCasePickScore[] }) {
                   : "text-muted-foreground hover:bg-surface hover:text-foreground",
               )}
             >
-              {labelForUseCase(s.use_case)}
+              {s.use_case === PERSONAL && (
+                <UserRound className="h-3 w-3 flex-none" />
+              )}
+              {tabLabel(s.use_case)}
               <span
                 className={cn(
                   "rounded-md px-1.5 py-0.5 text-[10.5px] tabular-nums",
@@ -112,6 +185,18 @@ export function PickScoreCard({ scores }: { scores: UseCasePickScore[] }) {
             </button>
           );
         })}
+        {/* Placeholder while the personalized score is being computed */}
+        {calculating && (
+          <span className="text-muted-foreground flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold">
+            <UserRound className="h-3 w-3 flex-none" />
+            For you
+            <Progress
+              value={null}
+              aria-label="Calculating your personal PickScore"
+              className="w-10 gap-0 [&_[data-slot=progress-indicator]]:w-1/2 motion-safe:[&_[data-slot=progress-indicator]]:animate-progress-slide"
+            />
+          </span>
+        )}
       </div>
 
       <div className="flex flex-col gap-8 sm:flex-row sm:items-start">
@@ -119,12 +204,12 @@ export function PickScoreCard({ scores }: { scores: UseCasePickScore[] }) {
         <div className="flex flex-none flex-col items-center gap-3 sm:w-40 sm:pt-1">
           <PickScoreRing score={current.score} size={124} caption="inside" />
           <span className="text-[11.5px] font-medium text-muted-foreground">
-            {labelForUseCase(current.use_case)}
+            {tabLabel(current.use_case)}
           </span>
           {best && (
             <span className="bg-brand-tint text-brand flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold">
               <Sparkles className="h-3 w-3" />
-              Best fit: {labelForUseCase(best.use_case)} · {best.score}
+              Best fit: {tabLabel(best.use_case)} · {best.score}
             </span>
           )}
         </div>
@@ -176,8 +261,9 @@ export function PickScoreCard({ scores }: { scores: UseCasePickScore[] }) {
             );
           })}
           <p className="mt-1.5 text-[10.5px] leading-relaxed text-muted-foreground">
-            Bars show each factor&apos;s 0–100 score; the weight is how much it
-            counts toward this use case. Sorted by contribution.
+            {isPersonal
+              ? "Bars show each factor's 0–100 score; the weights come from your Needs Wizard answers, and price scores against your own budget. Sorted by contribution."
+              : "Bars show each factor's 0–100 score; the weight is how much it counts toward this use case. Sorted by contribution."}
             {gpuProxied &&
               " * Apple silicon has no separate GPU benchmark — GPU is scored via the CPU as a proxy."}
           </p>
