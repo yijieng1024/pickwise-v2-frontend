@@ -12,17 +12,33 @@ import {
   ChevronDown,
   Loader2,
   MessageSquare,
+  MoreHorizontal,
+  Pencil,
   Plus,
   Search,
   Send,
   ShoppingBag,
   Star,
   Trash2,
+  UserRound,
 } from "lucide-react";
 
 import { GlassSurface } from "@/components/glass-surface";
 import { PickScoreRing } from "@/components/pick-score-ring";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   MessageScroller,
   MessageScrollerButton,
@@ -36,9 +52,12 @@ import {
   type ConversationSummary,
   deleteConversation,
   getConversation,
+  getConversationLaptops,
   listConversations,
+  renameConversation,
   streamAgentChat,
 } from "@/lib/api/agent";
+import { calculatePersonalScoreBatch } from "@/lib/api/pickscore";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
@@ -248,33 +267,48 @@ function renderMarkdownLite(text: string, animate = false) {
   return out;
 }
 
-/** Live reasoning trace for the in-flight turn — auto-follows the newest text. */
+/** Live reasoning trace for the in-flight turn — auto-follows the newest
+ * text; collapsible via its header (expanded by default). */
 function ThinkingFlow({ text, active }: { text: string; active: boolean }) {
+  const [open, setOpen] = useState(true);
   const bodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight });
-  }, [text]);
+  }, [text, open]);
 
   return (
     <div className="border-line bg-surface-2 w-full rounded-2xl border px-4 py-3">
-      <div className="flex items-center gap-2 text-[11.5px] font-semibold text-muted-foreground">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full cursor-pointer items-center gap-2 text-[11.5px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
+      >
         <Brain className="text-brand h-3.5 w-3.5" />
         Thinking
         {active && (
           <span className="border-brand-tint border-t-brand h-3 w-3 animate-spin rounded-full border-2" />
         )}
-      </div>
-      <div
-        ref={bodyRef}
-        className="mt-2 max-h-36 overflow-y-auto text-xs leading-relaxed whitespace-pre-wrap text-muted-foreground"
-      >
-        {text.split(/(?<=\s)/).map((w, i) => (
-          <span key={i} className="motion-safe:animate-token-in">
-            {w}
-          </span>
-        ))}
-      </div>
+        <ChevronDown
+          className={cn(
+            "ml-auto h-3.5 w-3.5 transition-transform",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+      {open && (
+        <div
+          ref={bodyRef}
+          className="mt-2 max-h-36 overflow-y-auto text-xs leading-relaxed whitespace-pre-wrap text-muted-foreground"
+        >
+          {text.split(/(?<=\s)/).map((w, i) => (
+            <span key={i} className="motion-safe:animate-token-in">
+              {w}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -311,8 +345,17 @@ function formatPrice(price: number | null) {
   return `RM ${Math.round(price).toLocaleString("en-MY")}`;
 }
 
-/** Compact shortlist tile fed by real agent data (name, price, PickScore). */
-function ResultCard({ laptop }: { laptop: AgentLaptopCard }) {
+/** Compact shortlist tile fed by real agent data (name, price, PickScore).
+ * When `personalScore` is set, the ring shows it instead of the stored
+ * general-mode score, marked with a small person badge. */
+function ResultCard({
+  laptop,
+  personalScore,
+}: {
+  laptop: AgentLaptopCard;
+  personalScore?: number;
+}) {
+  const ringScore = personalScore ?? laptop.pick_score;
   return (
     <Link
       href={`/laptops/${laptop.laptop_id}`}
@@ -329,8 +372,22 @@ function ResultCard({ laptop }: { laptop: AgentLaptopCard }) {
           />
         </div>
       )}
-      {laptop.pick_score != null && (
-        <PickScoreRing score={laptop.pick_score} size={42} caption="none" />
+      {ringScore != null && (
+        <span
+          className="relative flex-none"
+          title={
+            personalScore != null
+              ? "Personalized PickScore — weighted from your Needs Wizard answers"
+              : undefined
+          }
+        >
+          <PickScoreRing score={ringScore} size={42} caption="none" />
+          {personalScore != null && (
+            <span className="bg-brand absolute -right-1 -bottom-1 flex h-4 w-4 items-center justify-center rounded-full text-white">
+              <UserRound className="h-2.5 w-2.5" />
+            </span>
+          )}
+        </span>
       )}
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="truncate text-[13px] font-semibold">
@@ -360,12 +417,15 @@ function ResultCard({ laptop }: { laptop: AgentLaptopCard }) {
 
 export default function ChatPage() {
   const router = useRouter();
-  const { user, token, isLoading } = useAuth();
+  const { user, token, isLoading, hasPreferences } = useAuth();
 
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [laptops, setLaptops] = useState<AgentLaptopCard[]>([]);
+  // laptop_id -> personalized PickScore, overlaying the stored general-mode
+  // scores. null = personalization off (guest / no wizard prefs / failed).
+  const [personalScores, setPersonalScores] = useState<Record<string, number> | null>(null);
   const [threadLoading, setThreadLoading] = useState(false);
 
   const [input, setInput] = useState("");
@@ -378,6 +438,32 @@ export default function ChatPage() {
   const thinkingRef = useRef("");
   const abortRef = useRef<AbortController | null>(null);
   const chipId = useRef(0);
+  // Guards personalization against stale batch responses after the
+  // shortlist changed (e.g. switching conversations mid-request).
+  const personalizeSeq = useRef(0);
+
+  /** Overlay personalized PickScores onto a fresh shortlist (best-effort). */
+  const personalizeShortlist = (cards: AgentLaptopCard[]) => {
+    const seq = ++personalizeSeq.current;
+    setPersonalScores(null);
+    if (!token || !user || hasPreferences !== true || cards.length === 0) return;
+    calculatePersonalScoreBatch(
+      cards.map((c) => c.laptop_id),
+      user.id,
+      token,
+    )
+      .then((res) => {
+        if (seq !== personalizeSeq.current) return;
+        const map: Record<string, number> = {};
+        for (const r of res.results) {
+          if (r.mode === "personalized") map[r.product_id] = r.score;
+        }
+        setPersonalScores(Object.keys(map).length > 0 ? map : null);
+      })
+      .catch(() => {
+        // General-mode scores remain — personalization is an overlay only.
+      });
+  };
 
   // Auth-gated page: bounce anonymous visitors to /login.
   useEffect(() => {
@@ -415,10 +501,16 @@ export default function ChatPage() {
     setLaptops([]);
     setThreadLoading(true);
     try {
-      const conv = await getConversation(id, token);
+      // Shortlist restore is best-effort — an empty rail must not block the thread.
+      const [conv, cards] = await Promise.all([
+        getConversation(id, token),
+        getConversationLaptops(id, token).catch(() => [] as AgentLaptopCard[]),
+      ]);
       setMessages(
         conv.messages.map((m) => ({ role: m.role, content: m.content })),
       );
+      setLaptops(cards);
+      personalizeShortlist(cards);
     } catch {
       setMessages([
         {
@@ -437,6 +529,7 @@ export default function ChatPage() {
     setActiveId(null);
     setMessages([]);
     setLaptops([]);
+    setPersonalScores(null);
   };
 
   const removeConversation = async (id: string) => {
@@ -447,6 +540,38 @@ export default function ChatPage() {
       if (id === activeId) startNewConversation();
     } catch {
       // Leave the row; a later refresh will reconcile.
+    }
+  };
+
+  // Rename dialog state — target row, draft title, and save status.
+  const [renameTarget, setRenameTarget] = useState<ConversationSummary | null>(null);
+  const [renameTitle, setRenameTitle] = useState("");
+  const [renameSaving, setRenameSaving] = useState(false);
+  const [renameError, setRenameError] = useState<string | null>(null);
+
+  const openRename = (chat: ConversationSummary) => {
+    setRenameTarget(chat);
+    setRenameTitle(chat.title);
+    setRenameError(null);
+  };
+
+  const saveRename = async () => {
+    const title = renameTitle.trim();
+    if (!token || !renameTarget || !title || renameSaving) return;
+    setRenameSaving(true);
+    setRenameError(null);
+    try {
+      const updated = await renameConversation(renameTarget.id, title, token);
+      setConversations((cs) =>
+        cs.map((c) => (c.id === updated.id ? { ...c, title: updated.title } : c)),
+      );
+      setRenameTarget(null);
+    } catch (e) {
+      setRenameError(
+        e instanceof Error ? e.message : "Couldn't rename the conversation.",
+      );
+    } finally {
+      setRenameSaving(false);
     }
   };
 
@@ -522,6 +647,7 @@ export default function ChatPage() {
           onDone: (_id, cards) => {
             finalize(streamTextRef.current);
             setLaptops(cards);
+            personalizeShortlist(cards);
             refreshConversations();
           },
           onError: (detail) => finalize(detail, true),
@@ -555,8 +681,19 @@ export default function ChatPage() {
 
   const shortlist = (
     <>
+      {personalScores && (
+        <p className="flex items-start gap-1.5 text-[11px] leading-snug text-muted-foreground">
+          <UserRound className="text-brand mt-px h-3 w-3 flex-none" />
+          PickScores personalized from your Needs Wizard answers — your
+          budget, priorities and portability reweight each factor.
+        </p>
+      )}
       {laptops.map((l) => (
-        <ResultCard key={l.laptop_id} laptop={l} />
+        <ResultCard
+          key={l.laptop_id}
+          laptop={l}
+          personalScore={personalScores?.[l.laptop_id]}
+        />
       ))}
     </>
   );
@@ -598,14 +735,31 @@ export default function ChatPage() {
                       <MessageSquare className="h-3.5 w-3.5 shrink-0" />
                       <span className="truncate">{chat.title}</span>
                     </button>
-                    <button
-                      type="button"
-                      aria-label={`Delete "${chat.title}"`}
-                      onClick={() => removeConversation(chat.id)}
-                      className="hover:text-negative shrink-0 p-1 opacity-0 transition-opacity group-hover:opacity-100"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        aria-label={`Actions for "${chat.title}"`}
+                        className="shrink-0 cursor-pointer rounded-md p-1 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 data-popup-open:opacity-100"
+                      >
+                        <MoreHorizontal className="h-3.5 w-3.5" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" sideOffset={4} className="w-36">
+                        <DropdownMenuItem
+                          onClick={() => openRename(chat)}
+                          className="cursor-pointer gap-2 text-[12.5px] font-medium"
+                        >
+                          <Pencil className="size-3.5" />
+                          Rename
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => removeConversation(chat.id)}
+                          className="cursor-pointer gap-2 text-[12.5px] font-medium data-[variant=destructive]:text-negative data-[variant=destructive]:focus:bg-negative/10 data-[variant=destructive]:focus:text-negative"
+                        >
+                          <Trash2 className="size-3.5" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 ))}
               </div>
@@ -796,19 +950,32 @@ export default function ChatPage() {
                     send();
                   }}
                 >
-                  <Input
+                  <Textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      // Enter sends, Shift+Enter breaks a line; never send
+                      // mid-IME-composition (Chinese/Japanese input).
+                      if (
+                        e.key === "Enter" &&
+                        !e.shiftKey &&
+                        !e.nativeEvent.isComposing
+                      ) {
+                        e.preventDefault();
+                        send();
+                      }
+                    }}
                     placeholder={isStreaming ? "Pico is replying…" : "Message Pico…"}
                     aria-label="Message Pico"
                     disabled={isStreaming}
-                    className="h-[52px] rounded-full border-0 bg-transparent py-0 pr-16 pl-6 text-[14.5px] md:text-[14.5px] focus-visible:ring-0 disabled:bg-transparent disabled:opacity-60 dark:bg-transparent dark:disabled:bg-transparent"
+                    rows={1}
+                    className="max-h-40 min-h-[52px] resize-none rounded-[26px] border-0 bg-transparent py-[15px] pr-16 pl-6 text-[14.5px] leading-[22px] md:text-[14.5px] focus-visible:ring-0 disabled:bg-transparent disabled:opacity-60 dark:bg-transparent dark:disabled:bg-transparent"
                   />
                   <button
                     type="submit"
                     aria-label="Send"
                     disabled={isStreaming || !input.trim()}
-                    className="bg-brand absolute top-[6px] right-[6px] flex h-10 w-10 items-center justify-center rounded-full text-white transition-transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+                    className="bg-brand absolute right-[6px] bottom-[6px] flex h-10 w-10 items-center justify-center rounded-full text-white transition-transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
                   >
                     {isStreaming ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -857,7 +1024,7 @@ export default function ChatPage() {
                     {activeTool === tool ? (
                       <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />
                     ) : (
-                      <Icon className="h-3.5 w-3.5" />
+                      <Icon className="text-brand h-3.5 w-3.5" />
                     )}
                   </span>
                   {label}
@@ -893,6 +1060,56 @@ export default function ChatPage() {
           </div>
         </div>
       </div>
+
+      {/* Rename-conversation dialog */}
+      <Dialog
+        open={renameTarget !== null}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setRenameTarget(null);
+        }}
+      >
+        <DialogContent showCloseButton={false} className="sm:max-w-sm">
+          <DialogTitle className="font-sans text-[15px] font-semibold tracking-tight">
+            Rename conversation
+          </DialogTitle>
+          <form
+            className="flex flex-col gap-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              saveRename();
+            }}
+          >
+            <Input
+              value={renameTitle}
+              onChange={(e) => setRenameTitle(e.target.value)}
+              maxLength={60}
+              autoFocus
+              aria-label="Conversation title"
+              className="border-line bg-canvas dark:bg-canvas h-11 rounded-xl border px-4 text-[13.5px] md:text-[13.5px] transition-shadow focus:shadow-[0_0_0_3px_var(--brand-tint)] focus-visible:border-line focus-visible:ring-0"
+            />
+            {renameError && (
+              <p className="text-negative text-[12px] font-medium">{renameError}</p>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-full"
+                onClick={() => setRenameTarget(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={!renameTitle.trim() || renameSaving}
+                className="bg-brand rounded-full text-white transition-opacity hover:bg-brand hover:opacity-90"
+              >
+                {renameSaving ? "Saving…" : "Save"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

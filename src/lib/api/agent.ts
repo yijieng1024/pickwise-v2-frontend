@@ -43,10 +43,27 @@ export function getConversation(id: string, token: string) {
   });
 }
 
+/** Rename a conversation; the backend trims and caps the title at 60 chars. */
+export function renameConversation(id: string, title: string, token: string) {
+  return apiFetch<ConversationSummary>(`/conversations/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ title }),
+    token,
+  });
+}
+
 export function deleteConversation(id: string, token: string) {
   return apiFetch<void>(`/conversations/${id}`, {
     method: "DELETE",
     token,
+  });
+}
+
+/** The conversation's persisted shortlist — same cards the `done` event carries. */
+export function getConversationLaptops(id: string, token: string) {
+  return apiFetch<AgentLaptopCard[]>(`/conversations/${id}/laptops`, {
+    token,
+    cache: "no-store",
   });
 }
 
