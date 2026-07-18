@@ -92,11 +92,11 @@ const capabilities = [
 const toolChipLabel = (name: string) =>
   capabilities.find((c) => c.tool === name)?.chip ?? "Working on it";
 
-const examplePrompts = [
-  "I need a light laptop for college under RM 4,500, mostly for coding",
-  "Best gaming laptop around RM 6,000?",
-  "What do reviewers say about the MacBook Air M5?",
-];
+// const examplePrompts = [
+//   "I need a light laptop for college under RM 4,500, mostly for coding",
+//   "Best gaming laptop around RM 6,000?",
+//   "What do reviewers say about the MacBook Air M5?",
+// ];
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -800,7 +800,7 @@ export default function ChatPage() {
               <MessageScrollerViewport className="px-4 pt-6 pb-4 sm:px-6">
                 <MessageScrollerContent className="mx-auto w-full max-w-[680px] gap-5">
               {showEmptyState && (
-                <div className="flex flex-col items-center gap-5 pt-14 text-center">
+                <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
                   <div className="bg-brand flex h-12 w-12 items-center justify-center rounded-full text-white">
                     <Bot className="h-6 w-6" />
                   </div>
@@ -812,7 +812,7 @@ export default function ChatPage() {
                     </p>
                   </div>
                   <div className="flex flex-wrap justify-center gap-2">
-                    {examplePrompts.map((p) => (
+                    {/* {examplePrompts.map((p) => (
                       <button
                         key={p}
                         type="button"
@@ -821,7 +821,7 @@ export default function ChatPage() {
                       >
                         {p}
                       </button>
-                    ))}
+                    ))} */}
                   </div>
                 </div>
               )}
