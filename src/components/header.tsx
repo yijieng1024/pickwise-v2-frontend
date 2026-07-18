@@ -34,7 +34,8 @@ const navLinks = [
   { href: "/laptops", label: "Laptops" },
   { href: "/wizard", label: "Needs Wizard" },
   { href: "/chat", label: "Chat" },
-  { href: "/compare", label: "Compare" },
+  { href: "/saved", label: "Saved" },
+  // { href: "/compare", label: "Compare" },
 ];
 
 export function Header() {
