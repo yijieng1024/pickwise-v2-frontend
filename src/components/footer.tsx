@@ -9,8 +9,8 @@ const productLinks = [
 ];
 
 const aboutLinks = [
-  { href: "#", label: "About" },
-  { href: "#", label: "FAQ" },
+  { href: "/about", label: "About" },
+  { href: "/faq", label: "FAQ" },
 ];
 
 const supportLinks = [
@@ -56,13 +56,13 @@ export function Footer() {
               About
             </span>
             {aboutLinks.map(({ href, label }) => (
-              <a
+              <Link
                 key={label}
                 href={href}
                 className="hover:text-brand text-[13px] text-foreground"
               >
                 {label}
-              </a>
+              </Link>
             ))}
           </nav>
 

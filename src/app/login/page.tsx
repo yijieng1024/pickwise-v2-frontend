@@ -300,9 +300,13 @@ export default function LoginPage() {
                 or continue with
                 <span className="bg-line h-px flex-1" />
               </div>
+              {/* [color-scheme:light] keeps the GIS iframe transparent: when the
+                  embedder's color-scheme (dark, set on <html> by next-themes)
+                  differs from the iframe's, Chromium paints an opaque backdrop
+                  behind the pill. */}
               <div
                 ref={googleButtonRef}
-                className="flex min-h-11 justify-center"
+                className="flex min-h-11 justify-center [color-scheme:light]"
               />
             </>
           )}
