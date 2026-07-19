@@ -140,8 +140,9 @@ const splitTableRow = (line: string) =>
   line.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
 
 /**
- * Minimal markdown for agent replies (headings, **bold**, bullets, tables) —
- * enough for Pico's formatting without a markdown dependency or raw HTML.
+ * Minimal markdown for agent replies (headings, **bold**, bullets, tables,
+ * [links](url)) — enough for Pico's formatting without a markdown dependency
+ * or raw HTML.
  *
  * With `animate`, every word is wrapped in a fade-in span. Index keys keep
  * already-rendered words' DOM stable as streamed text appends, so the
@@ -171,6 +172,34 @@ function renderMarkdownLite(text: string, animate = false) {
         )}
       </span>
     );
+  };
+
+  // [label](url) → anchor; everything else falls through to bold(). While a
+  // link is still streaming in (no closing paren yet) it renders as plain
+  // text and converts once complete.
+  const inline = (line: string, key: number) => {
+    const linkRe = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+    const parts: React.ReactNode[] = [];
+    let last = 0;
+    let k = 0;
+    for (let m = linkRe.exec(line); m !== null; m = linkRe.exec(line)) {
+      if (m.index > last) parts.push(bold(line.slice(last, m.index), k++));
+      parts.push(
+        <a
+          key={k++}
+          href={m[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-brand font-medium underline underline-offset-2 hover:opacity-80"
+        >
+          {words(m[1])}
+        </a>,
+      );
+      last = m.index + m[0].length;
+    }
+    if (last === 0) return bold(line, key);
+    if (last < line.length) parts.push(bold(line.slice(last), k++));
+    return <span key={key}>{parts}</span>;
   };
 
   const lines = text.split("\n");
@@ -209,7 +238,7 @@ function renderMarkdownLite(text: string, animate = false) {
                       key={k}
                       className="px-3 py-2 text-left font-semibold whitespace-nowrap"
                     >
-                      {bold(h, 0)}
+                      {inline(h, 0)}
                     </th>
                   ))}
                 </tr>
@@ -225,7 +254,7 @@ function renderMarkdownLite(text: string, animate = false) {
                           k === 0 && "font-medium whitespace-nowrap",
                         )}
                       >
-                        {bold(cell, 0)}
+                        {inline(cell, 0)}
                       </td>
                     ))}
                   </tr>
@@ -243,7 +272,7 @@ function renderMarkdownLite(text: string, animate = false) {
     if (heading) {
       out.push(
         <p key={i} className="mt-2 mb-1 font-semibold first:mt-0">
-          {bold(heading[1], 0)}
+          {inline(heading[1], 0)}
         </p>,
       );
     } else {
@@ -252,13 +281,13 @@ function renderMarkdownLite(text: string, animate = false) {
         out.push(
           <p key={i} className="flex gap-2 pl-1">
             <span className="text-brand">•</span>
-            <span>{bold(bullet[1], 0)}</span>
+            <span>{inline(bullet[1], 0)}</span>
           </p>,
         );
       } else if (line.trim() === "") {
         out.push(<div key={i} className="h-2" />);
       } else {
-        out.push(<p key={i}>{bold(line, 0)}</p>);
+        out.push(<p key={i}>{inline(line, 0)}</p>);
       }
     }
     i++;
@@ -268,9 +297,9 @@ function renderMarkdownLite(text: string, animate = false) {
 }
 
 /** Live reasoning trace for the in-flight turn — auto-follows the newest
- * text; collapsible via its header (expanded by default). */
+ * text; collapsible via its header (collapsed by default). */
 function ThinkingFlow({ text, active }: { text: string; active: boolean }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
