@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, MenuIcon, Settings, User } from "lucide-react";
+import { LogOut, MenuIcon, Settings, ShieldCheck, User } from "lucide-react";
 
 import { GlassSurface } from "@/components/glass-surface";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -191,6 +191,15 @@ export function Header() {
                     <Settings className="size-3.5" />
                     Preferences
                   </DropdownMenuItem>
+                  {user.role === "admin" && (
+                    <DropdownMenuItem
+                      render={<Link href="/admin" />}
+                      className="cursor-pointer gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium focus:bg-surface-2"
+                    >
+                      <ShieldCheck className="size-3.5" />
+                      Admin
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator className="mx-0 my-1.5 bg-line" />
                   <DropdownMenuItem
                     variant="destructive"
