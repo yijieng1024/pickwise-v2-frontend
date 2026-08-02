@@ -8,7 +8,9 @@ import {
   ArrowLeft,
   ChevronRight,
   Cpu,
+  FileText,
   FolderTree,
+  Gauge,
   LayoutDashboard,
   Laptop,
   Laptop2,
@@ -17,9 +19,11 @@ import {
   SlidersHorizontal,
   Sparkles,
   Tag,
+  Tv,
   Users,
   Video,
   Workflow,
+  Zap,
 } from "lucide-react";
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -65,10 +69,20 @@ const catalogLinks: NavLink[] = [
 
 const pipelineLink: NavLink = { href: "/admin/pipeline", label: "Pipeline", icon: Workflow };
 
+const reviewsLinks: NavLink[] = [
+  { href: "/admin/reviews/channels", label: "Channels", icon: Tv },
+  { href: "/admin/reviews/raw", label: "Raw reviews", icon: FileText },
+  { href: "/admin/reviews/pipeline", label: "Pipeline", icon: Workflow },
+];
+
 const configLinks: NavLink[] = [
   { href: "/admin/taxonomy", label: "Taxonomy", icon: FolderTree },
   { href: "/admin/embeddings", label: "Embeddings", icon: Sparkles },
-  { href: "/admin/benchmarks", label: "Benchmarks", icon: Cpu },
+];
+
+const benchmarksLinks: NavLink[] = [
+  { href: "/admin/benchmarks/cpu", label: "CPU", icon: Cpu },
+  { href: "/admin/benchmarks/gpu", label: "GPU", icon: Zap },
 ];
 
 const monitoringLinks: NavLink[] = [
@@ -78,10 +92,7 @@ const monitoringLinks: NavLink[] = [
 // Domains the backend already gates behind get_current_admin but this phase
 // doesn't build a UI for yet — shown so the nav communicates the full future
 // shape instead of just omitting them.
-const comingSoonLinks = [
-  { label: "Reviews", icon: Video },
-  { label: "Questionnaire", icon: ListChecks },
-];
+const comingSoonLinks = [{ label: "Questionnaire", icon: ListChecks }];
 
 export function AdminShell({
   children,
@@ -112,6 +123,22 @@ export function AdminShell({
   if (isCatalogPath !== prevIsCatalogPath) {
     setPrevIsCatalogPath(isCatalogPath);
     if (isCatalogPath) setCatalogOpen(true);
+  }
+
+  const isBenchmarksPath = pathname.startsWith("/admin/benchmarks");
+  const [benchmarksOpen, setBenchmarksOpen] = useState(isBenchmarksPath);
+  const [prevIsBenchmarksPath, setPrevIsBenchmarksPath] = useState(isBenchmarksPath);
+  if (isBenchmarksPath !== prevIsBenchmarksPath) {
+    setPrevIsBenchmarksPath(isBenchmarksPath);
+    if (isBenchmarksPath) setBenchmarksOpen(true);
+  }
+
+  const isReviewsPath = pathname.startsWith("/admin/reviews");
+  const [reviewsOpen, setReviewsOpen] = useState(isReviewsPath);
+  const [prevIsReviewsPath, setPrevIsReviewsPath] = useState(isReviewsPath);
+  if (isReviewsPath !== prevIsReviewsPath) {
+    setPrevIsReviewsPath(isReviewsPath);
+    if (isReviewsPath) setReviewsOpen(true);
   }
 
   if (isLoading || !user || user.role !== "admin") {
@@ -196,6 +223,42 @@ export function AdminShell({
                 </Collapsible>
 
                 <NavItem link={pipelineLink} pathname={pathname} />
+
+                <Collapsible open={reviewsOpen} onOpenChange={setReviewsOpen}>
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger
+                      render={
+                        <SidebarMenuButton
+                          className="group data-active:bg-brand-tint data-active:font-semibold data-active:text-brand"
+                          isActive={isReviewsPath}
+                        >
+                          <Video />
+                          <span>Reviews</span>
+                          <ChevronRight className="ml-auto size-4 shrink-0 transition-transform duration-200 group-data-[panel-open]:rotate-90" />
+                        </SidebarMenuButton>
+                      }
+                    />
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {reviewsLinks.map((link) => {
+                          const Icon = link.icon;
+                          return (
+                            <SidebarMenuSubItem key={link.href}>
+                              <SidebarMenuSubButton
+                                render={<Link href={link.href} />}
+                                isActive={pathname === link.href}
+                                className="data-active:bg-brand-tint data-active:font-semibold data-active:text-brand"
+                              >
+                                <Icon />
+                                <span>{link.label}</span>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          );
+                        })}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -207,6 +270,42 @@ export function AdminShell({
                 {configLinks.map((link) => (
                   <NavItem key={link.href} link={link} pathname={pathname} />
                 ))}
+
+                <Collapsible open={benchmarksOpen} onOpenChange={setBenchmarksOpen}>
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger
+                      render={
+                        <SidebarMenuButton
+                          className="group data-active:bg-brand-tint data-active:font-semibold data-active:text-brand"
+                          isActive={isBenchmarksPath}
+                        >
+                          <Gauge />
+                          <span>Benchmarks</span>
+                          <ChevronRight className="ml-auto size-4 shrink-0 transition-transform duration-200 group-data-[panel-open]:rotate-90" />
+                        </SidebarMenuButton>
+                      }
+                    />
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {benchmarksLinks.map((link) => {
+                          const Icon = link.icon;
+                          return (
+                            <SidebarMenuSubItem key={link.href}>
+                              <SidebarMenuSubButton
+                                render={<Link href={link.href} />}
+                                isActive={pathname === link.href}
+                                className="data-active:bg-brand-tint data-active:font-semibold data-active:text-brand"
+                              >
+                                <Icon />
+                                <span>{link.label}</span>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          );
+                        })}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

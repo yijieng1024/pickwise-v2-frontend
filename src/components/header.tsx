@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, MenuIcon, Settings, ShieldCheck, User } from "lucide-react";
+import { Cog, LogOut, MenuIcon, Settings, User } from "lucide-react";
 
 import { GlassSurface } from "@/components/glass-surface";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -196,7 +196,7 @@ export function Header() {
                       render={<Link href="/admin" />}
                       className="cursor-pointer gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium focus:bg-surface-2"
                     >
-                      <ShieldCheck className="size-3.5" />
+                      <Cog className="size-3.5" />
                       Admin
                     </DropdownMenuItem>
                   )}
