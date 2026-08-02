@@ -205,15 +205,6 @@ export function Header() {
                     <Settings className="size-3.5" />
                     Preferences
                   </DropdownMenuItem>
-                  {user.role === "admin" && (
-                    <DropdownMenuItem
-                      render={<Link href="/admin" />}
-                      className="cursor-pointer gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium focus:bg-surface-2"
-                    >
-                      <Cog className="size-3.5" />
-                      Admin
-                    </DropdownMenuItem>
-                  )}
                   <DropdownMenuSeparator className="mx-0 my-1.5 bg-line" />
                   <DropdownMenuItem
                     variant="destructive"
