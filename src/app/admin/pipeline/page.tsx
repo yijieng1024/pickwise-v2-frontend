@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Loader2, PlayCircle } from "lucide-react";
 import { toast } from "sonner";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -36,6 +37,7 @@ import {
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 
+import { AdminErrorState } from "../admin-error-state";
 import { AdminPageHeader } from "../admin-page-header";
 
 export default function AdminPipelinePage() {
@@ -58,20 +60,30 @@ function ScraperSection() {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [brandId, setBrandId] = useState<string>("");
   const [queue, setQueue] = useState<RawScrapLaptop[] | null>(null);
+  const [queueError, setQueueError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [report, setReport] = useState<BulkScrapeReport | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
-    listBrands({ isActive: true }).then((res) => {
-      setBrands(res);
-      if (res.length > 0) setBrandId((current) => current || res[0].id);
-    });
+    listBrands({ isActive: true })
+      .then((res) => {
+        setBrands(res);
+        if (res.length > 0) setBrandId((current) => current || res[0].id);
+      })
+      .catch(() => toast.error("Failed to load brands."));
   }, []);
 
   useEffect(() => {
     if (!token) return;
-    listRawScrapLaptops(token, { limit: 1000 }).then(setQueue);
+    listRawScrapLaptops(token, { limit: 1000 })
+      .then((res) => {
+        setQueue(res);
+        setQueueError(null);
+      })
+      .catch((err) => {
+        setQueueError(err instanceof ApiError ? err.message : "Failed to load the raw-scrape queue.");
+      });
   }, [token, reloadTick]);
 
   const queueByBrand = useMemo(() => {
@@ -146,7 +158,9 @@ function ScraperSection() {
       )}
 
       <div className="border-line bg-surface rounded-lg border">
-        {queue === null ? (
+        {queueError ? (
+          <AdminErrorState message={queueError} onRetry={() => setReloadTick((t) => t + 1)} />
+        ) : queue === null ? (
           <div className="flex items-center justify-center p-10">
             <Loader2 className="size-5 text-muted-foreground motion-safe:animate-spin" />
           </div>
@@ -166,9 +180,15 @@ function ScraperSection() {
                 return (
                   <TableRow key={b.id}>
                     <TableCell className="font-medium">{b.name}</TableCell>
-                    <TableCell className="tabular-nums">{counts.pending}</TableCell>
-                    <TableCell className="tabular-nums">{counts.completed}</TableCell>
-                    <TableCell className="tabular-nums">{counts.failed}</TableCell>
+                    <TableCell>
+                      <Badge className="bg-warning/10 text-warning tabular-nums">{counts.pending}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className="bg-positive/10 text-positive tabular-nums">{counts.completed}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className="bg-negative/10 text-negative tabular-nums">{counts.failed}</Badge>
+                    </TableCell>
                   </TableRow>
                 );
               })}

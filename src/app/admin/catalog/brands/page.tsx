@@ -50,11 +50,13 @@ import {
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 
+import { AdminErrorState } from "../../admin-error-state";
 import { AdminPageHeader } from "../../admin-page-header";
 
 export default function AdminCatalogBrandsPage() {
   const { token } = useAuth();
   const [brands, setBrands] = useState<Brand[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Brand | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Brand | null>(null);
@@ -63,9 +65,15 @@ export default function AdminCatalogBrandsPage() {
 
   useEffect(() => {
     let cancelled = false;
-    listBrands().then((res) => {
-      if (!cancelled) setBrands(res);
-    });
+    listBrands()
+      .then((res) => {
+        if (cancelled) return;
+        setBrands(res);
+        setLoadError(null);
+      })
+      .catch((err) => {
+        if (!cancelled) setLoadError(err instanceof ApiError ? err.message : "Failed to load brands.");
+      });
     return () => {
       cancelled = true;
     };
@@ -101,7 +109,9 @@ export default function AdminCatalogBrandsPage() {
       />
 
       <div className="border-line bg-surface rounded-lg border">
-        {brands === null ? (
+        {loadError ? (
+          <AdminErrorState message={loadError} onRetry={() => setReloadTick((t) => t + 1)} />
+        ) : brands === null ? (
           <div className="flex items-center justify-center p-10">
             <Loader2 className="size-5 text-muted-foreground motion-safe:animate-spin" />
           </div>
@@ -125,7 +135,7 @@ export default function AdminCatalogBrandsPage() {
                     {b.base_scrape_url}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={b.is_active ? "secondary" : "outline"}>
+                    <Badge className={b.is_active ? "bg-positive/10 text-positive" : "bg-negative/10 text-negative"}>
                       {b.is_active ? "Active" : "Inactive"}
                     </Badge>
                   </TableCell>
@@ -284,7 +294,7 @@ function BrandFormDialog({
             <Checkbox checked={isActive} onCheckedChange={(c) => setIsActive(c === true)} />
             Active
           </label>
-          {error && <p className="text-[12.5px] font-medium text-negative">{error}</p>}
+          {error && <p className="text-[13px] font-medium text-negative">{error}</p>}
           <DialogFooter>
             <Button type="submit" disabled={saving}>
               {saving ? "Saving…" : "Save"}

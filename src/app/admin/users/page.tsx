@@ -42,8 +42,11 @@ import {
 } from "@/lib/api/admin/users";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
+import { cn } from "@/lib/utils";
 
+import { AdminErrorState } from "../admin-error-state";
 import { AdminPageHeader } from "../admin-page-header";
+import { AdminPagination } from "../admin-pagination";
 
 const PAGE_SIZE = 20;
 
@@ -60,10 +63,12 @@ const statusOptions = [
   { value: "suspended", label: "Suspended" },
 ];
 
-const statusBadgeVariant: Record<UserStatus, "secondary" | "outline" | "destructive"> = {
-  active: "secondary",
-  inactive: "outline",
-  suspended: "destructive",
+// Suspended (admin-blocked) reads as the more severe state than a merely
+// dormant inactive account, so it gets red while inactive gets amber.
+const statusBadgeClass: Record<UserStatus, string> = {
+  active: "bg-positive/10 text-positive",
+  inactive: "bg-warning/10 text-warning",
+  suspended: "bg-negative/10 text-negative",
 };
 
 type PendingAction =
@@ -159,9 +164,6 @@ export default function AdminUsersPage() {
     }
   }
 
-  const pageStart = total === 0 ? 0 : skip + 1;
-  const pageEnd = Math.min(skip + PAGE_SIZE, total);
-
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
@@ -219,7 +221,7 @@ export default function AdminUsersPage() {
 
       <div className="border-line bg-surface rounded-lg border">
         {loadError ? (
-          <p className="p-6 text-[13px] text-muted-foreground">{loadError}</p>
+          <AdminErrorState message={loadError} onRetry={() => setReloadTick((t) => t + 1)} />
         ) : users === null ? (
           <div className="flex items-center justify-center p-10">
             <Loader2 className="size-5 text-muted-foreground motion-safe:animate-spin" />
@@ -246,12 +248,12 @@ export default function AdminUsersPage() {
                       <div className="font-medium">
                         {u.username}
                         {isSelf && (
-                          <span className="ml-1.5 text-[11px] text-muted-foreground">
+                          <span className="ml-1.5 text-[12.5px] text-muted-foreground">
                             (you)
                           </span>
                         )}
                       </div>
-                      <div className="text-[12px] text-muted-foreground">{u.email}</div>
+                      <div className="text-[12.5px] text-muted-foreground">{u.email}</div>
                     </TableCell>
                     <TableCell>
                       <Select
@@ -288,7 +290,7 @@ export default function AdminUsersPage() {
                         }
                       >
                         <SelectTrigger size="sm" className="w-32">
-                          <Badge variant={statusBadgeVariant[u.status]} className="mr-1">
+                          <Badge className={cn("mr-1 capitalize", statusBadgeClass[u.status])}>
                             {u.status}
                           </Badge>
                         </SelectTrigger>
@@ -315,31 +317,12 @@ export default function AdminUsersPage() {
         )}
       </div>
 
-      {total > 0 && (
-        <div className="flex items-center justify-between text-[12.5px] text-muted-foreground">
-          <span>
-            {pageStart}–{pageEnd} of {total}
-          </span>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              disabled={skip === 0}
-              onClick={() => setSkip((s) => Math.max(0, s - PAGE_SIZE))}
-              className="rounded-full px-3 py-1 font-medium hover:bg-surface-2 disabled:opacity-40"
-            >
-              Previous
-            </button>
-            <button
-              type="button"
-              disabled={pageEnd >= total}
-              onClick={() => setSkip((s) => s + PAGE_SIZE)}
-              className="rounded-full px-3 py-1 font-medium hover:bg-surface-2 disabled:opacity-40"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      )}
+      <AdminPagination
+        page={Math.floor(skip / PAGE_SIZE) + 1}
+        pageSize={PAGE_SIZE}
+        total={total}
+        onPageChange={(p) => setSkip((p - 1) * PAGE_SIZE)}
+      />
 
       <AlertDialog
         open={pending !== null}
