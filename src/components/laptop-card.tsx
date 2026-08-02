@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Cpu, Monitor, RectangleEllipsis, Zap } from "lucide-react";
 
 import { DataIcon } from "@/components/icon-map";
@@ -36,6 +37,7 @@ export function LaptopCard({
   compareChecked,
   onCompareChange,
 }: LaptopCardProps) {
+  const router = useRouter();
   const specEntries = Object.entries(laptop.specs);
   const images = laptop.images?.length ? laptop.images : [laptop.image];
 
@@ -54,16 +56,24 @@ export function LaptopCard({
         className="absolute inset-0 z-10 rounded-3xl"
       />
 
+      {/* On mobile this sits above the stretched link (z-10) so embla receives
+          touch and the image can be swiped; taps still open details via the
+          onClick below (embla cancels the click after a drag). On desktop it
+          drops back below the link (md:z-auto) — swipe isn't needed there and
+          the whole-card link keeps its original behaviour. */}
       <div
         className={cn(
-          "relative overflow-hidden bg-white",
+          "relative z-10 overflow-hidden bg-white md:z-auto",
           layout === "list"
             ? "w-40 shrink-0 rounded-l-3xl sm:w-64"
             : "h-75 w-full rounded-t-3xl",
         )}
       >
         <Carousel className="h-full w-full">
-          <CarouselContent className="h-full">
+          <CarouselContent
+            className="h-full cursor-pointer"
+            onClick={() => router.push(`/laptops/${laptop.id}`)}
+          >
             {images.map((img, index) => (
               <CarouselItem key={index} className="h-full">
                 <Image
