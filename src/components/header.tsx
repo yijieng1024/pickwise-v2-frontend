@@ -3,9 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-<<<<<<< HEAD
-import { Cog, LogOut, MenuIcon, Settings, User } from "lucide-react";
-=======
 import {
   Heart,
   Home,
@@ -17,7 +14,6 @@ import {
   Sparkles,
   User,
 } from "lucide-react";
->>>>>>> b1c4284b93f2c9149577d81de03965689151aa61
 
 import { GlassSurface } from "@/components/glass-surface";
 import { ThemeToggle } from "@/components/theme-toggle";
