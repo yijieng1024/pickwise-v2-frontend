@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  Activity,
   ArrowLeft,
   ChevronRight,
   Cpu,
@@ -52,7 +53,7 @@ interface NavLink {
   icon: React.ComponentType;
 }
 
-const overviewLink: NavLink = { href: "/admin", label: "Overview", icon: LayoutDashboard };
+const overviewLink: NavLink = { href: "/admin", label: "Dashboard", icon: LayoutDashboard };
 
 const operationsLinks: NavLink[] = [{ href: "/admin/users", label: "Users", icon: Users }];
 
@@ -64,14 +65,21 @@ const catalogLinks: NavLink[] = [
 
 const pipelineLink: NavLink = { href: "/admin/pipeline", label: "Pipeline", icon: Workflow };
 
+const configLinks: NavLink[] = [
+  { href: "/admin/taxonomy", label: "Taxonomy", icon: FolderTree },
+  { href: "/admin/embeddings", label: "Embeddings", icon: Sparkles },
+  { href: "/admin/benchmarks", label: "Benchmarks", icon: Cpu },
+];
+
+const monitoringLinks: NavLink[] = [
+  { href: "/admin/agent-monitoring", label: "Agent", icon: Activity },
+];
+
 // Domains the backend already gates behind get_current_admin but this phase
 // doesn't build a UI for yet — shown so the nav communicates the full future
 // shape instead of just omitting them.
 const comingSoonLinks = [
-  { label: "Benchmarks", icon: Cpu },
-  { label: "Embeddings", icon: Sparkles },
   { label: "Reviews", icon: Video },
-  { label: "Taxonomy", icon: FolderTree },
   { label: "Questionnaire", icon: ListChecks },
 ];
 
@@ -188,6 +196,28 @@ export function AdminShell({
                 </Collapsible>
 
                 <NavItem link={pipelineLink} pathname={pathname} />
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          <SidebarGroup>
+            <SidebarGroupLabel>Configuration</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {configLinks.map((link) => (
+                  <NavItem key={link.href} link={link} pathname={pathname} />
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          <SidebarGroup>
+            <SidebarGroupLabel>Monitoring</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {monitoringLinks.map((link) => (
+                  <NavItem key={link.href} link={link} pathname={pathname} />
+                ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
