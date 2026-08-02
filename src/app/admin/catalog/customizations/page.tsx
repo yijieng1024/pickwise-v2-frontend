@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, MoreHorizontal, Pencil, Search, Trash2 } from "lucide-react";
+import { Loader2, MoreHorizontal, Pencil, Search, SlidersHorizontal, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -40,41 +40,82 @@ import {
 import {
   type Customization,
   type CustomizationUpdateInput,
+  type LaptopCustomizationSummary,
   deleteCustomization,
   listCustomizationsByLaptop,
+  listLaptopsWithCustomizations,
   updateCustomization,
 } from "@/lib/api/admin/customizations";
 import { apiFetch, ApiError } from "@/lib/api/client";
 import type { BackendLaptop } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth-context";
 
+import { AdminErrorState } from "../../admin-error-state";
 import { AdminPageHeader } from "../../admin-page-header";
 
 // Look up by laptop, edit/delete only. Bulk create and bulk-by-pattern are
 // deferred; still available via Swagger for now.
 
+interface LaptopWithCustomizationCount {
+  laptop: BackendLaptop;
+  count: number;
+}
+
 export default function AdminCatalogCustomizationsPage() {
   const { token } = useAuth();
-  const [laptops, setLaptops] = useState<BackendLaptop[]>([]);
-  const [laptopSearch, setLaptopSearch] = useState("");
+  const [laptopsWithCustomizations, setLaptopsWithCustomizations] = useState<
+    LaptopWithCustomizationCount[] | null
+  >(null);
+  const [listError, setListError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [listReloadTick, setListReloadTick] = useState(0);
+
   const [selectedLaptop, setSelectedLaptop] = useState<BackendLaptop | null>(null);
   const [customizations, setCustomizations] = useState<Customization[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [editTarget, setEditTarget] = useState<Customization | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Customization | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
-    apiFetch<BackendLaptop[]>("/laptops/").then(setLaptops);
-  }, []);
+    if (!token) return;
+    let cancelled = false;
+    Promise.all([
+      apiFetch<BackendLaptop[]>("/laptops/"),
+      listLaptopsWithCustomizations(token),
+    ])
+      .then(([laptops, summary]) => {
+        if (cancelled) return;
+        const countByLaptopId = new Map<string, number>(
+          summary.map((s: LaptopCustomizationSummary) => [s.laptop_id, s.customization_count]),
+        );
+        const withCustomizations = laptops
+          .filter((l) => countByLaptopId.has(l.id))
+          .map((l) => ({ laptop: l, count: countByLaptopId.get(l.id)! }))
+          .sort((a, b) => a.laptop.product_name.localeCompare(b.laptop.product_name));
+        setLaptopsWithCustomizations(withCustomizations);
+        setListError(null);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setListError(err instanceof ApiError ? err.message : "Failed to load laptops.");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token, listReloadTick]);
 
-  const laptopMatches = useMemo(() => {
-    const q = laptopSearch.trim().toLowerCase();
-    if (!q) return [];
-    return laptops
-      .filter((l) => l.product_name.toLowerCase().includes(q) || l.model_code.toLowerCase().includes(q))
-      .slice(0, 8);
-  }, [laptops, laptopSearch]);
+  const filtered = useMemo(() => {
+    if (!laptopsWithCustomizations) return [];
+    const q = search.trim().toLowerCase();
+    if (!q) return laptopsWithCustomizations;
+    return laptopsWithCustomizations.filter(
+      ({ laptop: l }) =>
+        l.product_name.toLowerCase().includes(q) || l.model_code.toLowerCase().includes(q),
+    );
+  }, [laptopsWithCustomizations, search]);
 
   // Reset to loading state when the selected laptop changes — the "adjust
   // state during render" pattern, not an effect (see laptops-browse.tsx).
@@ -83,14 +124,24 @@ export default function AdminCatalogCustomizationsPage() {
   if (laptopSig !== prevLaptopSig) {
     setPrevLaptopSig(laptopSig);
     setCustomizations(null);
+    setLoadError(null);
   }
 
   useEffect(() => {
     if (!selectedLaptop || !token) return;
     let cancelled = false;
-    listCustomizationsByLaptop(token, selectedLaptop.id).then((res) => {
-      if (!cancelled) setCustomizations(res);
-    });
+    listCustomizationsByLaptop(token, selectedLaptop.id)
+      .then((res) => {
+        if (cancelled) return;
+        setCustomizations(res);
+        setLoadError(null);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setLoadError(
+          err instanceof ApiError ? err.message : "Failed to load customizations.",
+        );
+      });
     return () => {
       cancelled = true;
     };
@@ -104,6 +155,9 @@ export default function AdminCatalogCustomizationsPage() {
       toast.success(`Deleted "${deleteTarget.option_name}".`);
       setDeleteTarget(null);
       setReloadTick((t) => t + 1);
+      // A deleted customization may have been a laptop's last one — refresh
+      // the summary list so it drops off when its count hits zero.
+      setListReloadTick((t) => t + 1);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "Failed to delete customization.");
     } finally {
@@ -116,45 +170,84 @@ export default function AdminCatalogCustomizationsPage() {
       <AdminPageHeader
         crumbs={["Catalog", "Customizations"]}
         title="Customizations"
-        description="Look up a laptop to view and edit its upgrade options."
+        description="Laptops that have upgrade options configured — pick one to view and edit them."
       />
 
       <div className="border-line bg-surface rounded-lg border p-4">
-        <div className="relative max-w-sm">
+        <div className="relative max-w-xs">
           <Search className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Find a laptop to view its customizations…"
-            value={selectedLaptop ? selectedLaptop.product_name : laptopSearch}
-            onChange={(e) => {
-              setSelectedLaptop(null);
-              setLaptopSearch(e.target.value);
-            }}
+            placeholder="Filter by model or code…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             className="pl-8"
           />
-          {laptopMatches.length > 0 && !selectedLaptop && (
-            <div className="border-line bg-popover absolute z-10 mt-1 w-full rounded-lg border p-1 shadow-md">
-              {laptopMatches.map((l) => (
-                <button
-                  key={l.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedLaptop(l);
-                    setLaptopSearch("");
-                  }}
-                  className="block w-full rounded-md px-2.5 py-1.5 text-left text-[13px] hover:bg-surface-2"
-                >
-                  {l.product_name}{" "}
-                  <span className="text-muted-foreground">({l.model_code})</span>
-                </button>
-              ))}
-            </div>
-          )}
         </div>
+      </div>
+
+      <div className="border-line bg-surface rounded-lg border">
+        {listError ? (
+          <AdminErrorState message={listError} onRetry={() => setListReloadTick((t) => t + 1)} />
+        ) : laptopsWithCustomizations === null ? (
+          <div className="flex items-center justify-center p-10">
+            <Loader2 className="size-5 text-muted-foreground motion-safe:animate-spin" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <p className="p-6 text-[13px] text-muted-foreground">
+            {laptopsWithCustomizations.length === 0
+              ? "No laptops have customizations configured yet."
+              : "No laptops match."}
+          </p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Model</TableHead>
+                <TableHead>Customizations</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map(({ laptop: l, count }) => (
+                <TableRow
+                  key={l.id}
+                  className={selectedLaptop?.id === l.id ? "bg-brand-tint/40" : undefined}
+                >
+                  <TableCell>
+                    <div className="font-medium">{l.product_name}</div>
+                    <div className="text-[12.5px] text-muted-foreground">{l.model_code}</div>
+                  </TableCell>
+                  <TableCell className="tabular-nums">{count}</TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant={selectedLaptop?.id === l.id ? "secondary" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedLaptop(l)}
+                    >
+                      <SlidersHorizontal className="size-3.5" />
+                      View
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </div>
 
       {selectedLaptop && (
         <div className="border-line bg-surface rounded-lg border">
-          {customizations === null ? (
+          <div className="flex items-center justify-between border-b border-line p-4">
+            <h2 className="text-sm font-bold tracking-tight">
+              Customizations for {selectedLaptop.product_name}
+            </h2>
+            <Button variant="ghost" size="icon-sm" aria-label="Close" onClick={() => setSelectedLaptop(null)}>
+              <X className="size-3.5" />
+            </Button>
+          </div>
+          {loadError ? (
+            <AdminErrorState message={loadError} onRetry={() => setReloadTick((t) => t + 1)} />
+          ) : customizations === null ? (
             <div className="flex items-center justify-center p-10">
               <Loader2 className="size-5 text-muted-foreground motion-safe:animate-spin" />
             </div>
@@ -318,7 +411,7 @@ function CustomizationEditDialog({
             Note (optional)
             <Input value={note} onChange={(e) => setNote(e.target.value)} />
           </label>
-          {error && <p className="text-[12.5px] font-medium text-negative">{error}</p>}
+          {error && <p className="text-[13px] font-medium text-negative">{error}</p>}
           <DialogFooter>
             <Button type="submit" disabled={saving}>
               {saving ? "Saving…" : "Save"}

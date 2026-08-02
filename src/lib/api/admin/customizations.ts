@@ -27,6 +27,21 @@ export function listCustomizationsByLaptop(
   });
 }
 
+/** One row per laptop that has at least one customization. */
+export interface LaptopCustomizationSummary {
+  laptop_id: string;
+  customization_count: number;
+}
+
+export function listLaptopsWithCustomizations(
+  token: string,
+): Promise<LaptopCustomizationSummary[]> {
+  return apiFetch<LaptopCustomizationSummary[]>("/customizations/laptops-summary", {
+    token,
+    next: { revalidate: 0 },
+  });
+}
+
 export function updateCustomization(
   token: string,
   id: string,
