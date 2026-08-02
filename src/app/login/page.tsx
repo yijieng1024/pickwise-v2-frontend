@@ -199,7 +199,7 @@ export default function LoginPage() {
                 <Input
                   type="text"
                   autoComplete="username"
-                  placeholder="you@example.com"
+                  placeholder="johndoe@example.com"
                   required
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
@@ -213,7 +213,7 @@ export default function LoginPage() {
                   <Input
                     type="text"
                     autoComplete="username"
-                    placeholder="aiman_rahim"
+                    placeholder="johndoe"
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
@@ -225,7 +225,7 @@ export default function LoginPage() {
                   <Input
                     type="email"
                     autoComplete="email"
-                    placeholder="you@example.com"
+                    placeholder="johndoe@example.com"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}

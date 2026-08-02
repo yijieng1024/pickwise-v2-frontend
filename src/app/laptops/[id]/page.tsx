@@ -43,7 +43,11 @@ export default async function LaptopDetailsPage({
 
   let raw: BackendLaptop;
   try {
-    raw = await apiFetch<BackendLaptop>(`/laptops/${id}`);
+    // No caching: the price shown here (and the history below) must reflect
+    // admin edits / scraper runs immediately — a stale 60s data-cache made
+    // updated prices appear to "not show". Opting these fetches out of the
+    // cache also makes the route dynamic, so the whole page stays current.
+    raw = await apiFetch<BackendLaptop>(`/laptops/${id}`, { next: { revalidate: 0 } });
   } catch (err) {
     // 404 = well-formed id, no such laptop. 422 = backend's UUID path-param
     // validation rejecting a malformed id (e.g. a stale non-UUID link).
@@ -56,7 +60,9 @@ export default async function LaptopDetailsPage({
 
   const [brand, rawHistory, pickScores] = await Promise.all([
     apiFetch<BackendBrand>(`/brands/${raw.brand_id}`),
-    apiFetch<BackendPriceHistoryEntry[]>(`/laptops/${id}/price-history`),
+    apiFetch<BackendPriceHistoryEntry[]>(`/laptops/${id}/price-history`, {
+      next: { revalidate: 0 },
+    }),
     // Best-effort: scores may not be generated yet — the tile just hides.
     getLaptopPickScores(id).catch(() => null),
   ]);
@@ -73,6 +79,7 @@ export default async function LaptopDetailsPage({
     }),
   );
   const priceHistoryPrices = priceHistorySorted.map((h) => h.price_rm);
+  const priceHistoryDates = priceHistorySorted.map((h) => h.recorded_at);
   // priceValue of 0 means "price not available", not a genuine drop to zero.
   const priceDrop =
     priceHistorySorted.length > 0 && laptop.priceValue > 0
@@ -265,13 +272,27 @@ export default async function LaptopDetailsPage({
               </span>
             )}
           </div>
-          {priceHistoryPrices.length > 0 ? (
+          {priceHistoryPrices.length >= 2 ? (
             <PriceHistory
               months={priceHistoryLabels}
+              dates={priceHistoryDates}
               series={[
                 { name: `${laptop.brand} (RM)`, color: CHART_COLOR, prices: priceHistoryPrices },
               ]}
             />
+          ) : priceHistoryPrices.length === 1 ? (
+            // A single record is one data point — a lone dot with an
+            // unreliable hover tooltip. State it plainly instead; the chart
+            // (and its tooltips) appears once there's a second price to plot.
+            <p className="text-sm text-muted-foreground">
+              No price changes yet — first recorded on{" "}
+              {new Date(priceHistoryDates[0]).toLocaleDateString(undefined, {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
+              .
+            </p>
           ) : (
             <p className="text-sm text-muted-foreground">
               No price history recorded yet.
