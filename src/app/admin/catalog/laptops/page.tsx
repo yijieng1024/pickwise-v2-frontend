@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ExternalLink, Loader2, MoreHorizontal, Search, Trash2 } from "lucide-react";
+import { ExternalLink, Loader2, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -31,51 +31,91 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { deleteLaptop } from "@/lib/api/admin/laptops";
+import { deleteLaptop, listLaptops } from "@/lib/api/admin/laptops";
 import { apiFetch, ApiError } from "@/lib/api/client";
 import type { BackendBrand, BackendLaptop } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth-context";
 
+import { AdminErrorState } from "../../admin-error-state";
 import { AdminPageHeader } from "../../admin-page-header";
+import { AdminPagination } from "../../admin-pagination";
+import { type SortState, SortableTableHead, toggleSort } from "../../admin-sortable-head";
 
-// Laptops — list + delete only. Creating/editing the full 9-part spec form is
-// out of scope for this phase (200+ fields — deserves its own plan).
+const PAGE_SIZE = 25;
+
+type SortKey = "product_name" | "price_rm";
 
 export default function AdminCatalogLaptopsPage() {
   const { token } = useAuth();
   const [laptops, setLaptops] = useState<BackendLaptop[] | null>(null);
+  const [total, setTotal] = useState(0);
   const [brands, setBrands] = useState<Map<string, BackendBrand>>(new Map());
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadTick, setReloadTick] = useState(0);
+
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [sort, setSort] = useState<SortState<SortKey> | null>(null);
+  const [page, setPage] = useState(1);
+
   const [target, setTarget] = useState<BackendLaptop | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [reloadTick, setReloadTick] = useState(0);
+
+  useEffect(() => {
+    apiFetch<BackendBrand[]>("/brands")
+      .then((rawBrands) => setBrands(new Map(rawBrands.map((b) => [b.id, b]))))
+      .catch(() => toast.error("Failed to load brands."));
+  }, []);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Reset pagination when search/sort change, then reset loading state once
+  // the effective query changes — the "adjust state during render" pattern,
+  // not an effect (see laptops-browse.tsx).
+  const filterSig = `${debouncedSearch}|${sort?.key ?? ""}|${sort?.direction ?? ""}`;
+  const [prevFilterSig, setPrevFilterSig] = useState(filterSig);
+  if (filterSig !== prevFilterSig) {
+    setPrevFilterSig(filterSig);
+    setPage(1);
+  }
+
+  const paramsSig = `${filterSig}|${page}`;
+  const [prevParamsSig, setPrevParamsSig] = useState(paramsSig);
+  if (paramsSig !== prevParamsSig) {
+    setPrevParamsSig(paramsSig);
+    setLaptops(null);
+    setLoadError(null);
+  }
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([
-      apiFetch<BackendLaptop[]>("/laptops/"),
-      apiFetch<BackendBrand[]>("/brands"),
-    ]).then(([rawLaptops, rawBrands]) => {
-      if (cancelled) return;
-      setLaptops(rawLaptops);
-      setBrands(new Map(rawBrands.map((b) => [b.id, b])));
-    });
+    listLaptops({
+      search: debouncedSearch || undefined,
+      sortBy: sort?.key,
+      sortDir: sort?.direction,
+      skip: (page - 1) * PAGE_SIZE,
+      limit: PAGE_SIZE,
+    })
+      .then((res) => {
+        if (cancelled) return;
+        setLaptops(res.items);
+        setTotal(res.total);
+        setLoadError(null);
+      })
+      .catch((err) => {
+        if (!cancelled) setLoadError(err instanceof ApiError ? err.message : "Failed to load laptops.");
+      });
     return () => {
       cancelled = true;
     };
-  }, [reloadTick]);
+  }, [debouncedSearch, sort, page, reloadTick]);
 
-  const filtered = useMemo(() => {
-    if (!laptops) return [];
-    const q = search.trim().toLowerCase();
-    if (!q) return laptops;
-    return laptops.filter(
-      (l) =>
-        l.product_name.toLowerCase().includes(q) ||
-        l.model_code.toLowerCase().includes(q) ||
-        (brands.get(l.brand_id)?.name.toLowerCase().includes(q) ?? false),
-    );
-  }, [laptops, brands, search]);
+  function handleSort(key: SortKey) {
+    setSort((prev) => toggleSort(prev, key));
+  }
 
   async function confirmDelete() {
     if (!target || !token) return;
@@ -97,7 +137,13 @@ export default function AdminCatalogLaptopsPage() {
       <AdminPageHeader
         crumbs={["Catalog", "Laptops"]}
         title="Laptops"
-        description="Catalog listing — view and delete only."
+        description="Full catalog listing and spec editing."
+        action={
+          <Button size="sm" render={<Link href="/admin/catalog/laptops/new" />} nativeButton={false}>
+            <Plus className="size-3.5" />
+            New laptop
+          </Button>
+        }
       />
 
       <div className="border-line bg-surface rounded-lg border p-4">
@@ -113,28 +159,30 @@ export default function AdminCatalogLaptopsPage() {
       </div>
 
       <div className="border-line bg-surface rounded-lg border">
-        {laptops === null ? (
+        {loadError ? (
+          <AdminErrorState message={loadError} onRetry={() => setReloadTick((t) => t + 1)} />
+        ) : laptops === null ? (
           <div className="flex items-center justify-center p-10">
             <Loader2 className="size-5 text-muted-foreground motion-safe:animate-spin" />
           </div>
-        ) : filtered.length === 0 ? (
+        ) : laptops.length === 0 ? (
           <p className="p-6 text-[13px] text-muted-foreground">No laptops match.</p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Model</TableHead>
+                <SortableTableHead label="Model" sortKey="product_name" sort={sort} onSort={handleSort} />
                 <TableHead>Brand</TableHead>
-                <TableHead>Price</TableHead>
+                <SortableTableHead label="Price" sortKey="price_rm" sort={sort} onSort={handleSort} />
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((l) => (
+              {laptops.map((l) => (
                 <TableRow key={l.id}>
                   <TableCell>
                     <div className="font-medium">{l.product_name}</div>
-                    <div className="text-[12px] text-muted-foreground">{l.model_code}</div>
+                    <div className="text-[12.5px] text-muted-foreground">{l.model_code}</div>
                   </TableCell>
                   <TableCell>{brands.get(l.brand_id)?.name ?? "Unknown"}</TableCell>
                   <TableCell className="tabular-nums">
@@ -153,6 +201,10 @@ export default function AdminCatalogLaptopsPage() {
                           <ExternalLink className="size-3.5" />
                           View
                         </DropdownMenuItem>
+                        <DropdownMenuItem render={<Link href={`/admin/catalog/laptops/${l.id}/edit`} />}>
+                          <Pencil className="size-3.5" />
+                          Edit
+                        </DropdownMenuItem>
                         <DropdownMenuItem variant="destructive" onClick={() => setTarget(l)}>
                           <Trash2 className="size-3.5" />
                           Delete
@@ -166,6 +218,8 @@ export default function AdminCatalogLaptopsPage() {
           </Table>
         )}
       </div>
+
+      <AdminPagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
 
       <AlertDialog open={target !== null} onOpenChange={(open) => !open && setTarget(null)}>
         <AlertDialogContent>

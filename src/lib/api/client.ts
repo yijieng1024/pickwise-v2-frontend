@@ -18,10 +18,7 @@ interface ApiFetchOptions extends RequestInit {
   token?: string;
 }
 
-export async function apiFetch<T>(
-  path: string,
-  { token, headers, ...init }: ApiFetchOptions = {},
-): Promise<T> {
+async function rawFetch(path: string, { token, headers, ...init }: ApiFetchOptions): Promise<Response> {
   if (!BASE_URL) {
     throw new Error("NEXT_PUBLIC_API_BASE_URL is not set");
   }
@@ -55,9 +52,32 @@ export async function apiFetch<T>(
     throw new ApiError(res.status, message);
   }
 
+  return res;
+}
+
+export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
+  const res = await rawFetch(path, options);
   if (res.status === 204) {
     return undefined as T;
   }
-
   return res.json() as Promise<T>;
+}
+
+/**
+ * Like apiFetch, but also reads the `X-Total-Count` response header — for
+ * list endpoints that deliberately kept a bare-array response body (see
+ * /laptops/, /benchmarks/cpu, /benchmarks/gpu) instead of a {items,total}
+ * envelope, so real pagination still needs the true row count from
+ * somewhere. Requires the backend to send `Access-Control-Expose-Headers`
+ * for this header — plain "*" allow_headers does NOT cover response-header
+ * visibility, that's a separate CORS allowance.
+ */
+export async function apiFetchWithTotal<T>(
+  path: string,
+  options: ApiFetchOptions = {},
+): Promise<{ items: T; total: number }> {
+  const res = await rawFetch(path, options);
+  const total = Number(res.headers.get("X-Total-Count") ?? 0);
+  const items = (res.status === 204 ? undefined : await res.json()) as T;
+  return { items, total };
 }
