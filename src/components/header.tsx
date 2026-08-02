@@ -3,7 +3,17 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, MenuIcon, Settings, User } from "lucide-react";
+import {
+  Heart,
+  Home,
+  Laptop,
+  LogOut,
+  MenuIcon,
+  MessageSquare,
+  Settings,
+  Sparkles,
+  User,
+} from "lucide-react";
 
 import { GlassSurface } from "@/components/glass-surface";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -29,12 +39,16 @@ import { cn } from "@/lib/utils";
 
 const SPRING = "cubic-bezier(0.34, 1.56, 0.64, 1)";
 
+// Shared mobile-drawer row: 44px tap target, icon + label.
+const DRAWER_ITEM =
+  "flex min-h-11 items-center gap-3 rounded-xl px-3 text-[15px] font-medium transition-colors";
+
 const navLinks = [
-  { href: "/", label: "Home" },
-  { href: "/laptops", label: "Laptops" },
-  { href: "/wizard", label: "Needs Wizard" },
-  { href: "/chat", label: "Chat" },
-  { href: "/saved", label: "Saved" },
+  { href: "/", label: "Home", icon: Home },
+  { href: "/laptops", label: "Laptops", icon: Laptop },
+  { href: "/wizard", label: "Needs Wizard", icon: Sparkles },
+  { href: "/chat", label: "Chat", icon: MessageSquare },
+  { href: "/saved", label: "Saved", icon: Heart },
   // { href: "/compare", label: "Compare" },
 ];
 
@@ -137,7 +151,7 @@ export function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger
                 aria-label="Account"
-                className="relative flex h-9 w-9 items-center justify-center rounded-full border-0 bg-transparent transition-transform hover:scale-105"
+                className="relative hidden h-9 w-9 items-center justify-center rounded-full border-0 bg-transparent transition-transform hover:scale-105 md:flex"
               >
                 <UserAvatar
                   userId={user.id}
@@ -233,28 +247,122 @@ export function Header() {
 
             <SheetContent side="right">
               <SheetTitle className="sr-only">PickWise navigation</SheetTitle>
-              <nav className="flex flex-col gap-1 px-4 pt-4">
-                {visibleLinks.map(({ href, label }) => (
+
+              {/* Visible drawer header: account for signed-in users, brand for guests */}
+              <div className="flex items-center gap-2.5 border-b border-line px-4 pt-5 pb-4 pr-10">
+                {user ? (
+                  <>
+                    <UserAvatar
+                      userId={user.id}
+                      username={user.username}
+                      className="h-9 w-9 text-[13px]"
+                    />
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-semibold">{user.username}</span>
+                      <span className="block truncate text-[12px] text-muted-foreground">
+                        {user.email}
+                      </span>
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-[14px] font-bold text-white">
+                      P
+                    </span>
+                    <span className="text-[15px] font-bold tracking-tight">PickWise</span>
+                  </>
+                )}
+              </div>
+
+              <nav className="flex flex-col gap-1 px-3">
+                {visibleLinks.map(({ href, label, icon: Icon }) => {
+                  const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+                  return (
+                    <SheetClose
+                      key={href}
+                      nativeButton={false}
+                      render={
+                        <Link
+                          href={href}
+                          aria-current={active ? "page" : undefined}
+                          className={cn(
+                            DRAWER_ITEM,
+                            active
+                              ? "bg-brand-tint font-semibold text-brand"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground active:bg-surface-2",
+                          )}
+                        />
+                      }
+                    >
+                      <Icon className="size-[18px] shrink-0" />
+                      {label}
+                    </SheetClose>
+                  );
+                })}
+              </nav>
+
+              {user && (
+                <div className="flex flex-col gap-1 border-t border-line px-3 pt-3">
                   <SheetClose
-                    key={href}
+                    nativeButton={false}
                     render={
                       <Link
-                        href={href}
-                        className="rounded-lg px-2 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        href="/profile"
+                        className={cn(
+                          DRAWER_ITEM,
+                          "text-muted-foreground hover:bg-muted hover:text-foreground active:bg-surface-2",
+                        )}
                       />
                     }
                   >
-                    {label}
+                    <User className="size-[18px] shrink-0" />
+                    Profile
                   </SheetClose>
-                ))}
-              </nav>
-              {!user && (
-                <SheetFooter>
-                  <Button render={<Link href="/login" />} nativeButton={false}>
+                  <SheetClose
+                    nativeButton={false}
+                    render={
+                      <Link
+                        href="/profile#preferences"
+                        className={cn(
+                          DRAWER_ITEM,
+                          "text-muted-foreground hover:bg-muted hover:text-foreground active:bg-surface-2",
+                        )}
+                      />
+                    }
+                  >
+                    <Settings className="size-[18px] shrink-0" />
+                    Preferences
+                  </SheetClose>
+                </div>
+              )}
+
+              <SheetFooter>
+                <div className="flex items-center justify-between rounded-xl bg-surface-2 px-3 py-2">
+                  <span className="text-[13px] font-medium text-muted-foreground">Theme</span>
+                  <ThemeToggle />
+                </div>
+                {user ? (
+                  <SheetClose
+                    render={
+                      <button
+                        type="button"
+                        onClick={logout}
+                        className={cn(
+                          DRAWER_ITEM,
+                          "text-negative hover:bg-negative/10 active:bg-negative/10",
+                        )}
+                      />
+                    }
+                  >
+                    <LogOut className="size-[18px] shrink-0" />
+                    Log out
+                  </SheetClose>
+                ) : (
+                  <Button render={<Link href="/login" />} nativeButton={false} className="min-h-11">
                     Register to Get Recommendations
                   </Button>
-                </SheetFooter>
-              )}
+                )}
+              </SheetFooter>
             </SheetContent>
           </Sheet>
         </div>
