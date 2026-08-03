@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { LayoutGrid, List, Loader2, Search } from "lucide-react";
+import { LayoutGrid, List, Search } from "lucide-react";
 
 import { LaptopCard } from "@/components/laptop-card";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Spinner } from "@/components/ui/spinner";
 import type { Laptop } from "@/lib/laptops";
 import { cn } from "@/lib/utils";
 
@@ -101,7 +102,7 @@ export function LaptopsBrowse({ laptops }: { laptops: Laptop[] }) {
 
       <div className="mb-7 flex flex-wrap items-center gap-3">
         <div className="relative min-w-[240px] flex-1">
-          <Search className="absolute top-1/2 left-4 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute top-1/2 left-4 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -180,7 +181,7 @@ export function LaptopsBrowse({ laptops }: { laptops: Laptop[] }) {
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="size-4" />
             </button>
           ))}
         </div>
@@ -221,7 +222,7 @@ export function LaptopsBrowse({ laptops }: { laptops: Laptop[] }) {
           ref={sentinelRef}
           className="flex items-center justify-center gap-2 py-10 text-xs text-muted-foreground"
         >
-          <Loader2 className="text-brand h-4 w-4 animate-spin" />
+          <Spinner className="text-brand size-4" />
           Loading more laptops…
         </div>
       )}

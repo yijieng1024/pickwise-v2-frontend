@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Loader2, MoreHorizontal, Pencil, Plus } from "lucide-react";
+import { MoreHorizontal, Pencil, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -25,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -37,6 +39,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import {
   type ChannelCreateInput,
   type ChannelUpdateInput,
@@ -49,7 +53,7 @@ import {
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 
-import { AdminErrorState } from "../../admin-error-state";
+import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
 import { AdminPageHeader } from "../../admin-page-header";
 
 const tierLabel: Record<TrustTier, string> = { tier_1: "Tier 1", tier_2: "Tier 2" };
@@ -91,21 +95,19 @@ export default function AdminReviewChannelsPage() {
         description="YouTube channels the review pipeline pulls transcripts from."
         action={
           <Button size="sm" onClick={() => setCreateOpen(true)}>
-            <Plus className="size-3.5" />
+            <Plus data-icon="inline-start" />
             New channel
           </Button>
         }
       />
 
-      <div className="border-line bg-surface rounded-lg border">
+      <Card className="py-0">
         {loadError ? (
           <AdminErrorState message={loadError} onRetry={() => setReloadTick((t) => t + 1)} />
         ) : channels === null ? (
-          <div className="flex items-center justify-center p-10">
-            <Loader2 className="size-5 text-muted-foreground motion-safe:animate-spin" />
-          </div>
+          <AdminLoadingState />
         ) : channels.length === 0 ? (
-          <p className="p-6 text-[13px] text-muted-foreground">No channels yet.</p>
+          <AdminEmptyState title="No channels yet" />
         ) : (
           <Table>
             <TableHeader>
@@ -154,13 +156,15 @@ export default function AdminReviewChannelsPage() {
                         render={<Button variant="ghost" size="icon-sm" />}
                         aria-label="Row actions"
                       >
-                        <MoreHorizontal className="size-3.5" />
+                        <MoreHorizontal />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setEditTarget(c)}>
-                          <Pencil className="size-3.5" />
-                          Edit
-                        </DropdownMenuItem>
+                        <DropdownMenuGroup>
+                          <DropdownMenuItem onClick={() => setEditTarget(c)}>
+                            <Pencil />
+                            Edit
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -169,7 +173,7 @@ export default function AdminReviewChannelsPage() {
             </TableBody>
           </Table>
         )}
-      </div>
+      </Card>
 
       <AddChannelDialog
         open={createOpen}
@@ -238,15 +242,17 @@ function AddChannelDialog({
           <DialogTitle>New channel</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-xs font-semibold">
-            Channel URL, @handle, or UC… ID
-            <Input
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://youtube.com/@…"
-              required
-            />
-          </label>
+          <FieldGroup>
+            <Field>
+              <FieldLabel>Channel URL, @handle, or UC… ID</FieldLabel>
+              <Input
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://youtube.com/@…"
+                required
+              />
+            </Field>
+          </FieldGroup>
           <TierAndActiveFields
             tier={tier}
             setTier={setTier}
@@ -351,25 +357,29 @@ function TierAndActiveFields({
   ];
   return (
     <>
-      <label className="flex flex-col gap-1 text-xs font-semibold">
-        Trust tier
-        <Select
-          items={tierOptions}
-          value={tier}
-          onValueChange={(v) => setTier(v as TrustTier)}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {tierOptions.map((o) => (
-              <SelectItem key={o.value} value={o.value}>
-                {o.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </label>
+      <FieldGroup>
+        <Field>
+          <FieldLabel>Trust tier</FieldLabel>
+          <Select
+            items={tierOptions}
+            value={tier}
+            onValueChange={(v) => setTier(v as TrustTier)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {tierOptions.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </Field>
+      </FieldGroup>
       <label className="flex items-center gap-2 text-xs font-semibold">
         <Checkbox checked={active} onCheckedChange={(c) => setActive(c === true)} />
         Active

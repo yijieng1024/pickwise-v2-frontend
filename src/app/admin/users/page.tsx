@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -32,6 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 import {
   type AdminUser,
   type UserRole,
@@ -44,7 +46,7 @@ import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
-import { AdminErrorState } from "../admin-error-state";
+import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../admin-states";
 import { AdminPageHeader } from "../admin-page-header";
 import { AdminPagination } from "../admin-pagination";
 
@@ -187,11 +189,13 @@ export default function AdminUsersPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {roleOptions.map((o) => (
-              <SelectItem key={o.value} value={o.value}>
-                {o.label}
-              </SelectItem>
-            ))}
+            <SelectGroup>
+              {roleOptions.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
           </SelectContent>
         </Select>
         <Select items={statusOptions} value={status} onValueChange={(v) => setStatus(v as string)}>
@@ -199,11 +203,13 @@ export default function AdminUsersPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {statusOptions.map((o) => (
-              <SelectItem key={o.value} value={o.value}>
-                {o.label}
-              </SelectItem>
-            ))}
+            <SelectGroup>
+              {statusOptions.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
           </SelectContent>
         </Select>
         <Button
@@ -219,15 +225,13 @@ export default function AdminUsersPage() {
         </Button>
       </div>
 
-      <div className="border-line bg-surface rounded-lg border">
+      <Card className="py-0">
         {loadError ? (
           <AdminErrorState message={loadError} onRetry={() => setReloadTick((t) => t + 1)} />
         ) : users === null ? (
-          <div className="flex items-center justify-center p-10">
-            <Loader2 className="size-5 text-muted-foreground motion-safe:animate-spin" />
-          </div>
+          <AdminLoadingState />
         ) : users.length === 0 ? (
-          <p className="p-6 text-[13px] text-muted-foreground">No users match these filters.</p>
+          <AdminEmptyState title="No users match these filters" />
         ) : (
           <Table>
             <TableHeader>
@@ -271,8 +275,10 @@ export default function AdminUsersPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="user">User</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectGroup>
+                            <SelectItem value="user">User</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                          </SelectGroup>
                         </SelectContent>
                       </Select>
                     </TableCell>
@@ -295,9 +301,11 @@ export default function AdminUsersPage() {
                           </Badge>
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="inactive">Inactive</SelectItem>
-                          <SelectItem value="suspended">Suspended</SelectItem>
+                          <SelectGroup>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                            <SelectItem value="suspended">Suspended</SelectItem>
+                          </SelectGroup>
                         </SelectContent>
                       </Select>
                     </TableCell>
@@ -315,7 +323,7 @@ export default function AdminUsersPage() {
             </TableBody>
           </Table>
         )}
-      </div>
+      </Card>
 
       <AdminPagination
         page={Math.floor(skip / PAGE_SIZE) + 1}

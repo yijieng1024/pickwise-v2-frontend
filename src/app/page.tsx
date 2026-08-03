@@ -76,7 +76,7 @@ export default async function Home() {
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 sm:px-6 lg:px-8">
       <section className="flex flex-col items-center pt-24 pb-0 text-center md:pt-32">
         <div className="bg-brand-tint text-brand mb-9 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium motion-safe:animate-fade-in-up">
-          <Sparkles className="h-4 w-4" /> Welcome to PickWise! Pico is waiting for you!
+          <Sparkles className="size-4" /> Welcome to PickWise! Pico is waiting for you!
         </div>
 
         <h1 className="mb-10 max-w-[760px] text-5xl leading-[1.03] font-bold tracking-tighter text-balance motion-safe:animate-fade-in-up motion-safe:[animation-delay:100ms] md:text-[72px]">
@@ -117,7 +117,7 @@ export default async function Home() {
                 href="/laptops"
                 className="text-brand flex items-center gap-1 text-sm font-medium hover:underline"
               >
-                View All <ChevronRight className="h-4 w-4" />
+                View All <ChevronRight className="size-4" />
               </Link>
             </div>
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
@@ -149,8 +149,8 @@ export default async function Home() {
                 className="border-line bg-surface rounded-2xl border p-6 motion-safe:animate-fade-in-up"
                 style={{ animationDelay: `${i * 100}ms` }}
               >
-                <div className="bg-brand-tint text-brand flex h-9 w-9 items-center justify-center rounded-xl">
-                  <Icon className="h-4.5 w-4.5" />
+                <div className="bg-brand-tint text-brand flex size-9 items-center justify-center rounded-xl">
+                  <Icon className="size-4.5" />
                 </div>
                 <h3 className="mt-4 text-[15px] font-bold tracking-tight">
                   {title}
@@ -179,7 +179,7 @@ export default async function Home() {
               nativeButton={false}
               className="rounded-full px-6"
             >
-              <Sparkles className="h-4 w-4" /> Ask Pico
+              <Sparkles className="size-4" /> Ask Pico
             </Button>
             <Button
               size="lg"

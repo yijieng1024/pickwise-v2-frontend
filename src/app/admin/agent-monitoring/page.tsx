@@ -7,7 +7,6 @@ import {
   Check,
   Clock,
   Copy,
-  Loader2,
   MessageSquare,
   Search,
   Sparkles,
@@ -23,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -35,6 +35,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Spinner } from "@/components/ui/spinner";
+import { Card } from "@/components/ui/card";
 import {
   type AgentMonitoringStats,
   type AgentRunDetail,
@@ -48,7 +50,7 @@ import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
-import { AdminErrorState } from "../admin-error-state";
+import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../admin-states";
 import { AdminPageHeader } from "../admin-page-header";
 import { AdminPagination } from "../admin-pagination";
 import { type SortState, SortableTableHead, toggleSort } from "../admin-sortable-head";
@@ -225,15 +227,13 @@ export default function AdminAgentMonitoringPage() {
           />
         </div>
 
-        <div className="border-line bg-surface rounded-lg border p-4">
+        <Card className="gap-0 p-4">
           {statsError ? (
             <AdminErrorState message={statsError} onRetry={() => setStatsReloadTick((t) => t + 1)} />
           ) : stats === null ? (
-            <div className="flex items-center justify-center p-10">
-              <Loader2 className="size-5 text-muted-foreground motion-safe:animate-spin" />
-            </div>
+            <AdminLoadingState />
           ) : chartData.length === 0 ? (
-            <p className="p-6 text-[13px] text-muted-foreground">No tool calls recorded yet.</p>
+            <AdminEmptyState title="No tool calls recorded yet" />
           ) : (
             <>
               <h3 className="mb-2 text-[13px] font-semibold text-muted-foreground">
@@ -242,7 +242,7 @@ export default function AdminAgentMonitoringPage() {
               <StatusBarChart data={chartData} height={200} />
             </>
           )}
-        </div>
+        </Card>
       </div>
 
       <div className="border-line bg-surface flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center">
@@ -260,24 +260,24 @@ export default function AdminAgentMonitoringPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {statusOptions.map((o) => (
-              <SelectItem key={o.value} value={o.value}>
-                {o.label}
-              </SelectItem>
-            ))}
+            <SelectGroup>
+              {statusOptions.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
           </SelectContent>
         </Select>
       </div>
 
-      <div className="border-line bg-surface rounded-lg border">
+      <Card className="py-0">
         {loadError ? (
           <AdminErrorState message={loadError} onRetry={() => setReloadTick((t) => t + 1)} />
         ) : runs === null ? (
-          <div className="flex items-center justify-center p-10">
-            <Loader2 className="size-5 text-muted-foreground motion-safe:animate-spin" />
-          </div>
+          <AdminLoadingState />
         ) : runs.length === 0 ? (
-          <p className="p-6 text-[13px] text-muted-foreground">No agent runs match these filters.</p>
+          <AdminEmptyState title="No agent runs match these filters" />
         ) : (
           <Table>
             <TableHeader>
@@ -331,7 +331,7 @@ export default function AdminAgentMonitoringPage() {
             </TableBody>
           </Table>
         )}
-      </div>
+      </Card>
 
       <AdminPagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
 
@@ -343,9 +343,7 @@ export default function AdminAgentMonitoringPage() {
           {detailError ? (
             <AdminErrorState message={detailError} onRetry={() => setDetailReloadTick((t) => t + 1)} />
           ) : selectedRun === null ? (
-            <div className="flex items-center justify-center p-10">
-              <Loader2 className="size-5 text-muted-foreground motion-safe:animate-spin" />
-            </div>
+            <AdminLoadingState />
           ) : (
             <RunDetail run={selectedRun} />
           )}
@@ -447,7 +445,7 @@ function RunDetail({ run }: { run: AgentRunDetail }) {
       {/* Conversation */}
       <div className="flex flex-col gap-1">
         <span className="flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground">
-          <MessageSquare className="size-3.5" /> User
+          <MessageSquare /> User
         </span>
         <p className="bg-surface-2 rounded-lg p-3 whitespace-pre-wrap">{run.user_message}</p>
       </div>
@@ -462,7 +460,7 @@ function RunDetail({ run }: { run: AgentRunDetail }) {
       {run.error_message && (
         <div className="flex flex-col gap-1">
           <span className="text-negative flex items-center gap-1.5 text-[12px] font-semibold">
-            <AlertTriangle className="size-3.5" /> Error
+            <AlertTriangle /> Error
           </span>
           <p className="bg-negative/10 text-negative rounded-lg p-3 whitespace-pre-wrap">
             {run.error_message}
@@ -557,20 +555,19 @@ function StatTile({
   return (
     <div className="border-line bg-surface flex items-center gap-3 rounded-lg border p-3">
       <span
-        className={
-          tone === "negative"
-            ? "bg-negative/10 text-negative flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-            : "bg-brand-tint text-brand flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-        }
+        className={cn(
+          "flex size-8 shrink-0 items-center justify-center rounded-full",
+          tone === "negative" ? "bg-negative/10 text-negative" : "bg-brand-tint text-brand",
+        )}
       >
         <Icon className="size-4" />
       </span>
       <div>
-        <div className={`text-xl font-bold tabular-nums ${tone === "negative" ? "text-negative" : ""}`}>
+        <div className={cn("text-xl font-bold tabular-nums", tone === "negative" && "text-negative")}>
           {error ? (
             "—"
           ) : value === undefined ? (
-            <Loader2 className="size-4 text-muted-foreground motion-safe:animate-spin" />
+            <Spinner className="size-4 text-muted-foreground" />
           ) : (
             `${value.toLocaleString()}${suffix}`
           )}

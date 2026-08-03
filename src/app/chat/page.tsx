@@ -10,7 +10,6 @@ import {
   Calculator,
   Check,
   ChevronDown,
-  Loader2,
   MessageSquare,
   MoreHorizontal,
   Pencil,
@@ -34,6 +33,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -47,6 +47,7 @@ import {
   MessageScrollerProvider,
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller";
+import { Spinner } from "@/components/ui/spinner";
 import {
   type AgentLaptopCard,
   type ConversationSummary,
@@ -314,14 +315,14 @@ function ThinkingFlow({ text, active }: { text: string; active: boolean }) {
         aria-expanded={open}
         className="flex w-full cursor-pointer items-center gap-2 text-[11.5px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
       >
-        <Brain className="text-brand h-3.5 w-3.5" />
+        <Brain className="text-brand size-3.5" />
         Thinking
         {active && (
-          <span className="border-brand-tint border-t-brand h-3 w-3 animate-spin rounded-full border-2" />
+          <span className="border-brand-tint border-t-brand size-3 animate-spin rounded-full border-2" />
         )}
         <ChevronDown
           className={cn(
-            "ml-auto h-3.5 w-3.5 transition-transform",
+            "ml-auto size-3.5 transition-transform",
             open && "rotate-180",
           )}
         />
@@ -354,10 +355,10 @@ function ThinkingDisclosure({ text }: { text: string }) {
         aria-expanded={open}
         className="flex items-center gap-1.5 self-start text-[11.5px] font-medium text-muted-foreground transition-colors hover:text-foreground"
       >
-        <Brain className="h-3.5 w-3.5" />
+        <Brain className="size-3.5" />
         Thinking
         <ChevronDown
-          className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-180")}
+          className={cn("size-3.5 transition-transform", open && "rotate-180")}
         />
       </button>
       {open && (
@@ -412,8 +413,8 @@ function ResultCard({
         >
           <PickScoreRing score={ringScore} size={42} caption="none" />
           {personalScore != null && (
-            <span className="bg-brand absolute -right-1 -bottom-1 flex h-4 w-4 items-center justify-center rounded-full text-white">
-              <UserRound className="h-2.5 w-2.5" />
+            <span className="bg-brand absolute -right-1 -bottom-1 flex size-4 items-center justify-center rounded-full text-white">
+              <UserRound className="size-2.5" />
             </span>
           )}
         </span>
@@ -700,7 +701,7 @@ export default function ChatPage() {
   if (isLoading || !user || !token) {
     return (
       <main className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="text-brand h-6 w-6 animate-spin" />
+        <Spinner className="text-brand size-6" />
       </main>
     );
   }
@@ -712,7 +713,7 @@ export default function ChatPage() {
     <>
       {personalScores && (
         <p className="flex items-start gap-1.5 text-[11px] leading-snug text-muted-foreground">
-          <UserRound className="text-brand mt-px h-3 w-3 flex-none" />
+          <UserRound className="text-brand mt-px size-3 flex-none" />
           PickScores personalized from your Needs Wizard answers — your
           budget, priorities and portability reweight each factor.
         </p>
@@ -738,7 +739,7 @@ export default function ChatPage() {
             onClick={startNewConversation}
             className="border-line bg-canvas mb-4 flex items-center justify-center gap-2 rounded-full border py-2.5 text-[13px] font-semibold transition-colors hover:border-brand hover:text-brand"
           >
-            <Plus className="h-3.5 w-3.5" /> New Conversation
+            <Plus className="size-3.5" /> New Conversation
           </button>
           <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto">
             {groupConversations(conversations).map((group) => (
@@ -761,7 +762,7 @@ export default function ChatPage() {
                       onClick={() => selectConversation(chat.id)}
                       className="flex min-w-0 flex-1 items-center gap-2 truncate px-3 py-2.5 text-left text-[13px] font-medium"
                     >
-                      <MessageSquare className="h-3.5 w-3.5 shrink-0" />
+                      <MessageSquare className="size-3.5 shrink-0" />
                       <span className="truncate">{chat.title}</span>
                     </button>
                     <DropdownMenu>
@@ -769,24 +770,26 @@ export default function ChatPage() {
                         aria-label={`Actions for "${chat.title}"`}
                         className="shrink-0 cursor-pointer rounded-md p-1 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 data-popup-open:opacity-100"
                       >
-                        <MoreHorizontal className="h-3.5 w-3.5" />
+                        <MoreHorizontal className="size-3.5" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start" sideOffset={4} className="w-36">
-                        <DropdownMenuItem
-                          onClick={() => openRename(chat)}
-                          className="cursor-pointer gap-2 text-[12.5px] font-medium"
-                        >
-                          <Pencil className="size-3.5" />
-                          Rename
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          variant="destructive"
-                          onClick={() => removeConversation(chat.id)}
-                          className="cursor-pointer gap-2 text-[12.5px] font-medium data-[variant=destructive]:text-negative data-[variant=destructive]:focus:bg-negative/10 data-[variant=destructive]:focus:text-negative"
-                        >
-                          <Trash2 className="size-3.5" />
-                          Delete
-                        </DropdownMenuItem>
+                        <DropdownMenuGroup>
+                          <DropdownMenuItem
+                            onClick={() => openRename(chat)}
+                            className="cursor-pointer gap-2 text-[12.5px] font-medium"
+                          >
+                            <Pencil className="size-3.5" />
+                            Rename
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => removeConversation(chat.id)}
+                            className="cursor-pointer gap-2 text-[12.5px] font-medium data-[variant=destructive]:text-negative data-[variant=destructive]:focus:bg-negative/10 data-[variant=destructive]:focus:text-negative"
+                          >
+                            <Trash2 className="size-3.5" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -808,8 +811,8 @@ export default function ChatPage() {
         >
           {/* Tile header */}
           <div className="border-line flex items-center gap-3 border-b px-5 py-3.5">
-            <div className="bg-brand flex h-9 w-9 items-center justify-center rounded-full text-white">
-              <Bot className="h-4.5 w-4.5" />
+            <div className="bg-brand flex size-9 items-center justify-center rounded-full text-white">
+              <Bot className="size-4.5" />
             </div>
             <div className="flex flex-col">
               <span className="text-[14px] leading-tight font-semibold">Pico</span>
@@ -818,7 +821,7 @@ export default function ChatPage() {
               </span>
             </div>
             {isStreaming && (
-              <span className="border-brand-tint border-t-brand ml-auto h-3.5 w-3.5 animate-spin rounded-full border-2" />
+              <span className="border-brand-tint border-t-brand ml-auto size-3.5 animate-spin rounded-full border-2" />
             )}
           </div>
 
@@ -830,8 +833,8 @@ export default function ChatPage() {
                 <MessageScrollerContent className="mx-auto w-full max-w-[680px] gap-5">
               {showEmptyState && (
                 <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
-                  <div className="bg-brand flex h-12 w-12 items-center justify-center rounded-full text-white">
-                    <Bot className="h-6 w-6" />
+                  <div className="bg-brand flex size-12 items-center justify-center rounded-full text-white">
+                    <Bot className="size-6" />
                   </div>
                   <div>
                     <h1 className="text-lg font-semibold">Hi, I&apos;m Pico</h1>
@@ -857,7 +860,7 @@ export default function ChatPage() {
 
               {threadLoading && (
                 <div className="flex justify-center pt-14">
-                  <Loader2 className="text-brand h-5 w-5 animate-spin" />
+                  <Spinner className="text-brand size-5" />
                 </div>
               )}
 
@@ -873,8 +876,8 @@ export default function ChatPage() {
                 ) : (
                   <MessageScrollerItem key={i} messageId={`m-${i}`}>
                     <div className="flex items-start gap-3">
-                    <div className="bg-brand mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-full text-white">
-                      <Bot className="h-4 w-4" />
+                    <div className="bg-brand mt-0.5 flex size-8 flex-none items-center justify-center rounded-full text-white">
+                      <Bot className="size-4" />
                     </div>
                     <div className="flex max-w-[85%] flex-col gap-1.5">
                       <span className="text-[11.5px] font-semibold text-muted-foreground">
@@ -911,7 +914,7 @@ export default function ChatPage() {
                         cornerRadius={999}
                         className="flex items-center gap-2 px-3.5 py-1.5 text-xs text-muted-foreground"
                       >
-                        <Check className="text-positive h-3 w-3" strokeWidth={2.6} />
+                        <Check className="text-positive size-3" strokeWidth={2.6} />
                         {chip.label}
                       </GlassSurface>
                     ) : (
@@ -919,14 +922,14 @@ export default function ChatPage() {
                         key={chip.id}
                         className="motion-safe:animate-shimmer flex items-center gap-2 rounded-full border border-line bg-[linear-gradient(100deg,var(--glass)_40%,var(--brand-tint)_50%,var(--glass)_60%)] bg-[length:200%_100%] px-3.5 py-1.5 text-xs text-muted-foreground shadow-[0_4px_16px_var(--shadow)]"
                       >
-                        <span className="border-brand-tint border-t-brand h-3 w-3 animate-spin rounded-full border-2" />
+                        <span className="border-brand-tint border-t-brand size-3 animate-spin rounded-full border-2" />
                         {chip.label}…
                       </div>
                     ),
                   )}
                   {activity.length === 0 && !streamText && !thinkingText && (
                     <div className="motion-safe:animate-shimmer flex items-center gap-2 rounded-full border border-line bg-[linear-gradient(100deg,var(--glass)_40%,var(--brand-tint)_50%,var(--glass)_60%)] bg-[length:200%_100%] px-3.5 py-1.5 text-xs text-muted-foreground shadow-[0_4px_16px_var(--shadow)]">
-                      <span className="border-brand-tint border-t-brand h-3 w-3 animate-spin rounded-full border-2" />
+                      <span className="border-brand-tint border-t-brand size-3 animate-spin rounded-full border-2" />
                       Pico is thinking…
                     </div>
                   )}
@@ -939,8 +942,8 @@ export default function ChatPage() {
                   messageId="live-reply"
                   className="flex items-start gap-3"
                 >
-                  <div className="bg-brand mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-full text-white">
-                    <Bot className="h-4 w-4" />
+                  <div className="bg-brand mt-0.5 flex size-8 flex-none items-center justify-center rounded-full text-white">
+                    <Bot className="size-4" />
                   </div>
                   <div className="flex max-w-[85%] flex-col gap-1.5">
                     <span className="text-[11.5px] font-semibold text-muted-foreground">
@@ -1004,12 +1007,12 @@ export default function ChatPage() {
                     type="submit"
                     aria-label="Send"
                     disabled={isStreaming || !input.trim()}
-                    className="bg-brand absolute right-[6px] bottom-[6px] flex h-10 w-10 items-center justify-center rounded-full text-white transition-transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+                    className="bg-brand absolute right-[6px] bottom-[6px] flex size-10 items-center justify-center rounded-full text-white transition-transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
                   >
                     {isStreaming ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Spinner className="size-4" />
                     ) : (
-                      <Send className="h-4 w-4" />
+                      <Send className="size-4" />
                     )}
                   </button>
                 </form>
@@ -1046,14 +1049,14 @@ export default function ChatPage() {
                 >
                   <span
                     className={cn(
-                      "bg-surface-2 flex h-7 w-7 items-center justify-center rounded-lg",
+                      "bg-surface-2 flex size-7 items-center justify-center rounded-lg",
                       activeTool === tool && "bg-brand text-white",
                     )}
                   >
                     {activeTool === tool ? (
-                      <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                      <span className="size-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />
                     ) : (
-                      <Icon className="text-brand h-3.5 w-3.5" />
+                      <Icon className="text-brand size-3.5" />
                     )}
                   </span>
                   {label}

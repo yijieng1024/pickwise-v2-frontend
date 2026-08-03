@@ -137,11 +137,11 @@ export default async function LaptopDetailsPage({
           href="/laptops"
           className="text-brand flex items-center gap-2 font-medium hover:underline"
         >
-          <ChevronLeft className="h-4 w-4" /> Back to Browse
+          <ChevronLeft className="size-4" /> Back to Browse
         </Link>
         <div className="flex items-center gap-3 text-muted-foreground">
           <button type="button" aria-label="Share">
-            <Share className="h-4 w-4 transition-colors hover:text-foreground" />
+            <Share className="size-4 transition-colors hover:text-foreground" />
           </button>
           <SaveButton laptopId={laptop.id} />
         </div>
@@ -163,7 +163,7 @@ export default async function LaptopDetailsPage({
                 )}
                 {bestFit && (
                   <span className="bg-brand-tint text-brand flex items-center gap-1 rounded-full px-2.5 py-1 text-[10.5px] font-semibold">
-                    <Sparkles className="h-3 w-3" />
+                    <Sparkles className="size-3" />
                     Best fit: {labelForUseCase(bestFit.use_case)}
                   </span>
                 )}
@@ -187,8 +187,8 @@ export default async function LaptopDetailsPage({
           <div className="grid grid-cols-1 gap-x-2.5 gap-y-3.5 min-[420px]:grid-cols-2">
             {quickFacts.map(({ label, value, icon: Icon }) => (
               <div key={label} className="flex items-start gap-2.5">
-                <span className="bg-surface-2 flex h-8 w-8 flex-none items-center justify-center rounded-[10px] text-muted-foreground">
-                  <Icon className="h-3.5 w-3.5" />
+                <span className="bg-surface-2 flex size-8 flex-none items-center justify-center rounded-[10px] text-muted-foreground">
+                  <Icon className="size-3.5" />
                 </span>
                 <span className="min-w-0">
                   <span className="block text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
@@ -217,7 +217,7 @@ export default async function LaptopDetailsPage({
               </span>
               {priceDrop > 0 && (
                 <span className="text-positive bg-positive/10 flex items-center gap-1 rounded-md px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase">
-                  <TrendingDown className="h-3 w-3" /> RM{" "}
+                  <TrendingDown className="size-3" /> RM{" "}
                   {priceDrop.toLocaleString()} below launch
                 </span>
               )}
@@ -227,7 +227,7 @@ export default async function LaptopDetailsPage({
               href="/chat"
               className="bg-brand flex items-center justify-center gap-2 rounded-full py-3.5 text-[13.5px] font-semibold text-white transition hover:opacity-90"
             >
-              <Bot className="h-4 w-4" /> Ask Pico about this laptop
+              <Bot className="size-4" /> Ask Pico about this laptop
             </Link>
           </div>
         </div>
@@ -268,7 +268,7 @@ export default async function LaptopDetailsPage({
             </span>
             {priceDrop > 0 && (
               <span className="text-positive mb-1 flex items-center gap-1 rounded-md bg-positive/10 px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase">
-                <TrendingDown className="h-3 w-3" /> Great deal
+                <TrendingDown className="size-3" /> Great deal
               </span>
             )}
           </div>
@@ -302,7 +302,7 @@ export default async function LaptopDetailsPage({
             type="button"
             className="bg-surface-2 mt-4 flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold transition hover:opacity-80"
           >
-            <Bell className="h-3 w-3" /> Set price drop alert
+            <Bell className="size-3" /> Set price drop alert
           </button>
         </section>
 
@@ -310,7 +310,7 @@ export default async function LaptopDetailsPage({
         {/* {!laptop.accessories && (
           <section className="border-line bg-surface rounded-3xl border p-7 md:col-span-6">
             <h2 className="mb-2 flex items-center gap-2 text-base font-semibold tracking-tight">
-              <Layers className="text-brand h-4 w-4" /> Recommended accessories
+              <Layers className="text-brand size-4" /> Recommended accessories
             </h2>
             <p className="text-sm text-muted-foreground">
               No specific accessories recommended at this time.
@@ -320,13 +320,13 @@ export default async function LaptopDetailsPage({
         {laptop.accessories && (
           <section className="border-line bg-surface rounded-3xl border p-7 md:col-span-6">
             <h2 className="mb-3 flex items-center gap-2 text-base font-semibold tracking-tight">
-              <Layers className="text-brand h-4 w-4" /> Pairs well with
+              <Layers className="text-brand size-4" /> Pairs well with
             </h2>
             <div className="flex flex-col gap-2.5">
               {laptop.accessories.map((acc) => (
                 <div key={acc.name} className="flex items-center gap-3">
-                  <div className="bg-surface-2 flex h-9.5 w-9.5 flex-none items-center justify-center rounded-[10px] text-muted-foreground">
-                    <DataIcon name={acc.icon} className="h-4.5 w-4.5" />
+                  <div className="bg-surface-2 flex size-9.5 flex-none items-center justify-center rounded-[10px] text-muted-foreground">
+                    <DataIcon name={acc.icon} className="size-4.5" />
                   </div>
                   <div className="text-[13px]">
                     <div className="font-medium">{acc.name}</div>
@@ -334,7 +334,7 @@ export default async function LaptopDetailsPage({
                       {acc.price}
                     </div>
                   </div>
-                  <PlusCircle className="ml-auto h-4 w-4 text-muted-foreground/40" />
+                  <PlusCircle className="ml-auto size-4 text-muted-foreground/40" />
                 </div>
               ))}
             </div>

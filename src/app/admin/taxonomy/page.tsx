@@ -27,11 +27,11 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -40,6 +40,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import {
   type Category,
   type CategoryInput,
@@ -57,7 +59,7 @@ import {
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 
-import { AdminErrorState } from "../admin-error-state";
+import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../admin-states";
 import { AdminPageHeader } from "../admin-page-header";
 
 export default function AdminTaxonomyPage() {
@@ -121,20 +123,18 @@ function ProductTypesSection() {
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold tracking-tight">Product types</h2>
         <Button size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus className="size-3.5" />
+          <Plus data-icon="inline-start" />
           New product type
         </Button>
       </div>
 
-      <div className="border-line bg-surface rounded-lg border">
+      <Card className="py-0">
         {loadError ? (
           <AdminErrorState message={loadError} onRetry={() => setReloadTick((t) => t + 1)} />
         ) : items === null ? (
-          <div className="flex items-center justify-center p-10">
-            <Loader2 className="size-5 text-muted-foreground motion-safe:animate-spin" />
-          </div>
+          <AdminLoadingState />
         ) : items.length === 0 ? (
-          <p className="p-6 text-[13px] text-muted-foreground">No product types yet.</p>
+          <AdminEmptyState title="No product types yet" />
         ) : (
           <Table>
             <TableHeader>
@@ -159,17 +159,19 @@ function ProductTypesSection() {
                         render={<Button variant="ghost" size="icon-sm" />}
                         aria-label="Row actions"
                       >
-                        <MoreHorizontal className="size-3.5" />
+                        <MoreHorizontal />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setEditTarget(pt)}>
-                          <Pencil className="size-3.5" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(pt)}>
-                          <Trash2 className="size-3.5" />
-                          Delete
-                        </DropdownMenuItem>
+                        <DropdownMenuGroup>
+                          <DropdownMenuItem onClick={() => setEditTarget(pt)}>
+                            <Pencil />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(pt)}>
+                            <Trash2 />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -178,7 +180,7 @@ function ProductTypesSection() {
             </TableBody>
           </Table>
         )}
-      </div>
+      </Card>
 
       <ProductTypeFormDialog
         mode="create"
@@ -276,10 +278,12 @@ function ProductTypeFormDialog({
           <DialogTitle>{mode === "create" ? "New product type" : `Edit ${item?.name}`}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-xs font-semibold">
-            Name
-            <Input value={name} onChange={(e) => setName(e.target.value)} required />
-          </label>
+          <FieldGroup>
+            <Field>
+              <FieldLabel>Name</FieldLabel>
+              <Input value={name} onChange={(e) => setName(e.target.value)} required />
+            </Field>
+          </FieldGroup>
           <label className="flex items-center gap-2 text-xs font-semibold">
             <Checkbox checked={isActive} onCheckedChange={(c) => setIsActive(c === true)} />
             Active
@@ -342,20 +346,18 @@ function CategoriesSection() {
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold tracking-tight">Categories</h2>
         <Button size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus className="size-3.5" />
+          <Plus data-icon="inline-start" />
           New category
         </Button>
       </div>
 
-      <div className="border-line bg-surface rounded-lg border">
+      <Card className="py-0">
         {loadError ? (
           <AdminErrorState message={loadError} onRetry={() => setReloadTick((t) => t + 1)} />
         ) : items === null ? (
-          <div className="flex items-center justify-center p-10">
-            <Loader2 className="size-5 text-muted-foreground motion-safe:animate-spin" />
-          </div>
+          <AdminLoadingState />
         ) : items.length === 0 ? (
-          <p className="p-6 text-[13px] text-muted-foreground">No categories yet.</p>
+          <AdminEmptyState title="No categories yet" />
         ) : (
           <Table>
             <TableHeader>
@@ -380,17 +382,19 @@ function CategoriesSection() {
                         render={<Button variant="ghost" size="icon-sm" />}
                         aria-label="Row actions"
                       >
-                        <MoreHorizontal className="size-3.5" />
+                        <MoreHorizontal />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setEditTarget(c)}>
-                          <Pencil className="size-3.5" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(c)}>
-                          <Trash2 className="size-3.5" />
-                          Delete
-                        </DropdownMenuItem>
+                        <DropdownMenuGroup>
+                          <DropdownMenuItem onClick={() => setEditTarget(c)}>
+                            <Pencil />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(c)}>
+                            <Trash2 />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -399,7 +403,7 @@ function CategoriesSection() {
             </TableBody>
           </Table>
         )}
-      </div>
+      </Card>
 
       <CategoryFormDialog
         mode="create"
@@ -503,14 +507,16 @@ function CategoryFormDialog({
           <DialogTitle>{mode === "create" ? "New category" : `Edit ${item?.name}`}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-xs font-semibold">
-            Name
-            <Input value={name} onChange={(e) => setName(e.target.value)} required />
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-semibold">
-            Icon URL (optional)
-            <Input value={iconUrl ?? ""} onChange={(e) => setIconUrl(e.target.value)} />
-          </label>
+          <FieldGroup>
+            <Field>
+              <FieldLabel>Name</FieldLabel>
+              <Input value={name} onChange={(e) => setName(e.target.value)} required />
+            </Field>
+            <Field>
+              <FieldLabel>Icon URL (optional)</FieldLabel>
+              <Input value={iconUrl ?? ""} onChange={(e) => setIconUrl(e.target.value)} />
+            </Field>
+          </FieldGroup>
           <label className="flex items-center gap-2 text-xs font-semibold">
             <Checkbox checked={isActive} onCheckedChange={(c) => setIsActive(c === true)} />
             Active

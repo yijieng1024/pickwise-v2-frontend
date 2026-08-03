@@ -147,7 +147,7 @@ export const laptops: Laptop[] = [
     image:
       "https://images.unsplash.com/photo-1603302576837-37561b2e2302?auto=format&fit=crop&q=80&w=600",
     badge: "Performance King",
-    badgeClass: "bg-purple-100 text-purple-800",
+    badgeClass: "bg-brand-tint text-brand",
     specs: { cpu: "Ryzen 9 8945HS", ram: "16GB DDR5", gpu: "RTX 4060" },
     tags: ["Gaming", "RTX 4060", "OLED", "Compact Power"],
     plainEnglish: [
@@ -289,7 +289,7 @@ export const laptops: Laptop[] = [
     image:
       "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?auto=format&fit=crop&q=80&w=600",
     badge: "Value Pick",
-    badgeClass: "bg-green-100 text-green-800",
+    badgeClass: "bg-positive/10 text-positive",
     specs: {
       cpu: "Intel Core Ultra 5",
       ram: "16GB LPDDR5",
@@ -360,7 +360,7 @@ export const laptops: Laptop[] = [
     image:
       "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?auto=format&fit=crop&q=80&w=600",
     badge: "Mid-Range Gaming",
-    badgeClass: "bg-red-100 text-red-800",
+    badgeClass: "bg-negative/10 text-negative",
     specs: { cpu: "Ryzen 7 7840HS", ram: "16GB DDR5", gpu: "RTX 4060" },
     tags: ["Gaming", "RTX 4060", "1440p Ready", "Great Cooling"],
     plainEnglish: [

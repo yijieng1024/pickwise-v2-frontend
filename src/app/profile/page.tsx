@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import {
   BadgeCheck,
   Calendar as CalendarIcon,
-  Loader2,
   MailWarning,
   Wand2,
 } from "lucide-react";
@@ -25,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Spinner } from "@/components/ui/spinner";
 import { UserAvatar } from "@/components/user-avatar";
 import {
   type AuthUser,
@@ -74,7 +74,7 @@ export default function ProfilePage() {
   if (isLoading || !user || !token) {
     return (
       <main className="flex w-full flex-1 items-center justify-center py-24">
-        <Loader2 className="h-6 w-6 text-muted-foreground motion-safe:animate-spin" />
+        <Spinner className="size-6 text-muted-foreground" />
       </main>
     );
   }
@@ -153,7 +153,7 @@ function AccountCard({ user }: { user: AuthUser }) {
       <UserAvatar
         userId={user.id}
         username={user.username}
-        className="h-16 w-16 text-2xl"
+        className="size-16 text-2xl"
       />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
@@ -162,12 +162,12 @@ function AccountCard({ user }: { user: AuthUser }) {
           </h2>
           {user.is_verified ? (
             <span className="flex items-center gap-1 rounded-full bg-positive/10 px-2.5 py-0.5 text-[11px] font-semibold text-positive">
-              <BadgeCheck className="h-3 w-3" />
+              <BadgeCheck className="size-3" />
               Verified
             </span>
           ) : (
             <span className="flex items-center gap-1 rounded-full bg-negative/10 px-2.5 py-0.5 text-[11px] font-semibold text-negative">
-              <MailWarning className="h-3 w-3" />
+              <MailWarning className="size-3" />
               Email not verified
             </span>
           )}
@@ -413,14 +413,14 @@ function PreferencesCard({ token }: { token: string }) {
           href="/wizard"
           className="flex items-center gap-1.5 rounded-full bg-brand-tint px-4 py-2 text-[12.5px] font-semibold text-brand transition-opacity hover:opacity-80"
         >
-          <Wand2 className="h-3.5 w-3.5" />
+          <Wand2 className="size-3.5" />
           {hasPrefs ? "Update in the wizard" : "Take the Needs Wizard"}
         </Link>
       </div>
 
       <div className="mt-5">
         {status === "loading" && (
-          <Loader2 className="h-5 w-5 text-muted-foreground motion-safe:animate-spin" />
+          <Spinner className="size-5 text-muted-foreground" />
         )}
         {status === "error" && (
           <p className="text-[13px] text-muted-foreground">

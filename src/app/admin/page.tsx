@@ -7,7 +7,6 @@ import {
   Cpu,
   FolderTree,
   Laptop2,
-  Loader2,
   PackageSearch,
   RefreshCw,
   Sparkles,
@@ -18,6 +17,7 @@ import {
 
 import { StatusBarChart } from "@/components/charts/status-bar-chart";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { listBrands } from "@/lib/api/admin/brands";
 import { apiFetch } from "@/lib/api/client";
 import { getEmbeddingStatus } from "@/lib/api/admin/embeddings";
@@ -25,6 +25,9 @@ import { listRawScrapLaptops } from "@/lib/api/admin/scraper";
 import { listUsers } from "@/lib/api/admin/users";
 import type { BackendLaptop } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth-context";
+import { cn } from "@/lib/utils";
+
+import { AdminEmptyState } from "./admin-states";
 
 interface Stats {
   userCount: number;
@@ -184,7 +187,7 @@ export default function AdminDashboardPage() {
         </div>
         {error && (
           <Button variant="outline" size="sm" onClick={() => setReloadTick((t) => t + 1)}>
-            <RefreshCw className="size-3.5" />
+            <RefreshCw data-icon="inline-start" />
             Retry
           </Button>
         )}
@@ -239,10 +242,10 @@ export default function AdminDashboardPage() {
               </p>
             ) : !stats ? (
               <div className="flex items-center justify-center p-10">
-                <Loader2 className="size-5 text-muted-foreground motion-safe:animate-spin" />
+                <Spinner className="size-5 text-muted-foreground" />
               </div>
             ) : recentLaptops.length === 0 ? (
-              <p className="p-6 text-[13px] text-muted-foreground">No laptops yet.</p>
+              <AdminEmptyState title="No laptops yet" />
             ) : (
               <ul className="border-line divide-line divide-y">
                 {recentLaptops.map((l) => (
@@ -278,10 +281,10 @@ export default function AdminDashboardPage() {
               </p>
             ) : !stats ? (
               <div className="flex items-center justify-center p-10">
-                <Loader2 className="size-5 text-muted-foreground motion-safe:animate-spin" />
+                <Spinner className="size-5 text-muted-foreground" />
               </div>
             ) : brandBreakdown.length === 0 ? (
-              <p className="p-6 text-[13px] text-muted-foreground">No laptops yet.</p>
+              <AdminEmptyState title="No laptops yet" />
             ) : (
               <div className="flex flex-col gap-3">
                 {brandBreakdown.map((b) => (
@@ -313,7 +316,7 @@ export default function AdminDashboardPage() {
             </p>
           ) : !stats ? (
             <div className="flex items-center justify-center p-10">
-              <Loader2 className="size-5 text-muted-foreground motion-safe:animate-spin" />
+              <Spinner className="size-5 text-muted-foreground" />
             </div>
           ) : (
             <StatusBarChart
@@ -371,20 +374,19 @@ function StatTile({
   return (
     <div className="border-line bg-surface flex items-center gap-3 rounded-lg border p-3">
       <span
-        className={
-          tone === "negative"
-            ? "bg-negative/10 text-negative flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-            : "bg-brand-tint text-brand flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-        }
+        className={cn(
+          "flex size-8 shrink-0 items-center justify-center rounded-full",
+          tone === "negative" ? "bg-negative/10 text-negative" : "bg-brand-tint text-brand",
+        )}
       >
         <Icon className="size-4" />
       </span>
       <div>
-        <div className={`text-xl font-bold tabular-nums ${tone === "negative" ? "text-negative" : ""}`}>
+        <div className={cn("text-xl font-bold tabular-nums", tone === "negative" && "text-negative")}>
           {error ? (
             "—"
           ) : value === undefined ? (
-            <Loader2 className="size-4 text-muted-foreground motion-safe:animate-spin" />
+            <Spinner className="size-4 text-muted-foreground" />
           ) : (
             `${value.toLocaleString()}${suffix}`
           )}

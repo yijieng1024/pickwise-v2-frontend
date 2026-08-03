@@ -122,7 +122,7 @@ export function LaptopCard({
               >
                 <DataIcon
                   name={pe.icon}
-                  className="text-brand mt-0.5 h-3.5 w-3.5 shrink-0"
+                  className="text-brand mt-0.5 size-3.5 shrink-0"
                 />
                 {pe.text}
               </div>

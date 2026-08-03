@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, MoreHorizontal, Pencil, PlayCircle, Plus, Search, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, PlayCircle, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -25,6 +25,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -37,6 +38,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import {
   type GpuBenchmark,
   type GpuBenchmarkInput,
@@ -49,7 +52,7 @@ import {
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 
-import { AdminErrorState } from "../../admin-error-state";
+import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
 import { AdminPageHeader } from "../../admin-page-header";
 import { AdminPagination } from "../../admin-pagination";
 import { type SortState, SortableTableHead, toggleSort } from "../../admin-sortable-head";
@@ -156,11 +159,11 @@ export default function AdminGpuBenchmarksPage() {
         action={
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={runScraper} disabled={scraping}>
-              <PlayCircle className="size-3.5" />
+              <PlayCircle data-icon="inline-start" />
               {scraping ? "Starting…" : "Run PassMark scraper"}
             </Button>
             <Button size="sm" onClick={() => setCreateOpen(true)}>
-              <Plus className="size-3.5" />
+              <Plus data-icon="inline-start" />
               New entry
             </Button>
           </div>
@@ -177,15 +180,13 @@ export default function AdminGpuBenchmarksPage() {
         />
       </div>
 
-      <div className="border-line bg-surface rounded-lg border">
+      <Card className="py-0">
         {loadError ? (
           <AdminErrorState message={loadError} onRetry={() => setReloadTick((t) => t + 1)} />
         ) : items === null ? (
-          <div className="flex items-center justify-center p-10">
-            <Loader2 className="size-5 text-muted-foreground motion-safe:animate-spin" />
-          </div>
+          <AdminLoadingState />
         ) : items.length === 0 ? (
-          <p className="p-6 text-[13px] text-muted-foreground">No GPU benchmarks match.</p>
+          <AdminEmptyState title="No GPU benchmarks match" />
         ) : (
           <Table>
             <TableHeader>
@@ -216,17 +217,19 @@ export default function AdminGpuBenchmarksPage() {
                         render={<Button variant="ghost" size="icon-sm" />}
                         aria-label="Row actions"
                       >
-                        <MoreHorizontal className="size-3.5" />
+                        <MoreHorizontal />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setEditTarget(gpu)}>
-                          <Pencil className="size-3.5" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(gpu)}>
-                          <Trash2 className="size-3.5" />
-                          Delete
-                        </DropdownMenuItem>
+                        <DropdownMenuGroup>
+                          <DropdownMenuItem onClick={() => setEditTarget(gpu)}>
+                            <Pencil />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(gpu)}>
+                            <Trash2 />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -235,7 +238,7 @@ export default function AdminGpuBenchmarksPage() {
             </TableBody>
           </Table>
         )}
-      </div>
+      </Card>
 
       <AdminPagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
 
@@ -335,14 +338,16 @@ function GpuFormDialog({
           <DialogTitle>{mode === "create" ? "New GPU benchmark" : `Edit ${item?.gpu_name}`}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-xs font-semibold">
-            GPU name
-            <Input value={gpuName} onChange={(e) => setGpuName(e.target.value)} required />
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-semibold">
-            PassMark score
-            <Input type="number" value={gpuMark} onChange={(e) => setGpuMark(e.target.value)} required />
-          </label>
+          <FieldGroup>
+            <Field>
+              <FieldLabel>GPU name</FieldLabel>
+              <Input value={gpuName} onChange={(e) => setGpuName(e.target.value)} required />
+            </Field>
+            <Field>
+              <FieldLabel>PassMark score</FieldLabel>
+              <Input type="number" value={gpuMark} onChange={(e) => setGpuMark(e.target.value)} required />
+            </Field>
+          </FieldGroup>
           {error && <p className="text-[13px] font-medium text-negative">{error}</p>}
           <DialogFooter>
             <Button type="submit" disabled={saving}>

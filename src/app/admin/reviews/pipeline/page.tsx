@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, PlayCircle } from "lucide-react";
+import { PlayCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
 import {
   type AggregateResult,
   type IngestBulkResult,
@@ -19,6 +20,7 @@ import { ApiError } from "@/lib/api/client";
 import type { BackendLaptop } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth-context";
 
+import { OutcomeAlert, outcomeOf } from "../../admin-outcome-alert";
 import { AdminPageHeader } from "../../admin-page-header";
 import { LaptopPicker } from "../../laptop-picker";
 
@@ -55,12 +57,6 @@ function SectionCard({
       </div>
       {children}
     </section>
-  );
-}
-
-function ResultBox({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="border-line bg-surface rounded-lg border p-3 text-[13px]">{children}</div>
   );
 }
 
@@ -108,23 +104,20 @@ function IngestSection() {
           Skip already-covered families
         </label>
         <Button onClick={run} disabled={running} className="mb-0.5">
-          {running ? <Loader2 className="size-3.5 motion-safe:animate-spin" /> : <PlayCircle className="size-3.5" />}
+          {running ? <Spinner data-icon="inline-start" /> : <PlayCircle data-icon="inline-start" />}
           {running ? "Ingesting…" : "Run ingest"}
         </Button>
       </div>
 
       {result && (
-        <ResultBox>
-          {result.message ? (
-            <p className="text-muted-foreground">{result.message}</p>
-          ) : (
-            <p className="text-muted-foreground">
-              {result.families_attempted ?? 0} searched of {result.families_total ?? 0} families ·{" "}
-              {result.families_already_covered ?? 0} already covered · {result.families_remaining ?? 0} remaining.
-              {result.matched !== undefined && ` Matched ${result.matched}, ${result.pending ?? 0} pending.`}
-            </p>
-          )}
-        </ResultBox>
+        <OutcomeAlert
+          status="success"
+          title={result.message ?? `Ingest done — ${result.families_attempted ?? 0} families searched`}
+        >
+          {result.families_attempted ?? 0} searched of {result.families_total ?? 0} families ·{" "}
+          {result.families_already_covered ?? 0} already covered · {result.families_remaining ?? 0} remaining.
+          {result.matched !== undefined && ` Matched ${result.matched}, ${result.pending ?? 0} pending.`}
+        </OutcomeAlert>
       )}
     </SectionCard>
   );
@@ -169,18 +162,19 @@ function ProcessSection() {
           />
         </label>
         <Button onClick={run} disabled={running} className="mb-0.5">
-          {running ? <Loader2 className="size-3.5 motion-safe:animate-spin" /> : <PlayCircle className="size-3.5" />}
+          {running ? <Spinner data-icon="inline-start" /> : <PlayCircle data-icon="inline-start" />}
           {running ? "Processing…" : "Run processing"}
         </Button>
       </div>
 
       {result && (
-        <ResultBox>
-          <p className="text-muted-foreground">
-            {result.processed} processed of {result.candidates} candidates
-            {result.failed > 0 && `, ${result.failed} failed`} — {result.chunks_saved} chunks saved.
-          </p>
-        </ResultBox>
+        <OutcomeAlert
+          status={outcomeOf(result.processed, result.failed)}
+          title={`${result.processed} processed, ${result.failed} failed`}
+        >
+          {result.processed} processed of {result.candidates} candidates — {result.chunks_saved}{" "}
+          chunks saved.
+        </OutcomeAlert>
       )}
     </SectionCard>
   );
@@ -217,14 +211,15 @@ function AggregateSection() {
           <LaptopPicker selected={laptop} onSelect={setLaptop} placeholder="Search a laptop to aggregate…" />
         </div>
         <Button onClick={run} disabled={running || !laptop}>
-          {running ? <Loader2 className="size-3.5 motion-safe:animate-spin" /> : <PlayCircle className="size-3.5" />}
+          {running ? <Spinner data-icon="inline-start" /> : <PlayCircle data-icon="inline-start" />}
           {running ? "Aggregating…" : "Aggregate"}
         </Button>
       </div>
 
       {result && (
-        <ResultBox>
-          <p className="mb-2 font-semibold">{result.review_count} reviews aggregated.</p>
+        // "info" rather than "success" here: the strength/weakness lists carry
+        // their own positive/negative colors and read better on a neutral tint.
+        <OutcomeAlert status="info" title={`${result.review_count} reviews aggregated`}>
           {result.strengths.length > 0 && (
             <div className="mb-2">
               <span className="text-positive text-[12px] font-semibold uppercase">Strengths</span>
@@ -245,7 +240,7 @@ function AggregateSection() {
               </ul>
             </div>
           )}
-        </ResultBox>
+        </OutcomeAlert>
       )}
     </SectionCard>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Link2, Loader2, MoreHorizontal, RefreshCw, Search } from "lucide-react";
+import { Link2, MoreHorizontal, RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -23,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -35,6 +37,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
 import {
   type RawReview,
   type RawReviewStatus,
@@ -47,7 +51,7 @@ import type { BackendLaptop } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
-import { AdminErrorState } from "../../admin-error-state";
+import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
 import { AdminPageHeader } from "../../admin-page-header";
 import { AdminPagination } from "../../admin-pagination";
 import { LaptopPicker } from "../../laptop-picker";
@@ -150,7 +154,11 @@ export default function AdminRawReviewsPage() {
         description="Ingested YouTube reviews and how they matched to catalog laptops."
         action={
           <Button variant="outline" size="sm" onClick={runRematch} disabled={rematching}>
-            <RefreshCw className={`size-3.5 ${rematching ? "motion-safe:animate-spin" : ""}`} />
+            {rematching ? (
+              <Spinner data-icon="inline-start" />
+            ) : (
+              <RefreshCw data-icon="inline-start" />
+            )}
             {rematching ? "Rematching…" : "Rematch pending"}
           </Button>
         }
@@ -171,24 +179,24 @@ export default function AdminRawReviewsPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {statusOptions.map((o) => (
-              <SelectItem key={o.value} value={o.value}>
-                {o.label}
-              </SelectItem>
-            ))}
+            <SelectGroup>
+              {statusOptions.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
           </SelectContent>
         </Select>
       </div>
 
-      <div className="border-line bg-surface rounded-lg border">
+      <Card className="py-0">
         {loadError ? (
           <AdminErrorState message={loadError} onRetry={() => setReloadTick((t) => t + 1)} />
         ) : reviews === null ? (
-          <div className="flex items-center justify-center p-10">
-            <Loader2 className="size-5 text-muted-foreground motion-safe:animate-spin" />
-          </div>
+          <AdminLoadingState />
         ) : filtered.length === 0 ? (
-          <p className="p-6 text-[13px] text-muted-foreground">No reviews match.</p>
+          <AdminEmptyState title="No reviews match" />
         ) : (
           <Table>
             <TableHeader>
@@ -229,13 +237,15 @@ export default function AdminRawReviewsPage() {
                         render={<Button variant="ghost" size="icon-sm" />}
                         aria-label="Row actions"
                       >
-                        <MoreHorizontal className="size-3.5" />
+                        <MoreHorizontal />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setMatchTarget(r)}>
-                          <Link2 className="size-3.5" />
-                          Match to laptop…
-                        </DropdownMenuItem>
+                        <DropdownMenuGroup>
+                          <DropdownMenuItem onClick={() => setMatchTarget(r)}>
+                            <Link2 />
+                            Match to laptop…
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -244,7 +254,7 @@ export default function AdminRawReviewsPage() {
             </TableBody>
           </Table>
         )}
-      </div>
+      </Card>
 
       <AdminPagination page={page} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} />
 

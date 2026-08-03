@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ExternalLink, Loader2, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { ExternalLink, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -31,12 +32,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 import { deleteLaptop, listLaptops } from "@/lib/api/admin/laptops";
 import { apiFetch, ApiError } from "@/lib/api/client";
 import type { BackendBrand, BackendLaptop } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth-context";
 
-import { AdminErrorState } from "../../admin-error-state";
+import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
 import { AdminPageHeader } from "../../admin-page-header";
 import { AdminPagination } from "../../admin-pagination";
 import { type SortState, SortableTableHead, toggleSort } from "../../admin-sortable-head";
@@ -140,13 +142,13 @@ export default function AdminCatalogLaptopsPage() {
         description="Full catalog listing and spec editing."
         action={
           <Button size="sm" render={<Link href="/admin/catalog/laptops/new" />} nativeButton={false}>
-            <Plus className="size-3.5" />
+            <Plus data-icon="inline-start" />
             New laptop
           </Button>
         }
       />
 
-      <div className="border-line bg-surface rounded-lg border p-4">
+      <Card className="gap-0 p-4">
         <div className="relative max-w-xs">
           <Search className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -156,17 +158,15 @@ export default function AdminCatalogLaptopsPage() {
             className="pl-8"
           />
         </div>
-      </div>
+      </Card>
 
-      <div className="border-line bg-surface rounded-lg border">
+      <Card className="py-0">
         {loadError ? (
           <AdminErrorState message={loadError} onRetry={() => setReloadTick((t) => t + 1)} />
         ) : laptops === null ? (
-          <div className="flex items-center justify-center p-10">
-            <Loader2 className="size-5 text-muted-foreground motion-safe:animate-spin" />
-          </div>
+          <AdminLoadingState />
         ) : laptops.length === 0 ? (
-          <p className="p-6 text-[13px] text-muted-foreground">No laptops match.</p>
+          <AdminEmptyState title="No laptops match" />
         ) : (
           <Table>
             <TableHeader>
@@ -194,21 +194,23 @@ export default function AdminCatalogLaptopsPage() {
                         render={<Button variant="ghost" size="icon-sm" />}
                         aria-label="Row actions"
                       >
-                        <MoreHorizontal className="size-3.5" />
+                        <MoreHorizontal />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem render={<Link href={`/laptops/${l.id}`} target="_blank" />}>
-                          <ExternalLink className="size-3.5" />
-                          View
-                        </DropdownMenuItem>
-                        <DropdownMenuItem render={<Link href={`/admin/catalog/laptops/${l.id}/edit`} />}>
-                          <Pencil className="size-3.5" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem variant="destructive" onClick={() => setTarget(l)}>
-                          <Trash2 className="size-3.5" />
-                          Delete
-                        </DropdownMenuItem>
+                        <DropdownMenuGroup>
+                          <DropdownMenuItem render={<Link href={`/laptops/${l.id}`} target="_blank" />}>
+                            <ExternalLink />
+                            View
+                          </DropdownMenuItem>
+                          <DropdownMenuItem render={<Link href={`/admin/catalog/laptops/${l.id}/edit`} />}>
+                            <Pencil />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem variant="destructive" onClick={() => setTarget(l)}>
+                            <Trash2 />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -217,7 +219,7 @@ export default function AdminCatalogLaptopsPage() {
             </TableBody>
           </Table>
         )}
-      </div>
+      </Card>
 
       <AdminPagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
 

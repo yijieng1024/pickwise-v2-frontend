@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, PlayCircle, RefreshCw } from "lucide-react";
+import { PlayCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import {
   type EmbeddingStatus,
   type GenerateAllResult,
@@ -14,6 +15,7 @@ import {
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 
+import { OutcomeAlert } from "../admin-outcome-alert";
 import { AdminPageHeader } from "../admin-page-header";
 
 export default function AdminEmbeddingsPage() {
@@ -78,14 +80,14 @@ export default function AdminEmbeddingsPage() {
       <div className="flex flex-wrap items-center gap-3">
         <Button onClick={runGenerateAll} disabled={running}>
           {running ? (
-            <Loader2 className="size-3.5 motion-safe:animate-spin" />
+            <Spinner data-icon="inline-start" />
           ) : (
-            <PlayCircle className="size-3.5" />
+            <PlayCircle data-icon="inline-start" />
           )}
           {running ? "Starting…" : "Generate all"}
         </Button>
         <Button variant="outline" onClick={() => setReloadTick((t) => t + 1)}>
-          <RefreshCw className="size-3.5" />
+          <RefreshCw data-icon="inline-start" />
           Refresh status
         </Button>
         {status && (
@@ -96,10 +98,9 @@ export default function AdminEmbeddingsPage() {
       </div>
 
       {result && (
-        <div className="border-line bg-surface rounded-lg border p-3 text-[13px]">
-          <p className="font-semibold">{result.message}</p>
-          <p className="text-muted-foreground">{result.tip}</p>
-        </div>
+        <OutcomeAlert status="success" title={result.message}>
+          {result.tip}
+        </OutcomeAlert>
       )}
     </div>
   );
@@ -120,7 +121,7 @@ function StatTile({
         {error ? (
           "—"
         ) : value === undefined ? (
-          <Loader2 className="size-4 text-muted-foreground motion-safe:animate-spin" />
+          <Spinner className="size-4 text-muted-foreground" />
         ) : (
           value.toLocaleString()
         )}

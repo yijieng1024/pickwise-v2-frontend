@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -27,6 +27,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -39,6 +40,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import {
   type Brand,
   type BrandCreateInput,
@@ -50,7 +53,7 @@ import {
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 
-import { AdminErrorState } from "../../admin-error-state";
+import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
 import { AdminPageHeader } from "../../admin-page-header";
 
 export default function AdminCatalogBrandsPage() {
@@ -102,21 +105,19 @@ export default function AdminCatalogBrandsPage() {
         description="Full CRUD — scrape source, icon, active state."
         action={
           <Button size="sm" onClick={() => setCreateOpen(true)}>
-            <Plus className="size-3.5" />
+            <Plus data-icon="inline-start" />
             New brand
           </Button>
         }
       />
 
-      <div className="border-line bg-surface rounded-lg border">
+      <Card className="py-0">
         {loadError ? (
           <AdminErrorState message={loadError} onRetry={() => setReloadTick((t) => t + 1)} />
         ) : brands === null ? (
-          <div className="flex items-center justify-center p-10">
-            <Loader2 className="size-5 text-muted-foreground motion-safe:animate-spin" />
-          </div>
+          <AdminLoadingState />
         ) : brands.length === 0 ? (
-          <p className="p-6 text-[13px] text-muted-foreground">No brands yet.</p>
+          <AdminEmptyState title="No brands yet" />
         ) : (
           <Table>
             <TableHeader>
@@ -145,17 +146,19 @@ export default function AdminCatalogBrandsPage() {
                         render={<Button variant="ghost" size="icon-sm" />}
                         aria-label="Row actions"
                       >
-                        <MoreHorizontal className="size-3.5" />
+                        <MoreHorizontal />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setEditTarget(b)}>
-                          <Pencil className="size-3.5" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(b)}>
-                          <Trash2 className="size-3.5" />
-                          Delete
-                        </DropdownMenuItem>
+                        <DropdownMenuGroup>
+                          <DropdownMenuItem onClick={() => setEditTarget(b)}>
+                            <Pencil />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(b)}>
+                            <Trash2 />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -164,7 +167,7 @@ export default function AdminCatalogBrandsPage() {
             </TableBody>
           </Table>
         )}
-      </div>
+      </Card>
 
       <BrandFormDialog
         mode="create"
@@ -274,22 +277,24 @@ function BrandFormDialog({
           <DialogTitle>{mode === "create" ? "New brand" : `Edit ${brand?.name}`}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-xs font-semibold">
-            Name
-            <Input value={name} onChange={(e) => setName(e.target.value)} required />
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-semibold">
-            Base scrape URL
-            <Input
-              value={baseScrapeUrl}
-              onChange={(e) => setBaseScrapeUrl(e.target.value)}
-              required
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-semibold">
-            Icon URL (optional)
-            <Input value={iconsUrl ?? ""} onChange={(e) => setIconsUrl(e.target.value)} />
-          </label>
+          <FieldGroup>
+            <Field>
+              <FieldLabel>Name</FieldLabel>
+              <Input value={name} onChange={(e) => setName(e.target.value)} required />
+            </Field>
+            <Field>
+              <FieldLabel>Base scrape URL</FieldLabel>
+              <Input
+                value={baseScrapeUrl}
+                onChange={(e) => setBaseScrapeUrl(e.target.value)}
+                required
+              />
+            </Field>
+            <Field>
+              <FieldLabel>Icon URL (optional)</FieldLabel>
+              <Input value={iconsUrl ?? ""} onChange={(e) => setIconsUrl(e.target.value)} />
+            </Field>
+          </FieldGroup>
           <label className="flex items-center gap-2 text-xs font-semibold">
             <Checkbox checked={isActive} onCheckedChange={(c) => setIsActive(c === true)} />
             Active

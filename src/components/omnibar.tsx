@@ -42,7 +42,7 @@ export function Omnibar() {
         type="button"
         aria-label="Ask Pico"
         onClick={() => router.push("/chat")}
-        className="bg-brand absolute top-2 right-2 flex h-12 w-12 items-center justify-center rounded-full text-white transition-transform hover:scale-105"
+        className="bg-brand absolute top-2 right-2 flex size-12 items-center justify-center rounded-full text-white transition-transform hover:scale-105"
       >
         <ArrowUp className="h-[18px] w-[18px]" strokeWidth={2.2} />
       </button>

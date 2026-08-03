@@ -68,13 +68,20 @@ export function bulkScrape(token: string, brandId: string): Promise<BulkScrapeRe
   });
 }
 
+/**
+ * A price entry as scraped. The backend column is untyped JSONB (its model
+ * annotates `List[str]` but never enforces it) and the ASUS scraper writes
+ * `[{ price: "RM 4,999" }]`, so entries can be either shape.
+ */
+export type RawPrice = string | { price?: string | number; [key: string]: unknown };
+
 /** Mirrors the backend's `RawScrapLaptop` table (GET /scraper/raw-laptop/{id}, GET /laptops/raw-scrap-laptops). */
 export interface RawScrapLaptop {
   id: string;
   source_url: string;
   brand_id: string;
   raw_product_name: string;
-  raw_prices: string[];
+  raw_prices: RawPrice[];
   image_urls: string[];
   raw_specs_dump: Record<string, unknown>;
   processing_status: "pending" | "processing" | "completed" | "failed";

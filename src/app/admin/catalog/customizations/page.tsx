@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, MoreHorizontal, Pencil, Search, SlidersHorizontal, Trash2, X } from "lucide-react";
+import { MoreHorizontal, Pencil, Search, SlidersHorizontal, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -25,6 +25,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -37,6 +38,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import {
   type Customization,
   type CustomizationUpdateInput,
@@ -50,7 +53,7 @@ import { apiFetch, ApiError } from "@/lib/api/client";
 import type { BackendLaptop } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth-context";
 
-import { AdminErrorState } from "../../admin-error-state";
+import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
 import { AdminPageHeader } from "../../admin-page-header";
 
 // Look up by laptop, edit/delete only. Bulk create and bulk-by-pattern are
@@ -173,7 +176,7 @@ export default function AdminCatalogCustomizationsPage() {
         description="Laptops that have upgrade options configured — pick one to view and edit them."
       />
 
-      <div className="border-line bg-surface rounded-lg border p-4">
+      <Card className="gap-0 p-4">
         <div className="relative max-w-xs">
           <Search className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -183,21 +186,21 @@ export default function AdminCatalogCustomizationsPage() {
             className="pl-8"
           />
         </div>
-      </div>
+      </Card>
 
-      <div className="border-line bg-surface rounded-lg border">
+      <Card className="py-0">
         {listError ? (
           <AdminErrorState message={listError} onRetry={() => setListReloadTick((t) => t + 1)} />
         ) : laptopsWithCustomizations === null ? (
-          <div className="flex items-center justify-center p-10">
-            <Loader2 className="size-5 text-muted-foreground motion-safe:animate-spin" />
-          </div>
+          <AdminLoadingState />
         ) : filtered.length === 0 ? (
-          <p className="p-6 text-[13px] text-muted-foreground">
-            {laptopsWithCustomizations.length === 0
-              ? "No laptops have customizations configured yet."
-              : "No laptops match."}
-          </p>
+          <AdminEmptyState
+            title={
+              laptopsWithCustomizations.length === 0
+                ? "No laptops have customizations configured yet"
+                : "No laptops match"
+            }
+          />
         ) : (
           <Table>
             <TableHeader>
@@ -224,7 +227,7 @@ export default function AdminCatalogCustomizationsPage() {
                       size="sm"
                       onClick={() => setSelectedLaptop(l)}
                     >
-                      <SlidersHorizontal className="size-3.5" />
+                      <SlidersHorizontal data-icon="inline-start" />
                       View
                     </Button>
                   </TableCell>
@@ -233,28 +236,27 @@ export default function AdminCatalogCustomizationsPage() {
             </TableBody>
           </Table>
         )}
-      </div>
+      </Card>
 
       {selectedLaptop && (
-        <div className="border-line bg-surface rounded-lg border">
+        <Card className="py-0">
           <div className="flex items-center justify-between border-b border-line p-4">
             <h2 className="text-sm font-bold tracking-tight">
               Customizations for {selectedLaptop.product_name}
             </h2>
             <Button variant="ghost" size="icon-sm" aria-label="Close" onClick={() => setSelectedLaptop(null)}>
-              <X className="size-3.5" />
+              <X />
             </Button>
           </div>
           {loadError ? (
             <AdminErrorState message={loadError} onRetry={() => setReloadTick((t) => t + 1)} />
           ) : customizations === null ? (
-            <div className="flex items-center justify-center p-10">
-              <Loader2 className="size-5 text-muted-foreground motion-safe:animate-spin" />
-            </div>
+            <AdminLoadingState />
           ) : customizations.length === 0 ? (
-            <p className="p-6 text-[13px] text-muted-foreground">
-              No customizations for {selectedLaptop.product_name} yet.
-            </p>
+            <AdminEmptyState
+              title="No customizations yet"
+              description={`${selectedLaptop.product_name} has no configurable options.`}
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -281,17 +283,19 @@ export default function AdminCatalogCustomizationsPage() {
                           render={<Button variant="ghost" size="icon-sm" />}
                           aria-label="Row actions"
                         >
-                          <MoreHorizontal className="size-3.5" />
+                          <MoreHorizontal />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setEditTarget(c)}>
-                            <Pencil className="size-3.5" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(c)}>
-                            <Trash2 className="size-3.5" />
-                            Delete
-                          </DropdownMenuItem>
+                          <DropdownMenuGroup>
+                            <DropdownMenuItem onClick={() => setEditTarget(c)}>
+                              <Pencil />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(c)}>
+                              <Trash2 />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuGroup>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -300,7 +304,7 @@ export default function AdminCatalogCustomizationsPage() {
               </TableBody>
             </Table>
           )}
-        </div>
+        </Card>
       )}
 
       <CustomizationEditDialog
@@ -393,24 +397,26 @@ function CustomizationEditDialog({
           <DialogTitle>Edit customization</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-xs font-semibold">
-            Option name
-            <Input value={optionName} onChange={(e) => setOptionName(e.target.value)} required />
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-semibold">
-            Price add-on (RM)
-            <Input
-              type="number"
-              step="0.01"
-              value={priceAddRm}
-              onChange={(e) => setPriceAddRm(e.target.value)}
-              required
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-semibold">
-            Note (optional)
-            <Input value={note} onChange={(e) => setNote(e.target.value)} />
-          </label>
+          <FieldGroup>
+            <Field>
+              <FieldLabel>Option name</FieldLabel>
+              <Input value={optionName} onChange={(e) => setOptionName(e.target.value)} required />
+            </Field>
+            <Field>
+              <FieldLabel>Price add-on (RM)</FieldLabel>
+              <Input
+                type="number"
+                step="0.01"
+                value={priceAddRm}
+                onChange={(e) => setPriceAddRm(e.target.value)}
+                required
+              />
+            </Field>
+            <Field>
+              <FieldLabel>Note (optional)</FieldLabel>
+              <Input value={note} onChange={(e) => setNote(e.target.value)} />
+            </Field>
+          </FieldGroup>
           {error && <p className="text-[13px] font-medium text-negative">{error}</p>}
           <DialogFooter>
             <Button type="submit" disabled={saving}>

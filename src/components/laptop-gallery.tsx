@@ -36,7 +36,7 @@ export function LaptopGallery({ images, name }: LaptopGalleryProps) {
               aria-label={`Show photo ${i + 1} of ${name}`}
               aria-current={i === selected}
               className={cn(
-                "h-16 w-16 cursor-pointer rounded-xl transition-colors",
+                "size-16 cursor-pointer rounded-xl transition-colors",
                 i === selected
                   ? "border-brand border-[1.5px] bg-white p-1"
                   : "border-line hover:border-brand/40 border bg-white",

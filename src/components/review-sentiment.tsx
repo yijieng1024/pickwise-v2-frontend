@@ -33,7 +33,7 @@ export function ReviewSentiment({ reviews }: { reviews: ReviewPoint[] }) {
             onClick={() => setOpen(r)}
             className="flex items-center gap-2.5 rounded-2xl border border-positive/20 bg-positive/[0.07] px-4 py-3 text-left text-[13.5px] leading-snug transition-transform motion-safe:hover:scale-[1.015]"
           >
-            <Check className="h-4 w-4 shrink-0 text-positive" strokeWidth={2.4} />
+            <Check className="size-4 shrink-0 text-positive" strokeWidth={2.4} />
             {r.point}
             <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">
               {r.channel}
@@ -55,7 +55,7 @@ export function ReviewSentiment({ reviews }: { reviews: ReviewPoint[] }) {
                 onClick={() => setOpen(r)}
                 className="flex items-center gap-2.5 rounded-2xl border border-negative/20 bg-negative/[0.06] px-4 py-3 text-left text-[13.5px] leading-snug transition-transform motion-safe:hover:scale-[1.015]"
               >
-                <X className="h-4 w-4 shrink-0 text-negative" strokeWidth={2.4} />
+                <X className="size-4 shrink-0 text-negative" strokeWidth={2.4} />
                 {r.point}
                 <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">
                   {r.channel}
@@ -85,9 +85,9 @@ export function ReviewSentiment({ reviews }: { reviews: ReviewPoint[] }) {
                 </DialogTitle>
                 <DialogClose
                   aria-label="Close"
-                  className="bg-surface-2 flex h-7 w-7 flex-none items-center justify-center rounded-full text-muted-foreground"
+                  className="bg-surface-2 flex size-7 flex-none items-center justify-center rounded-full text-muted-foreground"
                 >
-                  <X className="h-3 w-3" />
+                  <X className="size-3" />
                 </DialogClose>
               </div>
               <div className="flex items-center justify-between text-sm">

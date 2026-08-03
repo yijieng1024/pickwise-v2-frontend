@@ -131,7 +131,7 @@ export default function ComparePage() {
         href="/laptops"
         className="text-brand mb-8 flex items-center gap-2 font-medium hover:underline"
       >
-        <ChevronLeft className="h-4 w-4" /> Back to Browse
+        <ChevronLeft className="size-4" /> Back to Browse
       </Link>
 
       <h1 className="mb-1.5 text-4xl font-bold tracking-tight">Compare</h1>
@@ -152,14 +152,14 @@ export default function ComparePage() {
           <div className="flex gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <span
-                className="h-2.5 w-2.5 rounded-[3px]"
+                className="size-2.5 rounded-[3px]"
                 style={{ background: RADAR_COLORS[0] }}
               />
               {left.name}
             </span>
             <span className="flex items-center gap-1.5">
               <span
-                className="h-2.5 w-2.5 rounded-[3px]"
+                className="size-2.5 rounded-[3px]"
                 style={{ background: RADAR_COLORS[1] }}
               />
               {right.name}
@@ -246,7 +246,7 @@ export default function ComparePage() {
           return (
             <section key={section.title}>
               <div className="mb-3.5 flex items-center gap-2 pl-2">
-                <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                <Icon className="size-3.5 text-muted-foreground" />
                 <span className="text-[11.5px] font-bold tracking-wide text-muted-foreground uppercase">
                   {section.title}
                 </span>
@@ -279,7 +279,7 @@ export default function ComparePage() {
         className="border-line mt-7 flex items-center gap-2 rounded-full border px-4.5 py-2 text-xs font-semibold text-muted-foreground transition hover:border-brand hover:text-brand"
       >
         <ChevronRight
-          className={cn("h-3 w-3 transition-transform", techOpen && "rotate-90")}
+          className={cn("size-3 transition-transform", techOpen && "rotate-90")}
         />
         {techOpen ? "Hide technical rows" : "Show technical rows (for the tech-savvy)"}
       </button>

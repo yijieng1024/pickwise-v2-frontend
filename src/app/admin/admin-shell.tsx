@@ -15,7 +15,6 @@ import {
   Laptop,
   Laptop2,
   ListChecks,
-  Loader2,
   SlidersHorizontal,
   Sparkles,
   Tag,
@@ -44,8 +43,8 @@ import {
   SidebarMenuSubItem,
   SidebarProvider,
   SidebarRail,
-  SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { Spinner } from "@/components/ui/spinner";
 import { Toaster } from "@/components/ui/sonner";
 import { useAuth } from "@/lib/auth-context";
 
@@ -144,7 +143,7 @@ export function AdminShell({
   if (isLoading || !user || user.role !== "admin") {
     return (
       <div className="flex min-h-svh w-full items-center justify-center">
-        <Loader2 className="h-6 w-6 text-muted-foreground motion-safe:animate-spin" />
+        <Spinner className="size-6 text-muted-foreground" />
       </div>
     );
   }
@@ -156,16 +155,17 @@ export function AdminShell({
     >
       <Sidebar collapsible="icon">
         <SidebarHeader>
-          <div className="flex items-center justify-between gap-2 px-2 py-1.5">
+          {/* Toggle lives in the topbar (AdminTopbar) so it stays reachable
+              when the rail is collapsed and on mobile. */}
+          <div className="flex items-center gap-2 px-2 py-1.5">
             <Link href="/" className="flex min-w-0 items-center gap-2">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-brand text-[12px] font-bold text-white">
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-brand text-[12px] font-bold text-white">
                 P
               </span>
               <span className="truncate text-[13.5px] font-bold tracking-tight group-data-[collapsible=icon]:hidden">
                 PickWise
               </span>
             </Link>
-            <SidebarTrigger className="group-data-[collapsible=icon]:hidden" />
           </div>
         </SidebarHeader>
 

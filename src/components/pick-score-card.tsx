@@ -169,7 +169,7 @@ export function PickScoreCard({
               )}
             >
               {s.use_case === PERSONAL && (
-                <UserRound className="h-3 w-3 flex-none" />
+                <UserRound className="size-3 flex-none" />
               )}
               {tabLabel(s.use_case)}
               <span
@@ -188,7 +188,7 @@ export function PickScoreCard({
         {/* Placeholder while the personalized score is being computed */}
         {calculating && (
           <span className="text-muted-foreground flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold">
-            <UserRound className="h-3 w-3 flex-none" />
+            <UserRound className="size-3 flex-none" />
             For you
             <Progress
               value={null}
@@ -208,7 +208,7 @@ export function PickScoreCard({
           </span>
           {best && (
             <span className="bg-brand-tint text-brand flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold">
-              <Sparkles className="h-3 w-3" />
+              <Sparkles className="size-3" />
               Best fit: {tabLabel(best.use_case)} · {best.score}
             </span>
           )}
@@ -226,7 +226,7 @@ export function PickScoreCard({
                 style={{ animationDelay: `${i * 40}ms` }}
               >
                 <span className="flex w-36 flex-none items-center gap-2 text-[12px] font-medium">
-                  <Icon className="text-brand h-3.5 w-3.5 flex-none" />
+                  <Icon className="text-brand size-3.5 flex-none" />
                   <span className="truncate">
                     {meta?.label ?? f.factor}
                     {f.factor === "gpu" && gpuProxied && (
