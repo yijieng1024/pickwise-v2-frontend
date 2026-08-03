@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Cog,
   Heart,
   Home,
   Laptop,
@@ -22,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -114,7 +116,7 @@ export function Header() {
         }}
       >
         <Link href="/" className="flex items-center gap-2">
-          <span className="flex h-6.5 w-6.5 items-center justify-center rounded-lg bg-brand text-[13px] font-bold text-white">
+          <span className="flex size-6.5 items-center justify-center rounded-lg bg-brand text-[13px] font-bold text-white">
             P
           </span>
           <span className="text-[15px] font-bold tracking-tight">
@@ -151,14 +153,14 @@ export function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger
                 aria-label="Account"
-                className="relative hidden h-9 w-9 items-center justify-center rounded-full border-0 bg-transparent transition-transform hover:scale-105 md:flex"
+                className="relative hidden size-9 items-center justify-center rounded-full border-0 bg-transparent transition-transform hover:scale-105 md:flex"
               >
                 <UserAvatar
                   userId={user.id}
                   username={user.username}
-                  className="h-9 w-9 text-[13px]"
+                  className="size-9 text-[13px]"
                 />
-                <span className="absolute right-0 bottom-0 h-2.5 w-2.5 rounded-full border-2 border-surface bg-positive" />
+                <span className="absolute right-0 bottom-0 size-2.5 rounded-full border-2 border-surface bg-positive" />
               </DropdownMenuTrigger>
 
               <DropdownMenuContent
@@ -180,7 +182,7 @@ export function Header() {
                     <UserAvatar
                       userId={user.id}
                       username={user.username}
-                      className="h-8.5 w-8.5 text-xs"
+                      className="size-8.5 text-xs"
                     />
                     <span className="min-w-0">
                       <span className="block truncate text-[13px] font-semibold">
@@ -191,27 +193,38 @@ export function Header() {
                       </span>
                     </span>
                   </div>
-                  <DropdownMenuItem
-                    render={<Link href="/profile" />}
-                    className="cursor-pointer gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium focus:bg-surface-2"
-                  >
-                    <User className="size-3.5" />
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    render={<Link href="/profile#preferences" />}
-                    className="cursor-pointer gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium focus:bg-surface-2"
-                  >
-                    <Settings className="size-3.5" />
-                    Preferences
-                  </DropdownMenuItem>
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem
+                      render={<Link href="/profile" />}
+                      className="cursor-pointer gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium focus:bg-surface-2"
+                    >
+                      <User />
+                      Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      render={<Link href="/profile#preferences" />}
+                      className="cursor-pointer gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium focus:bg-surface-2"
+                    >
+                      <Settings />
+                      Preferences
+                    </DropdownMenuItem>
+                    {user.role === "admin" && (
+                      <DropdownMenuItem
+                        render={<Link href="/admin" />}
+                        className="cursor-pointer gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium focus:bg-surface-2"
+                      >
+                        <Cog />
+                        Admin
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuGroup>
                   <DropdownMenuSeparator className="mx-0 my-1.5 bg-line" />
                   <DropdownMenuItem
                     variant="destructive"
                     onClick={logout}
                     className="cursor-pointer gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium data-[variant=destructive]:text-negative data-[variant=destructive]:focus:bg-negative/10 data-[variant=destructive]:focus:text-negative"
                   >
-                    <LogOut className="size-3.5" />
+                    <LogOut />
                     Log out
                   </DropdownMenuItem>
                 </GlassSurface>
@@ -255,7 +268,7 @@ export function Header() {
                     <UserAvatar
                       userId={user.id}
                       username={user.username}
-                      className="h-9 w-9 text-[13px]"
+                      className="size-9 text-[13px]"
                     />
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-semibold">{user.username}</span>
@@ -266,7 +279,7 @@ export function Header() {
                   </>
                 ) : (
                   <>
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-[14px] font-bold text-white">
+                    <span className="flex size-8 items-center justify-center rounded-lg bg-brand text-[14px] font-bold text-white">
                       P
                     </span>
                     <span className="text-[15px] font-bold tracking-tight">PickWise</span>
@@ -333,6 +346,23 @@ export function Header() {
                     <Settings className="size-[18px] shrink-0" />
                     Preferences
                   </SheetClose>
+                  {user.role === "admin" && (
+                    <SheetClose
+                      nativeButton={false}
+                      render={
+                        <Link
+                          href="/admin"
+                          className={cn(
+                            DRAWER_ITEM,
+                            "text-muted-foreground hover:bg-muted hover:text-foreground active:bg-surface-2",
+                          )}
+                        />
+                      }
+                    >
+                      <Cog className="size-[18px] shrink-0" />
+                      Admin
+                    </SheetClose>
+                  )}
                 </div>
               )}
 
