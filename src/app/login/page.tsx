@@ -238,7 +238,7 @@ export default function LoginPage() {
               <span className="flex justify-between">
                 <span>Password</span>
                 {isLogin && (
-                  <Link href="#" className="font-medium">
+                  <Link href="/forgot-password" className="font-medium">
                     Forgot password?
                   </Link>
                 )}

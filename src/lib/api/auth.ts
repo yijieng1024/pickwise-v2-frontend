@@ -54,6 +54,43 @@ export function register(
 }
 
 /**
+ * Confirms the address behind a registration. The token comes from the link
+ * in the verification email and is valid for an hour; an expired or reused
+ * one comes back as a 400.
+ */
+export function verifyEmail(token: string): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>(
+    `/auth/verify-email?token=${encodeURIComponent(token)}`,
+    { next: { revalidate: 0 } },
+  );
+}
+
+/**
+ * Starts a password reset. Always resolves for a well-formed address, whether
+ * or not an account exists — the backend deliberately doesn't reveal which,
+ * so the UI must not either.
+ */
+export function forgotPassword(email: string): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+    next: { revalidate: 0 },
+  });
+}
+
+/** Completes the reset with the emailed token. Passwords need 8+ characters. */
+export function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ token, new_password: newPassword }),
+    next: { revalidate: 0 },
+  });
+}
+
+/**
  * Exchanges a Google ID token (obtained via Google Identity Services) for
  * our own JWT. The backend verifies it against the same OAuth client ID and
  * finds-or-creates the account, so no separate registration step is needed.
