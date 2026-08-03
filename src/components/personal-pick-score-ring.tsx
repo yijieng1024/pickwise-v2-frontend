@@ -71,8 +71,8 @@ export function PersonalPickScoreRing({
         caption={caption}
       />
       {personal != null && (
-        <span className="bg-brand absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-white">
-          <UserRound className="h-2.5 w-2.5" />
+        <span className="bg-brand absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full text-white">
+          <UserRound className="size-2.5" />
         </span>
       )}
     </span>

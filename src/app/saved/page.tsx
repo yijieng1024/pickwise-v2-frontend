@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Heart, LayoutGrid, List, Loader2, Search } from "lucide-react";
+import { Heart, LayoutGrid, List, Search } from "lucide-react";
 
 import { LaptopCard } from "@/components/laptop-card";
 import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
 import { mapBackendLaptop } from "@/lib/api/adapters";
 import { apiFetch } from "@/lib/api/client";
 import { listSavedLaptops, unsaveLaptop } from "@/lib/api/saved";
@@ -27,8 +28,8 @@ function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center py-24 text-center">
-      <div className="bg-brand-tint text-brand mb-6 flex h-16 w-16 items-center justify-center rounded-full">
-        <Heart className="h-8 w-8" />
+      <div className="bg-brand-tint text-brand mb-6 flex size-16 items-center justify-center rounded-full">
+        <Heart className="size-8" />
       </div>
       <h1 className="mb-2 text-3xl font-bold tracking-tight">{title}</h1>
       <p className="mb-8 max-w-md text-muted-foreground">{body}</p>
@@ -120,9 +121,10 @@ export default function SavedPage() {
         type="button"
         aria-label={`Remove ${laptop.name} from saved`}
         onClick={() => remove(laptop.id)}
-        className="absolute top-3 right-3 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-white/85 text-red-500 shadow-sm backdrop-blur-sm transition-transform hover:scale-110"
+        // bg-white in both themes: it sits over the card's white photo panel.
+        className="absolute top-3 right-3 z-20 flex size-8 items-center justify-center rounded-full bg-white/85 text-negative shadow-sm backdrop-blur-sm transition-transform hover:scale-110"
       >
-        <Heart className="h-4 w-4 fill-current" />
+        <Heart className="size-4 fill-current" />
       </button>
     </div>
   );
@@ -131,7 +133,7 @@ export default function SavedPage() {
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 pb-24 sm:px-6 lg:px-8">
       {isLoading || (user && laptops === null && !failed) ? (
         <div className="flex justify-center py-24">
-          <Loader2 className="text-brand h-6 w-6 animate-spin" />
+          <Spinner className="text-brand size-6" />
         </div>
       ) : !user ? (
         <EmptyState
@@ -161,7 +163,7 @@ export default function SavedPage() {
 
           <div className="mb-7 flex flex-wrap items-center gap-3">
             <div className="relative min-w-[240px] flex-1">
-              <Search className="absolute top-1/2 left-4 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Search className="absolute top-1/2 left-4 size-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -195,7 +197,7 @@ export default function SavedPage() {
                       : "text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  <Icon className="h-3.5 w-3.5" />
+                  <Icon className="size-3.5" />
                 </button>
               ))}
             </div>

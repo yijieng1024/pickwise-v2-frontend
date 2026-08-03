@@ -69,8 +69,8 @@ export function SaveButton({ laptopId }: { laptopId: string }) {
     >
       <Heart
         className={cn(
-          "h-4 w-4 transition-colors",
-          saved ? "fill-red-500 text-red-500" : "hover:text-red-500",
+          "size-4 transition-colors",
+          saved ? "fill-negative text-negative" : "hover:text-negative",
         )}
       />
     </button>

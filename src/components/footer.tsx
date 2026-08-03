@@ -24,7 +24,7 @@ export function Footer() {
         <div className="mb-11 grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
           <div className="flex flex-col gap-3.5">
             <div className="flex items-center gap-2">
-              <span className="bg-brand flex h-6.5 w-6.5 items-center justify-center rounded-lg text-[13px] font-bold text-white">
+              <span className="bg-brand flex size-6.5 items-center justify-center rounded-lg text-[13px] font-bold text-white">
                 P
               </span>
               <span className="text-[16px] font-bold tracking-tight">

@@ -129,7 +129,7 @@ export default function LoginPage() {
         {/* Brand panel */}
         <div className="from-brand flex flex-col gap-4 bg-gradient-to-br to-primary px-10 py-11 text-white">
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-[9px] bg-white/20 text-[13px] font-bold">
+            <span className="flex size-7 items-center justify-center rounded-[9px] bg-white/20 text-[13px] font-bold">
               P
             </span>
             <span className="text-[16px] font-bold tracking-tight">
@@ -147,7 +147,7 @@ export default function LoginPage() {
           <div className="mt-auto flex flex-col gap-3 text-[13px]">
             {perks.map((perk) => (
               <span key={perk} className="flex items-center gap-2.5 opacity-90">
-                <Check className="h-3.5 w-3.5 flex-none" strokeWidth={2.2} />
+                <Check className="size-3.5 flex-none" strokeWidth={2.2} />
                 {perk}
               </span>
             ))}
@@ -199,7 +199,7 @@ export default function LoginPage() {
                 <Input
                   type="text"
                   autoComplete="username"
-                  placeholder="you@example.com"
+                  placeholder="johndoe@example.com"
                   required
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
@@ -213,7 +213,7 @@ export default function LoginPage() {
                   <Input
                     type="text"
                     autoComplete="username"
-                    placeholder="aiman_rahim"
+                    placeholder="johndoe"
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
@@ -225,7 +225,7 @@ export default function LoginPage() {
                   <Input
                     type="email"
                     autoComplete="email"
-                    placeholder="you@example.com"
+                    placeholder="johndoe@example.com"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -238,7 +238,7 @@ export default function LoginPage() {
               <span className="flex justify-between">
                 <span>Password</span>
                 {isLogin && (
-                  <Link href="#" className="font-medium">
+                  <Link href="/forgot-password" className="font-medium">
                     Forgot password?
                   </Link>
                 )}
@@ -260,9 +260,9 @@ export default function LoginPage() {
                   className="absolute top-1/2 right-3.5 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
                 >
                   {showPassword ? (
-                    <EyeOff className="h-4 w-4" strokeWidth={1.8} />
+                    <EyeOff className="size-4" strokeWidth={1.8} />
                   ) : (
-                    <Eye className="h-4 w-4" strokeWidth={1.8} />
+                    <Eye className="size-4" strokeWidth={1.8} />
                   )}
                 </button>
               </span>

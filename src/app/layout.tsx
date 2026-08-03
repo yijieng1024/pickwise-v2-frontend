@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { ConditionalFooter } from "@/components/conditional-footer";
-import { Header } from "@/components/header";
+import { AppShell } from "@/components/app-shell";
 import { ThemeProvider } from "@/components/theme-provider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth-context";
 
 const geistMono = Geist_Mono({
@@ -35,10 +35,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <Header />
-            {/* Breathing room between the floating nav island and page content */}
-            <div className="flex flex-1 flex-col pt-6">{children}</div>
-            <ConditionalFooter />
+            <TooltipProvider>
+              <AppShell>{children}</AppShell>
+            </TooltipProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

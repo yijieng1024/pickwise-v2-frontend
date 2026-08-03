@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 interface UserAvatarProps {
   userId: string;
   username: string;
-  /** Size + font-size come from the caller (e.g. "h-9 w-9 text-[13px]"). */
+  /** Size + font-size come from the caller (e.g. "size-9 text-[13px]"). */
   className?: string;
 }
 

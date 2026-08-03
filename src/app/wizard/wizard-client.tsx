@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Spinner } from "@/components/ui/spinner";
 import { useRouter } from "next/navigation";
 import {
   Banknote,
@@ -10,7 +11,6 @@ import {
   Cpu,
   Film,
   Gamepad2,
-  Loader2,
   Monitor,
   Tag,
   Weight,
@@ -87,7 +87,7 @@ export function WizardClient({ questions, brands }: WizardClientProps) {
   if (isLoading || !user || !token) {
     return (
       <main className="flex w-full flex-1 items-center justify-center py-24">
-        <Loader2 className="h-6 w-6 text-muted-foreground motion-safe:animate-spin" />
+        <Spinner className="size-6 text-muted-foreground" />
       </main>
     );
   }
@@ -209,13 +209,13 @@ export function WizardClient({ questions, brands }: WizardClientProps) {
                 )}
               >
                 {rank >= 0 && (
-                  <span className="bg-brand absolute top-3.5 right-3.5 flex h-6 w-6 items-center justify-center rounded-full text-[12px] font-bold text-white tabular-nums">
+                  <span className="bg-brand absolute top-3.5 right-3.5 flex size-6 items-center justify-center rounded-full text-[12px] font-bold text-white tabular-nums">
                     {rank + 1}
                   </span>
                 )}
                 <Icon
                   className={cn(
-                    "mb-3 block h-5.5 w-5.5",
+                    "mb-3 block size-5.5",
                     active ? "text-brand" : "text-muted-foreground",
                   )}
                   strokeWidth={1.8}

@@ -102,8 +102,8 @@ export default function AboutPage() {
             key={title}
             className="border-line bg-surface rounded-2xl border p-6"
           >
-            <div className="bg-brand-tint text-brand flex h-9 w-9 items-center justify-center rounded-xl">
-              <Icon className="h-4.5 w-4.5" />
+            <div className="bg-brand-tint text-brand flex size-9 items-center justify-center rounded-xl">
+              <Icon className="size-4.5" />
             </div>
             <h2 className="mt-4 text-[15px] font-bold tracking-tight">
               {title}
@@ -126,7 +126,7 @@ export default function AboutPage() {
         <ol className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-3">
           {steps.map(({ step, title, body }) => (
             <li key={step} className="flex flex-col gap-2">
-              <span className="bg-brand flex h-7 w-7 items-center justify-center rounded-full text-[13px] font-bold text-white">
+              <span className="bg-brand flex size-7 items-center justify-center rounded-full text-[13px] font-bold text-white">
                 {step}
               </span>
               <h3 className="mt-1 text-[14px] font-bold tracking-tight">
@@ -196,7 +196,7 @@ export default function AboutPage() {
             nativeButton={false}
             className="rounded-full px-6"
           >
-            <Sparkles className="h-4 w-4" /> Ask Pico
+            <Sparkles className="size-4" /> Ask Pico
           </Button>
           <Button
             size="lg"
