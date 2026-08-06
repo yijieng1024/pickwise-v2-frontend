@@ -49,8 +49,7 @@ import {
   listLaptopsWithCustomizations,
   updateCustomization,
 } from "@/lib/api/admin/customizations";
-import { apiFetch, ApiError } from "@/lib/api/client";
-import type { BackendLaptop } from "@/lib/api/types";
+import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
@@ -59,21 +58,18 @@ import { AdminPageHeader } from "../../admin-page-header";
 // Look up by laptop, edit/delete only. Bulk create and bulk-by-pattern are
 // deferred; still available via Swagger for now.
 
-interface LaptopWithCustomizationCount {
-  laptop: BackendLaptop;
-  count: number;
-}
-
 export default function AdminCatalogCustomizationsPage() {
   const { token } = useAuth();
   const [laptopsWithCustomizations, setLaptopsWithCustomizations] = useState<
-    LaptopWithCustomizationCount[] | null
+    LaptopCustomizationSummary[] | null
   >(null);
   const [listError, setListError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [listReloadTick, setListReloadTick] = useState(0);
 
-  const [selectedLaptop, setSelectedLaptop] = useState<BackendLaptop | null>(null);
+  const [selectedLaptop, setSelectedLaptop] = useState<LaptopCustomizationSummary | null>(
+    null,
+  );
   const [customizations, setCustomizations] = useState<Customization[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [editTarget, setEditTarget] = useState<Customization | null>(null);
@@ -84,20 +80,14 @@ export default function AdminCatalogCustomizationsPage() {
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
-    Promise.all([
-      apiFetch<BackendLaptop[]>("/laptops/"),
-      listLaptopsWithCustomizations(token),
-    ])
-      .then(([laptops, summary]) => {
+    // The summary carries product_name and model_code, so this no longer
+    // pulls the whole catalog just to label a handful of rows.
+    listLaptopsWithCustomizations(token)
+      .then((summary) => {
         if (cancelled) return;
-        const countByLaptopId = new Map<string, number>(
-          summary.map((s: LaptopCustomizationSummary) => [s.laptop_id, s.customization_count]),
+        setLaptopsWithCustomizations(
+          [...summary].sort((a, b) => a.product_name.localeCompare(b.product_name)),
         );
-        const withCustomizations = laptops
-          .filter((l) => countByLaptopId.has(l.id))
-          .map((l) => ({ laptop: l, count: countByLaptopId.get(l.id)! }))
-          .sort((a, b) => a.laptop.product_name.localeCompare(b.laptop.product_name));
-        setLaptopsWithCustomizations(withCustomizations);
         setListError(null);
       })
       .catch((err) => {
@@ -115,14 +105,14 @@ export default function AdminCatalogCustomizationsPage() {
     const q = search.trim().toLowerCase();
     if (!q) return laptopsWithCustomizations;
     return laptopsWithCustomizations.filter(
-      ({ laptop: l }) =>
+      (l) =>
         l.product_name.toLowerCase().includes(q) || l.model_code.toLowerCase().includes(q),
     );
   }, [laptopsWithCustomizations, search]);
 
   // Reset to loading state when the selected laptop changes — the "adjust
   // state during render" pattern, not an effect (see laptops-browse.tsx).
-  const laptopSig = selectedLaptop?.id ?? null;
+  const laptopSig = selectedLaptop?.laptop_id ?? null;
   const [prevLaptopSig, setPrevLaptopSig] = useState(laptopSig);
   if (laptopSig !== prevLaptopSig) {
     setPrevLaptopSig(laptopSig);
@@ -133,7 +123,7 @@ export default function AdminCatalogCustomizationsPage() {
   useEffect(() => {
     if (!selectedLaptop || !token) return;
     let cancelled = false;
-    listCustomizationsByLaptop(token, selectedLaptop.id)
+    listCustomizationsByLaptop(token, selectedLaptop.laptop_id)
       .then((res) => {
         if (cancelled) return;
         setCustomizations(res);
@@ -211,19 +201,23 @@ export default function AdminCatalogCustomizationsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map(({ laptop: l, count }) => (
+              {filtered.map((l) => (
                 <TableRow
-                  key={l.id}
-                  className={selectedLaptop?.id === l.id ? "bg-brand-tint/40" : undefined}
+                  key={l.laptop_id}
+                  className={
+                    selectedLaptop?.laptop_id === l.laptop_id ? "bg-brand-tint/40" : undefined
+                  }
                 >
                   <TableCell>
                     <div className="font-medium">{l.product_name}</div>
                     <div className="text-[12.5px] text-muted-foreground">{l.model_code}</div>
                   </TableCell>
-                  <TableCell className="tabular-nums">{count}</TableCell>
+                  <TableCell className="tabular-nums">{l.customization_count}</TableCell>
                   <TableCell className="text-right">
                     <Button
-                      variant={selectedLaptop?.id === l.id ? "secondary" : "outline"}
+                      variant={
+                        selectedLaptop?.laptop_id === l.laptop_id ? "secondary" : "outline"
+                      }
                       size="sm"
                       onClick={() => setSelectedLaptop(l)}
                     >

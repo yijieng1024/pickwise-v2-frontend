@@ -14,7 +14,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -34,6 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
+import { UserAvatar } from "@/components/user-avatar";
 import {
   type AdminUser,
   type UserRole,
@@ -44,10 +44,10 @@ import {
 } from "@/lib/api/admin/users";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
-import { cn } from "@/lib/utils";
 
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../admin-states";
 import { AdminPageHeader } from "../admin-page-header";
+import { AdminStatusPill } from "../admin-status-pill";
 import { AdminPagination } from "../admin-pagination";
 
 const PAGE_SIZE = 20;
@@ -67,12 +67,6 @@ const statusOptions = [
 
 // Suspended (admin-blocked) reads as the more severe state than a merely
 // dormant inactive account, so it gets red while inactive gets amber.
-const statusBadgeClass: Record<UserStatus, string> = {
-  active: "bg-positive/10 text-positive",
-  inactive: "bg-warning/10 text-warning",
-  suspended: "bg-negative/10 text-negative",
-};
-
 type PendingAction =
   | { kind: "role"; user: AdminUser; value: UserRole }
   | { kind: "status"; user: AdminUser; value: UserStatus };
@@ -249,17 +243,35 @@ export default function AdminUsersPage() {
                 return (
                   <TableRow key={u.id}>
                     <TableCell>
-                      <div className="font-medium">
-                        {u.username}
-                        {isSelf && (
-                          <span className="ml-1.5 text-[12.5px] text-muted-foreground">
-                            (you)
-                          </span>
-                        )}
+                      <div className="flex items-center gap-2.5">
+                        <UserAvatar
+                          userId={u.id}
+                          username={u.username}
+                          className="size-7 shrink-0 text-[13px]"
+                        />
+                        <div className="min-w-0">
+                          <div className="truncate font-medium">
+                            {u.username}
+                            {isSelf && (
+                              <span className="ml-1.5 text-[12.5px] text-muted-foreground">
+                                (you)
+                              </span>
+                            )}
+                          </div>
+                          <div className="truncate text-[12.5px] text-muted-foreground">
+                            {u.email}
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-[12.5px] text-muted-foreground">{u.email}</div>
                     </TableCell>
                     <TableCell>
+                      <span
+                        title={
+                          isSelf
+                            ? "You can't change your own role. Ask another admin."
+                            : undefined
+                        }
+                      >
                       <Select
                         items={[
                           { value: "user", label: "User" },
@@ -281,8 +293,16 @@ export default function AdminUsersPage() {
                           </SelectGroup>
                         </SelectContent>
                       </Select>
+                      </span>
                     </TableCell>
                     <TableCell>
+                      <span
+                        title={
+                          isSelf
+                            ? "You can't deactivate your own account. Ask another admin."
+                            : undefined
+                        }
+                      >
                       <Select
                         items={[
                           { value: "active", label: "Active" },
@@ -296,9 +316,7 @@ export default function AdminUsersPage() {
                         }
                       >
                         <SelectTrigger size="sm" className="w-32">
-                          <Badge className={cn("mr-1 capitalize", statusBadgeClass[u.status])}>
-                            {u.status}
-                          </Badge>
+                          <AdminStatusPill kind="userStatus" value={u.status} className="mr-1" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectGroup>
@@ -308,6 +326,7 @@ export default function AdminUsersPage() {
                           </SelectGroup>
                         </SelectContent>
                       </Select>
+                      </span>
                     </TableCell>
                     <TableCell>{u.is_verified ? "Yes" : "No"}</TableCell>
                     <TableCell className="text-muted-foreground">

@@ -30,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Table,
   TableBody,
@@ -49,11 +50,13 @@ import {
   triggerGpuScraper,
   updateGpuBenchmark,
 } from "@/lib/api/admin/benchmarks";
+import { generateAllPickScores } from "@/lib/api/admin/embeddings";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
 import { AdminPageHeader } from "../../admin-page-header";
+import { OutcomeAlert } from "../../admin-outcome-alert";
 import { AdminPagination } from "../../admin-pagination";
 import { type SortState, SortableTableHead, toggleSort } from "../../admin-sortable-head";
 
@@ -70,6 +73,11 @@ export default function AdminGpuBenchmarksPage() {
   const [deleteTarget, setDeleteTarget] = useState<GpuBenchmark | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [scraping, setScraping] = useState(false);
+  // The scraper returns 200 with no job id and no status endpoint, so the
+  // only honest signal is that we asked for it. Kept on screen rather than
+  // as a toast, because the work outlives the toast by minutes.
+  const [scrapeStarted, setScrapeStarted] = useState(false);
+  const [rescoring, setRescoring] = useState(false);
   const [reloadTick, setReloadTick] = useState(0);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -150,6 +158,20 @@ export default function AdminGpuBenchmarksPage() {
     }
   }
 
+  async function runRescore() {
+    if (!token) return;
+    setRescoring(true);
+    try {
+      await generateAllPickScores(token);
+      toast.success("PickScores recalculated.");
+      setScrapeStarted(false);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Couldn't recalculate scores.");
+    } finally {
+      setRescoring(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
@@ -169,6 +191,20 @@ export default function AdminGpuBenchmarksPage() {
           </div>
         }
       />
+
+      {scrapeStarted && (
+        <OutcomeAlert status="info" title="Refresh started">
+          This runs in the background and may take a few minutes. There is no progress to
+          report, so use the list below to see new scores as they land. Once it finishes,
+          recalculate PickScores — they are derived from these numbers.
+          <span className="mt-2 block">
+            <Button size="sm" variant="outline" onClick={runRescore} disabled={rescoring}>
+              {rescoring && <Spinner data-icon="inline-start" />}
+              Recalculate PickScores
+            </Button>
+          </span>
+        </OutcomeAlert>
+      )}
 
       <div className="relative max-w-xs">
         <Search className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />

@@ -33,7 +33,6 @@ import {
 } from "@/components/ui/table";
 import { type Brand, listBrands } from "@/lib/api/admin/brands";
 import {
-  type BulkScrapeReport,
   type RawPrice,
   type RawScrapLaptop,
   bulkScrape,
@@ -46,22 +45,23 @@ import {
   processPending,
 } from "@/lib/api/admin/processor";
 import { ApiError } from "@/lib/api/client";
+import { useJob } from "@/lib/admin/use-job";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
-import { OutcomeAlert, outcomeOf } from "../admin-outcome-alert";
+import { AdminJobPanel } from "../admin-job-panel";
+import { AdminStatusPill } from "../admin-status-pill";
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../admin-states";
 import { AdminPageHeader } from "../admin-page-header";
 import { AdminPagination } from "../admin-pagination";
 
 const PAGE_SIZE = 25;
 
-const statusBadgeClass: Record<RawScrapLaptop["processing_status"], string> = {
-  pending: "bg-warning/10 text-warning",
-  processing: "bg-brand-tint text-brand",
-  completed: "bg-positive/10 text-positive",
-  failed: "bg-negative/10 text-negative",
-};
+/**
+ * Batch ceiling per run. The backend caps at 1500 and returns the *real*
+ * pending count in the 202, which is usually smaller than this.
+ */
+const PROCESS_BATCH_LIMIT = 100;
 
 const statusOptions = [
   { value: "all", label: "All statuses" },
@@ -101,7 +101,7 @@ export default function AdminPipelinePage() {
     listRawScrapLaptops(token, { limit: 1000 })
       .then((res) => {
         if (cancelled) return;
-        setQueue(res);
+        setQueue(res.items);
         setQueueError(null);
       })
       .catch((err) => {
@@ -158,8 +158,16 @@ function ScraperSection({
 }) {
   const { token } = useAuth();
   const [brandId, setBrandId] = useState<string>("");
-  const [running, setRunning] = useState(false);
-  const [report, setReport] = useState<BulkScrapeReport | null>(null);
+  const [starting, setStarting] = useState(false);
+  const scrapeJob = useJob(token);
+
+  // Refresh the queue once the run stops, so the counts below catch up.
+  const runFinished = scrapeJob.accepted !== null && !scrapeJob.isRunning;
+  const [prevRunFinished, setPrevRunFinished] = useState(runFinished);
+  if (runFinished !== prevRunFinished) {
+    setPrevRunFinished(runFinished);
+    if (runFinished) onReload();
+  }
 
   // Only active brands can be scraped; the list itself covers all of them.
   const activeBrands = useMemo(() => brands.filter((b) => b.is_active), [brands]);
@@ -178,21 +186,19 @@ function ScraperSection({
     return counts;
   }, [queue]);
 
+  // Returns 202 with a job to poll — the run itself continues server-side,
+  // so this only covers handing the work over, not doing it.
   async function runBulkScrape() {
     if (!token || !selectedBrandId) return;
-    setRunning(true);
-    setReport(null);
+    setStarting(true);
     try {
-      const res = await bulkScrape(token, selectedBrandId);
-      setReport(res);
-      toast.success(
-        `Bulk scrape done: ${res.succeeded} succeeded, ${res.failed} failed, ${res.skipped} skipped.`,
-      );
-      onReload();
+      const accepted = await bulkScrape(token, selectedBrandId);
+      scrapeJob.start(accepted);
+      toast.success(accepted.message);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Bulk scrape failed.");
+      toast.error(err instanceof ApiError ? err.message : "Couldn't start the scrape.");
     } finally {
-      setRunning(false);
+      setStarting(false);
     }
   }
 
@@ -219,23 +225,25 @@ function ScraperSection({
             </SelectGroup>
           </SelectContent>
         </Select>
-        <Button onClick={runBulkScrape} disabled={running || !selectedBrandId}>
-          {running ? (
+        <Button
+          onClick={runBulkScrape}
+          disabled={starting || scrapeJob.isRunning || !selectedBrandId}
+        >
+          {starting || scrapeJob.isRunning ? (
             <Spinner data-icon="inline-start" />
           ) : (
             <PlayCircle data-icon="inline-start" />
           )}
-          {running ? "Scraping…" : "Run bulk scrape"}
+          {scrapeJob.isRunning ? "Scraping…" : "Run bulk scrape"}
         </Button>
       </div>
 
-      {report && (
-        <OutcomeAlert
-          status={outcomeOf(report.succeeded, report.failed)}
-          title={`${report.brand} — ${report.succeeded} succeeded, ${report.failed} failed`}
-        >
-          {report.processed} processed of {report.total_pending} pending, {report.skipped} skipped.
-        </OutcomeAlert>
+      {scrapeJob.accepted && (
+        <AdminJobPanel
+          accepted={scrapeJob.accepted}
+          job={scrapeJob.job}
+          pollError={scrapeJob.pollError}
+        />
       )}
 
       <Card className="py-0">
@@ -291,10 +299,11 @@ function ProcessorSection({
   onReload: () => void;
 }) {
   const { token } = useAuth();
-  const [processing, setProcessing] = useState(false);
-  const [categorizing, setCategorizing] = useState(false);
-  const [processResult, setProcessResult] = useState<ProcessPendingResult | null>(null);
-  const [categorizeResult, setCategorizeResult] = useState<CategorizeUntaggedResult | null>(null);
+  const [startingProcess, setStartingProcess] = useState(false);
+  const [startingCategorize, setStartingCategorize] = useState(false);
+  // Two trackers, because the backend happily runs both at once.
+  const processJob = useJob(token);
+  const categorizeJob = useJob(token);
   const [status, setStatus] = useState("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -324,34 +333,51 @@ function ProcessorSection({
 
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  // A job's `result` is only populated once the run completes; its shape is
+  // determined by the job type, so the cast is the contract.
+  const processResult =
+    processJob.job?.status === "completed"
+      ? (processJob.job.result as ProcessPendingResult | null)
+      : null;
+  const categorizeResult =
+    categorizeJob.job?.status === "completed"
+      ? (categorizeJob.job.result as CategorizeUntaggedResult | null)
+      : null;
+
+  // Refresh the queue once processing stops, so the rows below catch up.
+  const processFinished = processJob.accepted !== null && !processJob.isRunning;
+  const [prevProcessFinished, setPrevProcessFinished] = useState(processFinished);
+  if (processFinished !== prevProcessFinished) {
+    setPrevProcessFinished(processFinished);
+    if (processFinished) onReload();
+  }
+
+  // Both endpoints below hand the work to a background job and return 202.
   async function runProcessPending() {
     if (!token) return;
-    setProcessing(true);
-    setProcessResult(null);
+    setStartingProcess(true);
     try {
-      const res = await processPending(token);
-      setProcessResult(res);
-      toast.success(res.message);
-      onReload();
+      const accepted = await processPending(token, PROCESS_BATCH_LIMIT);
+      processJob.start(accepted);
+      toast.success(accepted.message);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Processing failed.");
+      toast.error(err instanceof ApiError ? err.message : "Couldn't start processing.");
     } finally {
-      setProcessing(false);
+      setStartingProcess(false);
     }
   }
 
   async function runCategorizeUntagged() {
     if (!token) return;
-    setCategorizing(true);
-    setCategorizeResult(null);
+    setStartingCategorize(true);
     try {
-      const res = await categorizeUntagged(token);
-      setCategorizeResult(res);
-      toast.success(res.message);
+      const accepted = await categorizeUntagged(token, PROCESS_BATCH_LIMIT);
+      categorizeJob.start(accepted);
+      toast.success(accepted.message);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Categorization failed.");
+      toast.error(err instanceof ApiError ? err.message : "Couldn't start categorization.");
     } finally {
-      setCategorizing(false);
+      setStartingCategorize(false);
     }
   }
 
@@ -360,41 +386,64 @@ function ProcessorSection({
       <h2 className="text-sm font-bold tracking-tight">Processor</h2>
 
       <div className="flex flex-wrap gap-3">
-        <Button onClick={runProcessPending} disabled={processing}>
-          {processing ? (
+        <Button
+          onClick={runProcessPending}
+          disabled={startingProcess || processJob.isRunning}
+        >
+          {startingProcess || processJob.isRunning ? (
             <Spinner data-icon="inline-start" />
           ) : (
             <PlayCircle data-icon="inline-start" />
           )}
-          {processing ? "Processing…" : "Process pending"}
+          {processJob.isRunning ? "Processing…" : "Process pending"}
         </Button>
-        <Button variant="outline" onClick={runCategorizeUntagged} disabled={categorizing}>
-          {categorizing ? (
+        <Button
+          variant="outline"
+          onClick={runCategorizeUntagged}
+          disabled={startingCategorize || categorizeJob.isRunning}
+        >
+          {startingCategorize || categorizeJob.isRunning ? (
             <Spinner data-icon="inline-start" />
           ) : (
             <PlayCircle data-icon="inline-start" />
           )}
-          {categorizing ? "Categorizing…" : "Categorize untagged"}
+          {categorizeJob.isRunning ? "Categorizing…" : "Categorize untagged"}
         </Button>
       </div>
 
+      <p className="text-muted-foreground text-[12.5px]">
+        Both runs continue on the server, so leaving this page is safe. Tagging only fills
+        gaps and never removes a tag set by hand. There is no cancel once a run starts.
+      </p>
+
+      {processJob.accepted && (
+        <AdminJobPanel
+          accepted={processJob.accepted}
+          job={processJob.job}
+          pollError={processJob.pollError}
+          requestedLimit={PROCESS_BATCH_LIMIT}
+        />
+      )}
+      {categorizeJob.accepted && (
+        <AdminJobPanel
+          accepted={categorizeJob.accepted}
+          job={categorizeJob.job}
+          pollError={categorizeJob.pollError}
+          requestedLimit={PROCESS_BATCH_LIMIT}
+        />
+      )}
+
       {processResult && (
         <div className="flex flex-col gap-3 text-[13px]">
-          <OutcomeAlert
-            status={outcomeOf(
-              (processResult.details ?? []).filter((d) => !d.error).length,
-              (processResult.details ?? []).filter((d) => d.error).length,
-            )}
-            title={processResult.message}
-          >
-            {processResult.pending_remaining !== undefined && (
-              <>
-                {processResult.total_new_variants_saved ?? 0} new,{" "}
-                {processResult.total_variants_updated ?? 0} updated — {processResult.pending_remaining}{" "}
-                still pending.
-              </>
-            )}
-          </OutcomeAlert>
+          {/* The panel above already reports succeeded/failed; these are the
+              domain numbers it can't know about. */}
+          {processResult.pending_remaining !== undefined && (
+            <p className="text-muted-foreground text-[12.5px]">
+              {processResult.total_new_variants_saved ?? 0} new,{" "}
+              {processResult.total_variants_updated ?? 0} updated.{" "}
+              {processResult.pending_remaining} still pending.
+            </p>
+          )}
 
           {processResult.details && processResult.details.length > 0 && (
             <Card className="py-0">
@@ -440,20 +489,10 @@ function ProcessorSection({
       )}
 
       {categorizeResult && (
-        <OutcomeAlert
-          status={outcomeOf(categorizeResult.tagged, categorizeResult.errors.length)}
-          title={categorizeResult.message}
-        >
-          {categorizeResult.tagged} tagged, {categorizeResult.links_added} links added —{" "}
+        <p className="text-muted-foreground text-[12.5px]">
+          {categorizeResult.tagged} tagged, {categorizeResult.links_added} links added.{" "}
           {categorizeResult.untagged_remaining} still untagged.
-          {categorizeResult.errors.length > 0 && (
-            <ul className="mt-1.5 list-disc pl-4 text-[12px]">
-              {categorizeResult.errors.map((e, i) => (
-                <li key={i}>{e}</li>
-              ))}
-            </ul>
-          )}
-        </OutcomeAlert>
+        </p>
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -529,9 +568,7 @@ function ProcessorSection({
                     {brandNames.get(row.brand_id) ?? "—"}
                   </TableCell>
                   <TableCell>
-                    <Badge className={cn("capitalize", statusBadgeClass[row.processing_status])}>
-                      {row.processing_status}
-                    </Badge>
+                    <AdminStatusPill kind="raw" value={row.processing_status} />
                   </TableCell>
                   <TableCell className="text-muted-foreground tabular-nums">
                     {row.raw_prices.length === 0
@@ -605,9 +642,7 @@ function RawRecordDialog({
           <div className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto text-[13px]">
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
               <Field label="Status">
-                <Badge className={cn("capitalize", statusBadgeClass[record.processing_status])}>
-                  {record.processing_status}
-                </Badge>
+                <AdminStatusPill kind="raw" value={record.processing_status} />
               </Field>
               <Field label="Brand">{brandName ?? "—"}</Field>
               <Field label="Scraped">{formatDateTime(record.created_at)}</Field>

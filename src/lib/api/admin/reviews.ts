@@ -155,3 +155,52 @@ export function aggregateLaptop(token: string, laptopId: string): Promise<Aggreg
     next: { revalidate: 0 },
   });
 }
+
+// --- Summaries ---
+
+/**
+ * `new` means nothing has ever been aggregated for this laptop; `stale` means
+ * a review chunk arrived after the last aggregation. Laptops already covered
+ * are omitted, so this list is the work queue.
+ */
+export interface PendingSummary {
+  laptop_id: string;
+  product_name: string;
+  model_code: string;
+  chunk_count: number;
+  summary_review_count: number;
+  last_aggregated_at: string | null;
+  state: "new" | "stale";
+}
+
+export function listPendingSummaries(
+  token: string,
+): Promise<{ total: number; items: PendingSummary[] }> {
+  return apiFetch<{ total: number; items: PendingSummary[] }>("/reviews/summaries/pending", {
+    token,
+    next: { revalidate: 0 },
+  });
+}
+
+export interface LaptopReviewSummary {
+  laptop_id: string;
+  review_count: number;
+  strengths: string[];
+  weaknesses: string[];
+  last_updated_at: string;
+}
+
+/**
+ * Reads the stored roll-up. Unlike `aggregateLaptop`, this does not recompute
+ * anything, so previewing what the chatbot quotes costs nothing. 404s when
+ * the laptop has never been aggregated.
+ */
+export function getLaptopReviewSummary(
+  token: string,
+  laptopId: string,
+): Promise<LaptopReviewSummary> {
+  return apiFetch<LaptopReviewSummary>(`/reviews/summaries/${laptopId}`, {
+    token,
+    next: { revalidate: 0 },
+  });
+}
