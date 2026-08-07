@@ -33,6 +33,7 @@ import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
 import { AdminPageHeader } from "./admin-page-header";
+import { DashboardSkeleton } from "./dashboard-skeleton";
 
 /**
  * Everything here answers one question: what is stuck, and where?
@@ -271,9 +272,7 @@ export default function AdminDashboardPage() {
           </div>
         </Card>
       ) : !health ? (
-        <Card className="flex items-center justify-center gap-0 p-16">
-          <Spinner className="size-5 text-muted-foreground" />
-        </Card>
+        <DashboardSkeleton />
       ) : (
         <>
           {/* The pipeline, left to right. */}
