@@ -88,7 +88,7 @@ const navGroups: Array<{ label: string; links: NavLink[]; exactFirst?: boolean }
     links: [
       { href: "/admin/catalog/brands", label: "Brands", icon: Tag },
       { href: "/admin/queue", label: "Scrape Queue", icon: ListOrdered },
-      { href: "/admin/upload", label: "Manual upload", icon: Upload },
+      { href: "/admin/upload", label: "Acer Upload", icon: Upload },
       { href: "/admin/pipeline", label: "Raw Records", icon: FileStack },
     ],
   },
