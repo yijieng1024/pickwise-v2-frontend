@@ -250,8 +250,8 @@ export default function AdminDashboardPage() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        crumbs={["Pipeline health"]}
-        title="Pipeline health"
+        crumbs={["Pipeline Health"]}
+        title="Pipeline Health"
         description="Every laptop moves through four stages, and each one depends on the stage before it. A number below is a queue — open it to clear it. Re-running any stage is safe: finished items are skipped."
         action={
           <Button variant="outline" size="sm" onClick={() => setReloadTick((t) => t + 1)}>
@@ -322,7 +322,7 @@ export default function AdminDashboardPage() {
             {/* Waiting on you */}
             <div className="flex flex-col gap-3">
               <div className="flex items-baseline justify-between">
-                <h2 className="text-sm font-bold tracking-tight">Waiting on you</h2>
+                <h2 className="text-sm font-bold tracking-tight">Waiting on You</h2>
                 <span className="text-muted-foreground text-[12px]">
                   routine states, not errors
                 </span>
@@ -376,7 +376,7 @@ export default function AdminDashboardPage() {
             {/* Findable & rankable, plus recent runs */}
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-3">
-                <h2 className="text-sm font-bold tracking-tight">Findable and rankable</h2>
+                <h2 className="text-sm font-bold tracking-tight">Findable and Rankable</h2>
                 <Card className="gap-0 p-4">
                   <Meter
                     label="Embedded for chat"
@@ -420,7 +420,7 @@ export default function AdminDashboardPage() {
 
               <div className="flex flex-col gap-3">
                 <div className="flex items-baseline justify-between">
-                  <h2 className="text-sm font-bold tracking-tight">Recent runs</h2>
+                  <h2 className="text-sm font-bold tracking-tight">Recent Runs</h2>
                   <Link
                     href="/admin/jobs"
                     className="text-brand text-[12.5px] font-semibold hover:underline"

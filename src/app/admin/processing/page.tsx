@@ -100,14 +100,14 @@ export default function AdminProcessingPage() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        crumbs={["Catalog", "AI clean-up"]}
-        title="AI clean-up"
+        crumbs={["Catalog", "AI Clean-up"]}
+        title="AI Clean-up"
         description="Turns messy vendor text into real catalog entries and adds use-case tags. Tagging is additive: it never removes a tag you set by hand."
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card className="gap-0 p-5">
-          <h2 className="text-sm font-bold tracking-tight">Process collected records</h2>
+          <h2 className="text-sm font-bold tracking-tight">Process Collected Records</h2>
 
           <div className="mt-4 flex items-baseline gap-2">
             <span className="text-3xl font-bold tabular-nums">{limit.toLocaleString()}</span>
@@ -189,7 +189,7 @@ export default function AdminProcessingPage() {
             />
           ) : (
             <Card className="gap-0 p-5">
-              <h2 className="text-sm font-bold tracking-tight">Nothing running</h2>
+              <h2 className="text-sm font-bold tracking-tight">Nothing Running</h2>
               <p className="text-muted-foreground mt-2 text-[13px] leading-relaxed">
                 When you start a batch this panel switches to a live progress view, with
                 failures appearing as they happen rather than only at the end.

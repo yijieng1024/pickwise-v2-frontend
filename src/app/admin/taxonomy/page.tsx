@@ -121,7 +121,7 @@ function ProductTypesSection() {
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold tracking-tight">Product types</h2>
+        <h2 className="text-sm font-bold tracking-tight">Product Types</h2>
         <Button size="sm" onClick={() => setCreateOpen(true)}>
           <Plus data-icon="inline-start" />
           New product type

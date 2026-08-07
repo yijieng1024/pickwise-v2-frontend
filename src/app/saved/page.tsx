@@ -152,7 +152,7 @@ export default function SavedPage() {
       ) : (
         <>
           <div className="mb-6">
-            <h1 className="text-4xl font-bold tracking-tight">Saved laptops</h1>
+            <h1 className="text-4xl font-bold tracking-tight">Saved Laptops</h1>
             <p className="mt-1.5 text-sm text-muted-foreground">
               {laptops?.length} saved · newest first — tap the heart on a card
               to remove it

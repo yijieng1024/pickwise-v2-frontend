@@ -74,7 +74,7 @@ export function ConsoleSnippetCard() {
         <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-sm font-bold tracking-tight">
             <Terminal className="text-brand size-4" />
-            Capture script
+            Capture Script
           </h2>
           <p className="text-muted-foreground mt-1 text-[12.5px] leading-relaxed">
             Saves whichever product page you run it on, with its photo gallery intact. Copy it

@@ -149,8 +149,8 @@ export default function AdminRawReviewsPage() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        crumbs={["Reviews", "Raw reviews"]}
-        title="Raw reviews"
+        crumbs={["Reviews", "Raw Reviews"]}
+        title="Raw Reviews"
         description="Ingested YouTube reviews and how they matched to catalog laptops."
         action={
           <Button variant="outline" size="sm" onClick={runRematch} disabled={rematching}>

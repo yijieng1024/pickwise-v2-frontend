@@ -269,7 +269,7 @@ export function FullSpecs({ raw }: { raw: BackendLaptop }) {
   return (
     <>
       <h2 className="text-lg font-bold tracking-tight md:col-span-6">
-        Full specifications
+        Full Specifications
       </h2>
       {groups.map((group, i) => {
         const Icon = group.icon;

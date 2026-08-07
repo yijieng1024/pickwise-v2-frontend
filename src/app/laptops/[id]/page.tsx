@@ -248,7 +248,7 @@ export default async function LaptopDetailsPage({
         <section className="border-line bg-surface rounded-3xl border p-7 md:col-span-6">
           <div className="mb-1 flex items-baseline justify-between">
             <h2 className="text-base font-semibold tracking-tight">
-              Price history
+              Price History
             </h2>
             {priceDrop > 0 && (
               <span className="text-positive text-xs font-semibold">
@@ -309,7 +309,7 @@ export default async function LaptopDetailsPage({
         {/* {!laptop.accessories && (
           <section className="border-line bg-surface rounded-3xl border p-7 md:col-span-6">
             <h2 className="mb-2 flex items-center gap-2 text-base font-semibold tracking-tight">
-              <Layers className="text-brand size-4" /> Recommended accessories
+              <Layers className="text-brand size-4" /> Recommended Accessories
             </h2>
             <p className="text-sm text-muted-foreground">
               No specific accessories recommended at this time.
@@ -319,7 +319,7 @@ export default async function LaptopDetailsPage({
         {laptop.accessories && (
           <section className="border-line bg-surface rounded-3xl border p-7 md:col-span-6">
             <h2 className="mb-3 flex items-center gap-2 text-base font-semibold tracking-tight">
-              <Layers className="text-brand size-4" /> Pairs well with
+              <Layers className="text-brand size-4" /> Pairs Well With
             </h2>
             <div className="flex flex-col gap-2.5">
               {laptop.accessories.map((acc) => (

@@ -72,7 +72,7 @@ const navGroups: Array<{ label: string; links: NavLink[]; exactFirst?: boolean }
     label: "Overview",
     exactFirst: true,
     links: [
-      { href: "/admin", label: "Pipeline health", icon: LayoutDashboard },
+      { href: "/admin", label: "Pipeline Health", icon: LayoutDashboard },
       // Background runs outlive the page that started them, so their history
       // is a destination rather than a panel on one screen.
       { href: "/admin/jobs", label: "Jobs", icon: History },
@@ -87,9 +87,9 @@ const navGroups: Array<{ label: string; links: NavLink[]; exactFirst?: boolean }
     label: "Collect",
     links: [
       { href: "/admin/catalog/brands", label: "Brands", icon: Tag },
-      { href: "/admin/queue", label: "Scrape queue", icon: ListOrdered },
+      { href: "/admin/queue", label: "Scrape Queue", icon: ListOrdered },
       { href: "/admin/upload", label: "Manual upload", icon: Upload },
-      { href: "/admin/pipeline", label: "Raw records", icon: FileStack },
+      { href: "/admin/pipeline", label: "Raw Records", icon: FileStack },
     ],
   },
   {
@@ -97,9 +97,9 @@ const navGroups: Array<{ label: string; links: NavLink[]; exactFirst?: boolean }
     // the run that produces the rows sits directly above the rows themselves.
     label: "Catalog",
     links: [
-      { href: "/admin/processing", label: "AI clean-up", icon: Wand2 },
+      { href: "/admin/processing", label: "AI Clean-up", icon: Wand2 },
       { href: "/admin/catalog/laptops", label: "Laptops", icon: Laptop },
-      { href: "/admin/catalog/customizations", label: "Upgrade options", icon: SlidersHorizontal },
+      { href: "/admin/catalog/customizations", label: "Upgrade Options", icon: SlidersHorizontal },
     ],
   },
   {
@@ -107,11 +107,11 @@ const navGroups: Array<{ label: string; links: NavLink[]; exactFirst?: boolean }
     // and its score is meaningless until the benchmarks it reads exist. This
     // group was previously buried at the bottom under "Configuration", which
     // put the last pipeline stage after two things that aren't in the pipeline.
-    label: "Rank & search",
+    label: "Rank & Search",
     links: [
       { href: "/admin/embeddings", label: "Embeddings", icon: Sparkles },
-      { href: "/admin/benchmarks/cpu", label: "CPU benchmarks", icon: Cpu },
-      { href: "/admin/benchmarks/gpu", label: "GPU benchmarks", icon: Zap },
+      { href: "/admin/benchmarks/cpu", label: "CPU Benchmarks", icon: Cpu },
+      { href: "/admin/benchmarks/gpu", label: "GPU Benchmarks", icon: Zap },
     ],
   },
   {
@@ -119,7 +119,7 @@ const navGroups: Array<{ label: string; links: NavLink[]; exactFirst?: boolean }
     label: "Reviews",
     links: [
       { href: "/admin/reviews/channels", label: "Sources", icon: Tv },
-      { href: "/admin/reviews/raw", label: "Match queue", icon: FileText },
+      { href: "/admin/reviews/raw", label: "Match Queue", icon: FileText },
       { href: "/admin/reviews/pipeline", label: "Aggregate", icon: Workflow },
     ],
   },
@@ -127,14 +127,14 @@ const navGroups: Array<{ label: string; links: NavLink[]; exactFirst?: boolean }
     // Reference data the stages above read — set once, revisited rarely.
     label: "Configuration",
     links: [
-      { href: "/admin/taxonomy", label: "Tags & taxonomy", icon: FolderTree },
+      { href: "/admin/taxonomy", label: "Tags & Taxonomy", icon: FolderTree },
       { href: "/admin/questionnaire", label: "Questionnaire", icon: ListChecks },
     ],
   },
   {
     label: "Administration",
     links: [
-      { href: "/admin/agent-monitoring", label: "Chatbot monitoring", icon: Activity },
+      { href: "/admin/agent-monitoring", label: "Chatbot Monitoring", icon: Activity },
       { href: "/admin/users", label: "Users", icon: Users },
     ],
   },

@@ -229,7 +229,7 @@ export default function AdminUploadPage() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        crumbs={["Collect", "Acer upload"]}
+        crumbs={["Collect", "Acer Upload"]}
         title="Manual page upload"
         description="Acer's store blocks automated access, so their pages come in by hand. Run the capture script below in your browser, then drop the downloaded files here."
         action={
@@ -420,7 +420,7 @@ export default function AdminUploadPage() {
           truncated most of them, and this is the list being worked through. */}
       <div className="flex flex-col gap-3">
         <div className="flex items-baseline justify-between">
-          <h2 className="text-sm font-bold tracking-tight">Still waiting for a page</h2>
+          <h2 className="text-sm font-bold tracking-tight">Still Waiting for a Page</h2>
           {/* The server count, not the row count — the two diverge past TODO_LIMIT. */}
           <span className="text-muted-foreground text-[12.5px] tabular-nums">
             {todo && todo.length < todoTotal

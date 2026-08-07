@@ -83,7 +83,7 @@ export default function ProfilePage() {
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6">
       <div className="motion-safe:animate-fade-in-up">
-        <h1 className="text-3xl font-bold tracking-tight">Your profile</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Your Profile</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Account details and the personal info Pico uses to tailor advice.
         </p>
@@ -263,7 +263,7 @@ function PersonalDetailsCard({
       className="border-line bg-surface rounded-[24px] border p-7 motion-safe:animate-fade-in-up"
       style={{ animationDelay: "120ms" }}
     >
-      <h2 className="text-base font-bold tracking-tight">Personal details</h2>
+      <h2 className="text-base font-bold tracking-tight">Personal Details</h2>
       <p className="mt-0.5 mb-5 text-[13px] text-muted-foreground">
         Optional — helps PickWise put recommendations in context.
       </p>
@@ -400,7 +400,7 @@ function PreferencesCard({ token }: { token: string }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-base font-bold tracking-tight">
-            Laptop preferences
+            Laptop Preferences
           </h2>
           <p className="mt-0.5 text-[13px] text-muted-foreground">
             What Pico uses to personalize your PickScores.

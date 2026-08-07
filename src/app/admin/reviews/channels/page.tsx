@@ -91,7 +91,7 @@ export default function AdminReviewChannelsPage() {
     <div className="flex flex-col gap-4">
       <AdminPageHeader
         crumbs={["Reviews", "Channels"]}
-        title="Review channels"
+        title="Review Channels"
         description="YouTube channels the review pipeline pulls transcripts from."
         action={
           <Button size="sm" onClick={() => setCreateOpen(true)}>

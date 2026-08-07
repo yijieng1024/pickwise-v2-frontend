@@ -134,7 +134,7 @@ export function PickScoreCard({
     <section className="border-line bg-surface rounded-3xl border p-7 md:col-span-6">
       <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-base font-semibold tracking-tight">
-          PickScore by use case
+          PickScore by Use Case
         </h2>
         <span className="text-[11px] text-muted-foreground">
           Deterministic — real benchmarks, no AI opinion

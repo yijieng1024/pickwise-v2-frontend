@@ -120,7 +120,7 @@ export default function AdminQuestionnairePage() {
     <div className="flex flex-col gap-4">
       <AdminPageHeader
         crumbs={["Configuration", "Questionnaire"]}
-        title="Customer questionnaire"
+        title="Customer Questionnaire"
         description="The questions new customers answer when they set up their preferences. Answers feed their personalized PickScores."
         action={
           <Button size="sm" onClick={() => setEditing("new")}>
@@ -246,7 +246,7 @@ export default function AdminQuestionnairePage() {
 
         {/* Customer preview */}
         <div className="flex flex-col gap-3">
-          <h2 className="text-sm font-bold tracking-tight">What the customer sees</h2>
+          <h2 className="text-sm font-bold tracking-tight">What the Customer Sees</h2>
           <Card className="gap-0 p-5">
             {!previewed ? (
               <p className="text-muted-foreground text-[13px]">

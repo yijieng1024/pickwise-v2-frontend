@@ -121,7 +121,7 @@ export default function AboutPage() {
         style={{ animationDelay: "160ms" }}
       >
         <h2 className="text-2xl font-semibold tracking-tight">
-          How PickWise works
+          How PickWise Works
         </h2>
         <ol className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-3">
           {steps.map(({ step, title, body }) => (
@@ -146,7 +146,7 @@ export default function AboutPage() {
         style={{ animationDelay: "240ms" }}
       >
         <h2 className="text-2xl font-semibold tracking-tight">
-          What we won&apos;t do
+          What We Won&apos;t Do
         </h2>
         <p className="mt-1.5 text-sm text-muted-foreground">
           Recommendation services earn trust by what they refuse, not just what

@@ -228,7 +228,7 @@ export default function FaqPage() {
           FAQ
         </p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-          Frequently asked questions
+          Frequently Asked Questions
         </h1>
         <p className="mt-4 text-[14px] leading-relaxed text-muted-foreground">
           Quick answers about PickWise, Pico, and PickScore. Can&apos;t find

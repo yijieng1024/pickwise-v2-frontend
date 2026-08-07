@@ -145,8 +145,8 @@ export default function AdminRawRecordsPage() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        crumbs={["Collect", "Raw records"]}
-        title="Raw records"
+        crumbs={["Collect", "Raw Records"]}
+        title="Raw Records"
         description="The messy vendor text the scraper collected, before AI clean-up turns it into catalog entries. Nothing here is visible to customers."
         action={
           <Button variant="outline" size="sm" onClick={() => setReloadTick((t) => t + 1)}>
