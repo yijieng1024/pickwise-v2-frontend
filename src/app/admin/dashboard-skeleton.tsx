@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 /**
- * Loading state for the pipeline-health dashboard.
+ * Loading state for the admin dashboard.
  *
  * Mirrors the real layout block for block rather than showing a spinner in a
  * box: the dashboard waits on ten parallel requests, and the slowest decides
@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
  * where this says what is coming and roughly how much of it.
  *
  * Every bar is aria-hidden; the wrapper carries the single status message so a
- * screen reader hears "Loading pipeline health" once instead of a wall of divs.
+ * screen reader hears "Loading the dashboard" once instead of a wall of divs.
  * (The spinner this replaced had no accessible name at all.)
  */
 export function DashboardSkeleton() {
@@ -19,7 +19,7 @@ export function DashboardSkeleton() {
     <div
       role="status"
       aria-live="polite"
-      aria-label="Loading pipeline health"
+      aria-label="Loading the dashboard"
       className="flex flex-col gap-4"
     >
       {/* Four stage cards, matching the xl:grid-cols-4 pipeline row. */}
@@ -106,6 +106,24 @@ export function DashboardSkeleton() {
               <Line box="h-[17px]" bar="h-3 w-2/3" />
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Reference data row */}
+      <div className="flex flex-col gap-3">
+        <Line box="h-5" bar="h-3.5 w-32" aria-hidden />
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="border-line bg-surface flex flex-col rounded-2xl border p-3.5"
+              aria-hidden
+            >
+              <Line box="h-4" bar="h-3 w-24" />
+              <Line box="mt-1.5 h-7" bar="h-5 w-12" />
+              <Line box="h-[17px]" bar="h-3 w-20" />
+            </div>
+          ))}
         </div>
       </div>
     </div>

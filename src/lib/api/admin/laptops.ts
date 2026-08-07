@@ -3,6 +3,12 @@ import type { BackendLaptop } from "@/lib/api/types";
 
 export interface ListLaptopsParams {
   search?: string;
+  /** Filters applied server-side, so `total` reflects them. */
+  brandId?: string;
+  ramGb?: number;
+  storageType?: string;
+  priceMin?: number;
+  priceMax?: number;
   sortBy?: "product_name" | "price_rm" | "created_at";
   sortDir?: "asc" | "desc";
   skip?: number;
@@ -16,6 +22,11 @@ export function listLaptops(
 ): Promise<{ items: BackendLaptop[]; total: number }> {
   const query = new URLSearchParams();
   if (params.search) query.set("search", params.search);
+  if (params.brandId) query.set("brand_id", params.brandId);
+  if (params.ramGb !== undefined) query.set("ram_gb", String(params.ramGb));
+  if (params.storageType) query.set("storage_type", params.storageType);
+  if (params.priceMin !== undefined) query.set("price_min", String(params.priceMin));
+  if (params.priceMax !== undefined) query.set("price_max", String(params.priceMax));
   if (params.sortBy) query.set("sort_by", params.sortBy);
   if (params.sortDir) query.set("sort_dir", params.sortDir);
   if (params.skip !== undefined) query.set("skip", String(params.skip));

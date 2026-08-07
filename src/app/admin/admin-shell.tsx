@@ -72,7 +72,7 @@ const navGroups: Array<{ label: string; links: NavLink[]; exactFirst?: boolean }
     label: "Overview",
     exactFirst: true,
     links: [
-      { href: "/admin", label: "Pipeline Health", icon: LayoutDashboard },
+      { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
       // Background runs outlive the page that started them, so their history
       // is a destination rather than a panel on one screen.
       { href: "/admin/jobs", label: "Jobs", icon: History },
@@ -178,7 +178,10 @@ export function AdminShell({
           {/* Toggle lives in the topbar (AdminTopbar) so it stays reachable
               when the rail is collapsed and on mobile. */}
           <div className="flex items-center gap-2 px-2 py-1.5">
-            <Link href="/" className="flex min-w-0 items-center gap-2">
+            {/* Goes to the dashboard, not the storefront. A wordmark inside an
+                app is expected to be "home within this app"; leaving the portal
+                is the explicit "Back to site" action in the footer. */}
+            <Link href="/admin" className="flex min-w-0 items-center gap-2">
               <span className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-brand text-[12px] font-bold text-white">
                 P
               </span>

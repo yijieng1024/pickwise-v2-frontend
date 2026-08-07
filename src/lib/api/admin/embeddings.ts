@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api/client";
+import type { JobAccepted } from "@/lib/api/admin/jobs";
 
 export interface EmbeddingStatus {
   total_laptops: number;
@@ -7,10 +8,16 @@ export interface EmbeddingStatus {
   coverage_pct: number;
 }
 
+/**
+ * Result payload on a finished `embeddings.generate_all` job — the shape of
+ * `Job.result`, not of the trigger's response. The trigger returns
+ * `JobAccepted` like every other background run.
+ */
 export interface GenerateAllResult {
-  message: string;
-  total_laptops: number;
-  tip: string;
+  total: number;
+  succeeded: number;
+  failed: number;
+  errors: Array<{ laptop_id: string; error: string }>;
 }
 
 export function getEmbeddingStatus(): Promise<EmbeddingStatus> {
@@ -48,9 +55,13 @@ export function generateAllPickScores(token: string): Promise<Record<string, unk
   });
 }
 
-/** Kicks off a background job on the server — returns immediately, doesn't wait for completion. */
-export function generateAllEmbeddings(token: string): Promise<GenerateAllResult> {
-  return apiFetch<GenerateAllResult>("/embeddings/laptops/generate-all", {
+/**
+ * Returns 202 with a job to poll, like the scraper and processor. It used to
+ * fire and forget with no job record, which is why `/admin/embeddings` had to
+ * follow runs by watching the embedded count climb — track it with `useJob`.
+ */
+export function generateAllEmbeddings(token: string): Promise<JobAccepted> {
+  return apiFetch<JobAccepted>("/embeddings/laptops/generate-all", {
     method: "POST",
     token,
     next: { revalidate: 0 },

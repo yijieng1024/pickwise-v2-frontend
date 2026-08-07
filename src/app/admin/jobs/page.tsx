@@ -6,6 +6,14 @@ import { History, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -13,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { type Job, jobTypeLabel, listJobs } from "@/lib/api/admin/jobs";
+import { type Job, type JobStatus, jobTypeLabel, listJobs } from "@/lib/api/admin/jobs";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 
@@ -23,6 +31,28 @@ import { AdminPageHeader } from "../admin-page-header";
 import { AdminPagination } from "../admin-pagination";
 
 const PAGE_SIZE = 25;
+
+/**
+ * Filtering is server-side: `GET /jobs` takes `job_type` and `status`, and the
+ * response `total` already reflects them, so pagination stays correct. Doing it
+ * client-side would only filter the 25 rows on the current page.
+ */
+const TYPE_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "all", label: "All job types" },
+  { value: "processor.process_pending", label: jobTypeLabel("processor.process_pending") },
+  { value: "processor.categorize_untagged", label: jobTypeLabel("processor.categorize_untagged") },
+  { value: "scraper.bulk_scrape", label: jobTypeLabel("scraper.bulk_scrape") },
+  { value: "scraper.scrape_targets", label: jobTypeLabel("scraper.scrape_targets") },
+  { value: "embeddings.generate_all", label: jobTypeLabel("embeddings.generate_all") },
+];
+
+const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "all", label: "All statuses" },
+  { value: "queued", label: "Queued" },
+  { value: "processing", label: "Running" },
+  { value: "completed", label: "Completed" },
+  { value: "failed", label: "Crashed" },
+];
 
 function formatStarted(job: Job): string {
   const iso = job.started_at ?? job.created_at;
@@ -40,13 +70,25 @@ export default function AdminJobsPage() {
   const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const [jobType, setJobType] = useState("all");
+  const [status, setStatus] = useState("all");
   const [reloadTick, setReloadTick] = useState(0);
 
-  // Drop stale rows the moment a refresh is requested — "adjust state during
+  // Changing a filter must reset to page 1, or a page-3 view of a narrower
+  // result set lands past the end and shows nothing.
+  const filterSig = `${jobType}|${status}`;
+  const [prevFilterSig, setPrevFilterSig] = useState(filterSig);
+  if (filterSig !== prevFilterSig) {
+    setPrevFilterSig(filterSig);
+    setPage(1);
+  }
+
+  // Drop stale rows the moment the fetch key changes — "adjust state during
   // render", since the set-state-in-effect lint forbids the effect version.
-  const [prevReloadTick, setPrevReloadTick] = useState(reloadTick);
-  if (reloadTick !== prevReloadTick) {
-    setPrevReloadTick(reloadTick);
+  const fetchSig = `${filterSig}|${page}|${reloadTick}`;
+  const [prevFetchSig, setPrevFetchSig] = useState(fetchSig);
+  if (fetchSig !== prevFetchSig) {
+    setPrevFetchSig(fetchSig);
     setJobs(null);
     setError(null);
   }
@@ -55,7 +97,12 @@ export default function AdminJobsPage() {
     if (!token) return;
     let cancelled = false;
 
-    listJobs(token, { skip: (page - 1) * PAGE_SIZE, limit: PAGE_SIZE })
+    listJobs(token, {
+      skip: (page - 1) * PAGE_SIZE,
+      limit: PAGE_SIZE,
+      jobType: jobType === "all" ? undefined : jobType,
+      status: status === "all" ? undefined : (status as JobStatus),
+    })
       .then((res) => {
         if (cancelled) return;
         setJobs(res.items);
@@ -70,7 +117,9 @@ export default function AdminJobsPage() {
     return () => {
       cancelled = true;
     };
-  }, [token, page, reloadTick]);
+  }, [token, page, jobType, status, reloadTick]);
+
+  const filtered = jobType !== "all" || status !== "all";
 
   return (
     <div className="flex flex-col gap-4">
@@ -86,6 +135,43 @@ export default function AdminJobsPage() {
         }
       />
 
+      {/* gap-3: filter bar, same as every other control row in the portal. */}
+      <div className="flex flex-wrap items-center gap-3">
+        <Select items={TYPE_OPTIONS} value={jobType} onValueChange={(v) => setJobType(v as string)}>
+          <SelectTrigger className="w-60" aria-label="Filter by job type">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              {TYPE_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+        <Select items={STATUS_OPTIONS} value={status} onValueChange={(v) => setStatus(v as string)}>
+          <SelectTrigger className="w-44" aria-label="Filter by status">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              {STATUS_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+        {jobs && (
+          <span className="text-muted-foreground text-[12.5px] tabular-nums">
+            {total} run{total === 1 ? "" : "s"}
+          </span>
+        )}
+      </div>
+
       <Card className="py-0">
         {error ? (
           <AdminErrorState message={error} onRetry={() => setReloadTick((t) => t + 1)} />
@@ -94,8 +180,12 @@ export default function AdminJobsPage() {
         ) : jobs.length === 0 ? (
           <AdminEmptyState
             icon={History}
-            title="No jobs yet"
-            description="Scraping and processing runs will appear here once you start one."
+            title={filtered ? "No jobs match" : "No jobs yet"}
+            description={
+              filtered
+                ? "No run matches these filters. Widen them to see more history."
+                : "Scraping and processing runs will appear here once you start one."
+            }
           />
         ) : (
           <Table>

@@ -8,7 +8,8 @@ export type JobType =
   | "processor.process_pending"
   | "processor.categorize_untagged"
   | "scraper.bulk_scrape"
-  | "scraper.scrape_targets";
+  | "scraper.scrape_targets"
+  | "embeddings.generate_all";
 
 export type JobStatus = "queued" | "processing" | "completed" | "failed";
 
@@ -112,6 +113,7 @@ const JOB_TYPE_LABELS: Record<string, string> = {
   "processor.categorize_untagged": "Add missing tags",
   "scraper.bulk_scrape": "Bulk scrape brand",
   "scraper.scrape_targets": "Scrape selected targets",
+  "embeddings.generate_all": "Generate embeddings",
 };
 
 export function jobTypeLabel(jobType: string): string {

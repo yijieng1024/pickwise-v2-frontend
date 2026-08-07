@@ -19,8 +19,13 @@ import { AdminPageHeader } from "../admin-page-header";
 
 /** The backend's ceiling per run. Larger batches are rejected outright. */
 const MAX_BATCH = 1500;
-/** Measured pacing: the AI provider is rate-limited, so records are spaced out. */
-const SECONDS_PER_RECORD = 5;
+/**
+ * Backend pacing, mirrored here only for the pre-flight estimate. The real
+ * number comes back as `estimated_seconds` on the 202 — prefer that once a run
+ * starts. Extraction is paced against Gemma's 16K tokens-per-minute budget
+ * (not a fixed delay), which works out at ~13s per record.
+ */
+const SECONDS_PER_RECORD = 13;
 
 function formatDuration(seconds: number): string {
   if (seconds < 60) return `${Math.round(seconds)} seconds`;

@@ -7,9 +7,13 @@ import {
   ChevronRight,
   Layers,
   MessagesSquare,
+  Tag,
   RefreshCw,
+  Cpu,
   Sparkles,
   Upload,
+  UsersRound,
+  Zap,
   Video,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -18,6 +22,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { getAgentRunStats } from "@/lib/api/admin/agent-monitoring";
+import { listCpuBenchmarks, listGpuBenchmarks } from "@/lib/api/admin/benchmarks";
+import { listBrands } from "@/lib/api/admin/brands";
+import { listUsers } from "@/lib/api/admin/users";
 import {
   generateAllEmbeddings,
   generateAllPickScores,
@@ -59,6 +66,11 @@ interface Health {
   summariesPending: number;
   agentRuns: number;
   agentErrorRate: number;
+  // Reference data — not queues, so shown as status rather than calls to action.
+  cpuBenchmarks: number;
+  gpuBenchmarks: number;
+  userCount: number;
+  brandCount: number;
 }
 
 export default function AdminDashboardPage() {
@@ -94,6 +106,10 @@ export default function AdminDashboardPage() {
       listPendingSummaries(token),
       getAgentRunStats(token),
       listJobs(token, { limit: 4 }),
+      listCpuBenchmarks({ limit: 1 }),
+      listGpuBenchmarks({ limit: 1 }),
+      listUsers(token, { limit: 1 }),
+      listBrands(),
     ])
       .then(
         ([
@@ -107,6 +123,10 @@ export default function AdminDashboardPage() {
           pendingSummaries,
           agent,
           jobList,
+          cpu,
+          gpu,
+          users,
+          brandList,
         ]) => {
           if (cancelled) return;
           setHealth({
@@ -125,6 +145,10 @@ export default function AdminDashboardPage() {
             summariesPending: pendingSummaries.total,
             agentRuns: agent.runs_today,
             agentErrorRate: agent.error_rate_pct,
+            cpuBenchmarks: cpu.total,
+            gpuBenchmarks: gpu.total,
+            userCount: users.total,
+            brandCount: brandList.length,
           });
           setJobs(jobList.items);
           setError(null);
@@ -132,7 +156,7 @@ export default function AdminDashboardPage() {
       )
       .catch((err) => {
         if (!cancelled) {
-          setError(err instanceof ApiError ? err.message : "Couldn't load pipeline health.");
+          setError(err instanceof ApiError ? err.message : "Couldn't load the dashboard.");
         }
       });
 
@@ -145,10 +169,10 @@ export default function AdminDashboardPage() {
     if (!token) return;
     setRunning("embed");
     try {
-      await generateAllEmbeddings(token);
-      // Fires and forgets: no job id, no progress feed. The only honest
-      // signal is the coverage number climbing on the next refresh.
-      toast.success("Embedding generation started. Refresh to watch coverage climb.");
+      const accepted = await generateAllEmbeddings(token);
+      // This tile only starts the run; the Embeddings screen is where it is
+      // followed, so point there rather than tracking a job from the dashboard.
+      toast.success(`${accepted.message} Follow it on the Embeddings screen.`);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "Couldn't start embedding.");
     } finally {
@@ -206,7 +230,7 @@ export default function AdminDashboardPage() {
           cta: "Process batch",
           progress:
             health.rawTotal > 0 ? (health.rawTotal - health.rawPending) / health.rawTotal : 1,
-          footnote: "Roughly 5s per record",
+          footnote: "Roughly 13s per record",
         },
         {
           href: "/admin/catalog/laptops",
@@ -250,8 +274,8 @@ export default function AdminDashboardPage() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        crumbs={["Pipeline Health"]}
-        title="Pipeline Health"
+        crumbs={["Dashboard"]}
+        title="Dashboard"
         description="Every laptop moves through four stages, and each one depends on the stage before it. A number below is a queue — open it to clear it. Re-running any stage is safe: finished items are skipped."
         action={
           <Button variant="outline" size="sm" onClick={() => setReloadTick((t) => t + 1)}>
@@ -376,7 +400,15 @@ export default function AdminDashboardPage() {
             {/* Findable & rankable, plus recent runs */}
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-3">
-                <h2 className="text-sm font-bold tracking-tight">Findable and Rankable</h2>
+                <div className="flex items-baseline justify-between">
+                  <h2 className="text-sm font-bold tracking-tight">Findable and Rankable</h2>
+                  <Link
+                    href="/admin/embeddings"
+                    className="text-brand text-[12.5px] font-semibold hover:underline"
+                  >
+                    Embeddings →
+                  </Link>
+                </div>
                 <Card className="gap-0 p-4">
                   <Meter
                     label="Embedded for chat"
@@ -412,8 +444,8 @@ export default function AdminDashboardPage() {
                     </Button>
                   </div>
                   <p className="text-muted-foreground mt-2.5 text-[12px] leading-snug">
-                    Embedding runs in the background with no progress feed, so refresh to
-                    watch coverage climb. Scoring is arithmetic and finishes quickly.
+                    Embedding runs in the background as a job — follow it on the Embeddings
+                    screen or in Jobs. Scoring is arithmetic and finishes quickly.
                   </p>
                 </Card>
               </div>
@@ -467,6 +499,61 @@ export default function AdminDashboardPage() {
                   failed count, not the status.
                 </p>
               </div>
+            </div>
+          </div>
+
+          {/* Reference data. Deliberately quieter than the cards above: these
+              are not queues, so they carry no call to action — they answer
+              "is the supporting data there?" and link to where it is edited.
+              Benchmarks lead because PickScore is meaningless without them. */}
+          <div className="flex flex-col gap-3">
+            <h2 className="text-sm font-bold tracking-tight">Reference Data</h2>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              {[
+                {
+                  href: "/admin/benchmarks/cpu",
+                  icon: Cpu,
+                  label: "CPU benchmarks",
+                  value: health.cpuBenchmarks,
+                  hint: "Feeds PickScore",
+                },
+                {
+                  href: "/admin/benchmarks/gpu",
+                  icon: Zap,
+                  label: "GPU benchmarks",
+                  value: health.gpuBenchmarks,
+                  hint: "Feeds PickScore",
+                },
+                {
+                  href: "/admin/catalog/brands",
+                  icon: Tag,
+                  label: "Brands",
+                  value: health.brandCount,
+                  hint: "Drives the crawler",
+                },
+                {
+                  href: "/admin/users",
+                  icon: UsersRound,
+                  label: "Users",
+                  value: health.userCount,
+                  hint: "Accounts and roles",
+                },
+              ].map((r) => (
+                <Link
+                  key={r.href}
+                  href={r.href}
+                  className="border-line bg-surface hover:border-brand/30 flex flex-col rounded-2xl border p-3.5 transition-colors"
+                >
+                  <span className="text-muted-foreground flex items-center gap-1.5 text-[11.5px] font-semibold">
+                    <r.icon className="size-3.5" />
+                    {r.label}
+                  </span>
+                  <span className="mt-1.5 text-xl font-bold tabular-nums">
+                    {r.value.toLocaleString()}
+                  </span>
+                  <span className="text-muted-foreground text-[11.5px]">{r.hint}</span>
+                </Link>
+              ))}
             </div>
           </div>
         </>
