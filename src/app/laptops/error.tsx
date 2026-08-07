@@ -2,6 +2,8 @@
 
 import { useEffect } from "react";
 
+import { Button } from "@/components/ui/button";
+
 export default function LaptopsError({
   error,
   reset,
@@ -20,13 +22,9 @@ export default function LaptopsError({
         <p className="text-sm text-muted-foreground">
           We couldn&apos;t reach the catalog right now. Please try again.
         </p>
-        <button
-          type="button"
-          onClick={reset}
-          className="bg-brand mt-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
-        >
+        <Button type="button" size="xl" shape="pill" onClick={reset} className="mt-2">
           Try again
-        </button>
+        </Button>
       </div>
     </main>
   );

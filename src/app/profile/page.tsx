@@ -10,6 +10,7 @@ import {
   Wand2,
 } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import {
@@ -345,13 +346,9 @@ function PersonalDetailsCard({
         </label>
 
         <div className="flex items-center gap-3 sm:col-span-2">
-          <button
-            type="submit"
-            disabled={saving}
-            className="bg-brand rounded-full px-6 py-2.5 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-          >
+          <Button type="submit" size="xl" shape="pill" disabled={saving}>
             {saving ? "Saving…" : "Save changes"}
-          </button>
+          </Button>
           {saved && !error && (
             <span className="text-[12.5px] font-medium text-positive">
               Saved.
@@ -409,13 +406,14 @@ function PreferencesCard({ token }: { token: string }) {
             What Pico uses to personalize your PickScores.
           </p>
         </div>
-        <Link
-          href="/wizard"
-          className="flex items-center gap-1.5 rounded-full bg-brand-tint px-4 py-2 text-[12.5px] font-semibold text-brand transition-opacity hover:opacity-80"
+        <Button
+          variant="tint"
+          shape="pill"
+          render={<Link href="/wizard" />}
         >
-          <Wand2 className="size-3.5" />
+          <Wand2 data-icon="inline-start" />
           {hasPrefs ? "Update in the wizard" : "Take the Needs Wizard"}
-        </Link>
+        </Button>
       </div>
 
       <div className="mt-5">

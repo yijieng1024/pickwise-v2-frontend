@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Heart, LayoutGrid, List, Search } from "lucide-react";
 
 import { LaptopCard } from "@/components/laptop-card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { mapBackendLaptop } from "@/lib/api/adapters";
@@ -33,12 +34,9 @@ function EmptyState({
       </div>
       <h1 className="mb-2 text-3xl font-bold tracking-tight">{title}</h1>
       <p className="mb-8 max-w-md text-muted-foreground">{body}</p>
-      <Link
-        href={cta.href}
-        className="bg-brand rounded-full px-6 py-3 font-medium text-white transition-opacity hover:opacity-90"
-      >
+      <Button size="2xl" shape="pill" render={<Link href={cta.href} />}>
         {cta.label}
-      </Link>
+      </Button>
     </div>
   );
 }

@@ -21,6 +21,7 @@ import { LaptopGallery } from "@/components/laptop-gallery";
 import { PersonalPickScoreRing } from "@/components/personal-pick-score-ring";
 import { PickScoreCard } from "@/components/pick-score-card";
 import { SaveButton } from "@/components/save-button";
+import { Button } from "@/components/ui/button";
 import { apiFetch, ApiError } from "@/lib/api/client";
 import { mapBackendLaptop } from "@/lib/api/adapters";
 import { getLaptopPickScores, labelForUseCase } from "@/lib/api/pickscore";
@@ -298,12 +299,10 @@ export default async function LaptopDetailsPage({
               No price history recorded yet.
             </p>
           )}
-          <button
-            type="button"
-            className="bg-surface-2 mt-4 flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold transition hover:opacity-80"
-          >
-            <Bell className="size-3" /> Set price drop alert
-          </button>
+          <Button type="button" variant="soft" size="sm" shape="pill" className="mt-4">
+            <Bell data-icon="inline-start" />
+            Set price drop alert
+          </Button>
         </section>
 
         {/* Accessories fallback */}
