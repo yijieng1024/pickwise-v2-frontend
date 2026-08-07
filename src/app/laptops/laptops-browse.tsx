@@ -28,8 +28,23 @@ type ViewMode = "grid" | "list";
 /** Cards rendered initially and added per scroll-to-bottom batch. */
 const BATCH_SIZE = 24;
 
-export function LaptopsBrowse({ laptops }: { laptops: Laptop[] }) {
-  const brands = useMemo(() => ["All", ...new Set(laptops.map((l) => l.brand))], [laptops]);
+export function LaptopsBrowse({
+  laptops,
+  brands: activeBrands,
+}: {
+  laptops: Laptop[];
+  /** Active brand names, in backend order — see the comment in `page.tsx`. */
+  brands?: string[];
+}) {
+  // Active brands lead, then any brand present in the rows that isn't one of
+  // them, so a laptop whose brand was later deactivated stays reachable.
+  const brands = useMemo(
+    () => [
+      "All",
+      ...new Set([...(activeBrands ?? []), ...laptops.map((l) => l.brand)]),
+    ],
+    [activeBrands, laptops],
+  );
   const [brand, setBrand] = useState("All");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortOrder>("reco");

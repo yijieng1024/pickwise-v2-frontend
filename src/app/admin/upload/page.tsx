@@ -46,6 +46,8 @@ import { cn } from "@/lib/utils";
 
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../admin-states";
 import { AdminPageHeader } from "../admin-page-header";
+import { AdminStatusPill } from "../admin-status-pill";
+import { ConsoleSnippetCard } from "./console-snippet";
 
 /**
  * Every file is judged on its own, so a 49-file drop can be 46 stored, 2
@@ -84,6 +86,25 @@ const RESULT_META: Record<
   },
 };
 
+/**
+ * The statuses that still need a page from a human.
+ *
+ * `html_uploaded` is deliberately absent — those already have their HTML and
+ * are only waiting to be parsed.
+ *
+ * `pending` matters as much as `failed`, which this screen used to filter on
+ * alone. A target the feed crawler just added starts at `pending`
+ * (`ScrapeStatus.PENDING`, backend `app/scraper/models.py`) and only turns
+ * `failed` once a bulk run has tried it and found no stored HTML. Filtering on
+ * `failed` therefore hid every newly crawled product until a pointless scrape
+ * had been run against it. The backend has always treated the two the same:
+ * `bulk_scraper.py` picks up never-scraped, failed and html_uploaded together.
+ */
+const TODO_STATUSES = ["pending", "failed"] as const;
+
+/** Rows fetched per status. The true totals are reported even when this cuts in. */
+const TODO_LIMIT = 100;
+
 export default function AdminUploadPage() {
   const { token } = useAuth();
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -94,6 +115,8 @@ export default function AdminUploadPage() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [todo, setTodo] = useState<ScrapeTarget[] | null>(null);
+  /** Server-side count, which `todo.length` understates once TODO_LIMIT bites. */
+  const [todoTotal, setTodoTotal] = useState(0);
   const [todoError, setTodoError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
 
@@ -110,22 +133,31 @@ export default function AdminUploadPage() {
   if (todoSig !== prevTodoSig) {
     setPrevTodoSig(todoSig);
     setTodo(null);
+    setTodoTotal(0);
     setTodoError(null);
   }
 
   // The to-do list is the point of the screen: which queue rows still have no
-  // usable HTML. `failed` covers both "never collected" and "unparseable".
+  // usable HTML. See TODO_STATUSES for why that is two statuses, not one.
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
-    listScrapeTargets(token, {
-      brandId: brandId === "all" ? undefined : brandId,
-      scrapeStatus: "failed",
-      limit: 100,
-    })
-      .then((res) => {
+    const brand = brandId === "all" ? undefined : brandId;
+
+    // GET /scraper/targets takes a single scrape_status, so this is two calls
+    // merged rather than one filtered query.
+    Promise.all(
+      TODO_STATUSES.map((scrapeStatus) =>
+        listScrapeTargets(token, { brandId: brand, scrapeStatus, limit: TODO_LIMIT }),
+      ),
+    )
+      .then((responses) => {
         if (cancelled) return;
-        setTodo(res.targets);
+        const targets = responses.flatMap((r) => r.targets);
+        // Oldest first: the ones outstanding longest are the ones to clear.
+        targets.sort((a, b) => a.created_at.localeCompare(b.created_at));
+        setTodo(targets);
+        setTodoTotal(responses.reduce((sum, r) => sum + r.total, 0));
         setTodoError(null);
       })
       .catch((err) => {
@@ -199,7 +231,7 @@ export default function AdminUploadPage() {
       <AdminPageHeader
         crumbs={["Collect", "Acer upload"]}
         title="Manual page upload"
-        description="Acer's store blocks automated access, so their pages come in by hand. Open a product page in a normal browser, save it with Ctrl+S as “Webpage, HTML Only”, then drop the file here."
+        description="Acer's store blocks automated access, so their pages come in by hand. Run the capture script below in your browser, then drop the downloaded files here."
         action={
           <Button variant="outline" size="sm" onClick={() => setReloadTick((t) => t + 1)}>
             <RefreshCw data-icon="inline-start" />
@@ -381,58 +413,74 @@ export default function AdminUploadPage() {
           )}
         </div>
 
-        {/* The to-do list. */}
-        <div className="flex flex-col gap-3">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-sm font-bold tracking-tight">Still waiting for a page</h2>
-            <span className="text-muted-foreground text-[12.5px] tabular-nums">
-              {todo?.length ?? 0} left
-            </span>
-          </div>
-          <Card className="py-0">
-            {todoError ? (
-              <AdminErrorState message={todoError} onRetry={() => setReloadTick((t) => t + 1)} />
-            ) : todo === null ? (
-              <AdminLoadingState />
-            ) : todo.length === 0 ? (
-              <AdminEmptyState
-                icon={Inbox}
-                title="Nothing outstanding"
-                description="Every queued page for this brand has usable HTML."
-              />
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Product page</TableHead>
-                    <TableHead>Brand</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {todo.map((t) => (
-                    <TableRow key={t.id}>
-                      <TableCell className="max-w-sm">
-                        <a
-                          href={t.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-brand block truncate font-mono text-[12px] hover:underline"
-                        >
-                          {t.url}
-                        </a>
-                      </TableCell>
-                      <TableCell className="text-[13px]">{t.brand_name}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </Card>
-          <p className="text-muted-foreground text-[12px] leading-snug">
-            Open each link, save the page, and drop it on the left. The list shrinks as pages
-            arrive.
-          </p>
+        <ConsoleSnippetCard />
+      </div>
+
+      {/* Full width: these URLs are long enough that a half-width column
+          truncated most of them, and this is the list being worked through. */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-sm font-bold tracking-tight">Still waiting for a page</h2>
+          {/* The server count, not the row count — the two diverge past TODO_LIMIT. */}
+          <span className="text-muted-foreground text-[12.5px] tabular-nums">
+            {todo && todo.length < todoTotal
+              ? `showing ${todo.length} of ${todoTotal}`
+              : `${todoTotal} left`}
+          </span>
         </div>
+        <Card className="py-0">
+          {todoError ? (
+            <AdminErrorState message={todoError} onRetry={() => setReloadTick((t) => t + 1)} />
+          ) : todo === null ? (
+            <AdminLoadingState />
+          ) : todo.length === 0 ? (
+            <AdminEmptyState
+              icon={Inbox}
+              title="Nothing outstanding"
+              description="Every queued page for this brand has usable HTML."
+            />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Product page</TableHead>
+                  <TableHead className="w-40">Brand</TableHead>
+                  {/* "Pending" = never attempted; "Retry next run" = tried, no
+                      HTML found. Both need the same action, but the distinction
+                      says whether a scrape has already looked for this one. */}
+                  <TableHead className="w-36">State</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {todo.map((t) => (
+                  <TableRow key={t.id}>
+                    {/* w-full + max-w-0 lets the cell take the leftover width
+                        while still giving `truncate` something to measure —
+                        an unconstrained cell would push the table wider. */}
+                    <TableCell className="w-full max-w-0">
+                      <a
+                        href={t.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-brand block truncate font-mono text-[12px] hover:underline"
+                      >
+                        {t.url}
+                      </a>
+                    </TableCell>
+                    <TableCell className="w-40 text-[13px]">{t.brand_name}</TableCell>
+                    <TableCell className="w-36">
+                      <AdminStatusPill kind="scrape" value={t.scrape_status} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </Card>
+        <p className="text-muted-foreground text-[12px] leading-snug">
+          Open each link, run the script above on it, and drop the downloaded files in the drop
+          zone. The list shrinks as pages arrive.
+        </p>
       </div>
     </div>
   );

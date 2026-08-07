@@ -54,12 +54,18 @@ interface NavLink {
 }
 
 /**
- * Grouped in pipeline order rather than by domain, and deliberately flat.
+ * Ordered as the data flows, not by domain, and deliberately flat.
  *
- * Every stage depends on the one before it, so the nav order is the mental
- * model the portal has to teach. The previous domain grouping hid three of
- * these groups one accordion deep, which buried the destinations an admin
- * reaches for most.
+ * The four numbered groups are the pipeline stages from the backend's
+ * `admin.md` §2, in the order each one feeds the next: pages are queued,
+ * scraped into raw records, cleaned into the catalog, then made searchable
+ * and rankable. A laptop that stops at stage 2 is invisible to customers; one
+ * that stops at stage 3 is invisible to the chatbot. That dependency is the
+ * mental model the portal has to teach, so it is what the nav order says.
+ *
+ * The unnumbered groups below the stages feed in from the side (reviews),
+ * configure them (taxonomy, questionnaire), or sit outside the pipeline
+ * entirely (users, monitoring).
  */
 const navGroups: Array<{ label: string; links: NavLink[]; exactFirst?: boolean }> = [
   {
@@ -73,24 +79,43 @@ const navGroups: Array<{ label: string; links: NavLink[]; exactFirst?: boolean }
     ],
   },
   {
+    // Stage 1 (find pages) and stage 2 (collect specs) read as one job to an
+    // admin, so they share a group. Brands leads it: the feed crawler works
+    // from each brand's base_scrape_url, and `is_active` decides whether the
+    // brand is crawled at all — so it is the switch everything downstream
+    // hangs off, not a catalog-editing screen.
     label: "Collect",
     links: [
+      { href: "/admin/catalog/brands", label: "Brands", icon: Tag },
       { href: "/admin/queue", label: "Scrape queue", icon: ListOrdered },
       { href: "/admin/upload", label: "Manual upload", icon: Upload },
       { href: "/admin/pipeline", label: "Raw records", icon: FileStack },
     ],
   },
   {
+    // Stage 3 — the AI processor turns raw records into the real catalog, so
+    // the run that produces the rows sits directly above the rows themselves.
     label: "Catalog",
     links: [
       { href: "/admin/processing", label: "AI clean-up", icon: Wand2 },
       { href: "/admin/catalog/laptops", label: "Laptops", icon: Laptop },
-      { href: "/admin/catalog/brands", label: "Brands", icon: Tag },
       { href: "/admin/catalog/customizations", label: "Upgrade options", icon: SlidersHorizontal },
-      { href: "/admin/taxonomy", label: "Tags & taxonomy", icon: FolderTree },
     ],
   },
   {
+    // Stage 4 — a catalog row is still invisible to chat until it is embedded,
+    // and its score is meaningless until the benchmarks it reads exist. This
+    // group was previously buried at the bottom under "Configuration", which
+    // put the last pipeline stage after two things that aren't in the pipeline.
+    label: "Rank & search",
+    links: [
+      { href: "/admin/embeddings", label: "Embeddings", icon: Sparkles },
+      { href: "/admin/benchmarks/cpu", label: "CPU benchmarks", icon: Cpu },
+      { href: "/admin/benchmarks/gpu", label: "GPU benchmarks", icon: Zap },
+    ],
+  },
+  {
+    // Its own three-step flow, feeding the chatbot rather than the catalog.
     label: "Reviews",
     links: [
       { href: "/admin/reviews/channels", label: "Sources", icon: Tv },
@@ -99,12 +124,11 @@ const navGroups: Array<{ label: string; links: NavLink[]; exactFirst?: boolean }
     ],
   },
   {
+    // Reference data the stages above read — set once, revisited rarely.
     label: "Configuration",
     links: [
+      { href: "/admin/taxonomy", label: "Tags & taxonomy", icon: FolderTree },
       { href: "/admin/questionnaire", label: "Questionnaire", icon: ListChecks },
-      { href: "/admin/embeddings", label: "Embeddings", icon: Sparkles },
-      { href: "/admin/benchmarks/cpu", label: "CPU benchmarks", icon: Cpu },
-      { href: "/admin/benchmarks/gpu", label: "GPU benchmarks", icon: Zap },
     ],
   },
   {

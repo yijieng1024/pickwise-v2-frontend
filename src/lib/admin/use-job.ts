@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   type Job,
@@ -40,11 +40,33 @@ export interface UseJobResult {
  *    Judge outcomes by `failed_count`, never by `status`.
  * 2. There is no cancel. Once started, a job runs to completion — so this
  *    hook exposes no abort, and no UI should offer one.
+ *
+ * *onFinished* fires once per job, from the poll that first sees it stop. It
+ * exists so callers can refresh their data without watching `isRunning` flip
+ * during render: the usual "adjust state during render" trick is only legal
+ * for a component's *own* state, and every caller here wants to refresh a
+ * list that often lives in a parent — which React rejects with "Cannot update
+ * a component while rendering a different component". A poll callback is an
+ * event, so it can update anything.
  */
-export function useJob(token: string | null): UseJobResult {
+export function useJob(
+  token: string | null,
+  onFinished?: (job: Job) => void,
+): UseJobResult {
   const [accepted, setAccepted] = useState<JobAccepted | null>(null);
   const [job, setJob] = useState<Job | null>(null);
   const [pollError, setPollError] = useState<string | null>(null);
+
+  // Held in a ref so an inline arrow at the call site doesn't restart polling,
+  // and so the callback is never a dependency of the effect below.
+  const onFinishedRef = useRef(onFinished);
+  useEffect(() => {
+    onFinishedRef.current = onFinished;
+  });
+
+  // Job id the callback has already fired for — the interval can tick once
+  // more before the effect tears itself down, and this run is not repeatable.
+  const reportedRef = useRef<string | null>(null);
 
   const start = useCallback((next: JobAccepted) => {
     setAccepted(next);
@@ -74,6 +96,10 @@ export function useJob(token: string | null): UseJobResult {
         if (cancelled) return;
         setJob(next);
         setPollError(null);
+        if (isJobFinished(next) && reportedRef.current !== jobId) {
+          reportedRef.current = jobId;
+          onFinishedRef.current?.(next);
+        }
       } catch (err) {
         if (cancelled) return;
         // A transient poll failure is not a job failure — surface it, keep

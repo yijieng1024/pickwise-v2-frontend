@@ -75,7 +75,8 @@ export default function AdminQueuePage() {
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [starting, setStarting] = useState(false);
-  const job = useJob(token);
+  // Refresh once a run stops, so statuses and counts catch up.
+  const job = useJob(token, () => setReloadTick((t) => t + 1));
 
   useEffect(() => {
     listBrands({ isActive: true })
@@ -91,14 +92,6 @@ export default function AdminQueuePage() {
     setPrevFilterSig(filterSig);
     setPage(1);
     setSelected(new Set());
-  }
-
-  // Refresh once a run stops, so statuses and counts catch up.
-  const runFinished = job.accepted !== null && !job.isRunning;
-  const [prevRunFinished, setPrevRunFinished] = useState(runFinished);
-  if (runFinished !== prevRunFinished) {
-    setPrevRunFinished(runFinished);
-    if (runFinished) setReloadTick((t) => t + 1);
   }
 
   // Drop stale rows the moment the fetch key changes, so the table shows a

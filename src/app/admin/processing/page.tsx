@@ -40,19 +40,12 @@ export default function AdminProcessingPage() {
   const [startingProcess, setStartingProcess] = useState(false);
   const [startingTags, setStartingTags] = useState(false);
 
-  // Two trackers, because the backend happily runs both at once.
-  const processJob = useJob(token);
-  const tagJob = useJob(token);
-
   const [reloadTick, setReloadTick] = useState(0);
 
-  // Refresh the pending count once a run stops.
-  const processFinished = processJob.accepted !== null && !processJob.isRunning;
-  const [prevProcessFinished, setPrevProcessFinished] = useState(processFinished);
-  if (processFinished !== prevProcessFinished) {
-    setPrevProcessFinished(processFinished);
-    if (processFinished) setReloadTick((t) => t + 1);
-  }
+  // Two trackers, because the backend happily runs both at once. Refresh the
+  // pending count once a processing run stops.
+  const processJob = useJob(token, () => setReloadTick((t) => t + 1));
+  const tagJob = useJob(token);
 
   useEffect(() => {
     if (!token) return;
