@@ -274,7 +274,7 @@ export default function AdminQueuePage() {
             </div>
           </div>
 
-          <div className="ml-auto flex flex-wrap gap-2">
+          <div className="ml-auto flex flex-wrap gap-3">
             <Button variant="outline" size="sm" onClick={runCrawler} disabled={!brandChosen || busy}>
               <Spline data-icon="inline-start" />
               Find new pages
@@ -334,7 +334,7 @@ export default function AdminQueuePage() {
             <span className="text-brand/80 text-[12.5px]">
               Selected rows are always re-scraped, even ones that already succeeded.
             </span>
-            <div className="ml-auto flex gap-2">
+            <div className="ml-auto flex gap-3">
               <Button size="sm" onClick={runSelected} disabled={busy}>
                 Scrape selected
               </Button>

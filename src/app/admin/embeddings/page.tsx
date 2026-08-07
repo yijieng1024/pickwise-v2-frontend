@@ -82,6 +82,9 @@ export default function AdminEmbeddingsPage() {
         )}
       </Card>
 
+      {/* gap-3 throughout: at gap-2 the 8px between buttons was barely wider
+          than the 6px icon-to-label gap inside them, so the pair read as one
+          blob. Measured on screen, not assumed. */}
       <div className="flex flex-wrap items-center gap-3">
         {/* Held until the first status lands: the run panel measures from the
             embedded count at trigger time, and without one it would show

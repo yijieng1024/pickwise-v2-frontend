@@ -154,7 +154,7 @@ export default function AdminProcessingPage() {
             )}
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap gap-3">
             <Button onClick={runProcess} disabled={busy || pendingCount === 0}>
               {startingProcess || processJob.isRunning ? (
                 <Spinner data-icon="inline-start" />

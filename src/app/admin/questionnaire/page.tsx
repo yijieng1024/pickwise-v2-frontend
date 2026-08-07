@@ -299,7 +299,7 @@ export default function AdminQuestionnairePage() {
                   )}
                 </div>
 
-                <div className="mt-4 flex gap-2">
+                <div className="mt-4 flex gap-3">
                   <Button
                     variant="outline"
                     size="sm"

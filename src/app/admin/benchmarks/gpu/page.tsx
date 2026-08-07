@@ -179,7 +179,7 @@ export default function AdminGpuBenchmarksPage() {
         title="GPU benchmarks"
         description="PassMark GPU scores that feed PickScore's performance factors."
         action={
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <Button variant="outline" size="sm" onClick={runScraper} disabled={scraping}>
               <PlayCircle data-icon="inline-start" />
               {scraping ? "Starting…" : "Run PassMark scraper"}

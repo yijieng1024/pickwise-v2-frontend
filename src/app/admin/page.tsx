@@ -393,7 +393,7 @@ export default function AdminDashboardPage() {
                       pct={health.scoreCoverage}
                     />
                   </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="mt-4 flex flex-wrap gap-3">
                     <Button size="sm" onClick={runEmbeddings} disabled={running !== null}>
                       {running === "embed" ? (
                         <Spinner data-icon="inline-start" />
