@@ -1,9 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Link2, MoreHorizontal, RefreshCw, Search } from "lucide-react";
+import { Link2, MoreHorizontal, RefreshCw, Search, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,6 +54,7 @@ import {
   type RawReviewStatus,
   listRawReviews,
   manualMatch,
+  processReview,
   rematchPending,
 } from "@/lib/api/admin/reviews";
 import { apiFetch, ApiError } from "@/lib/api/client";
@@ -81,6 +92,8 @@ export default function AdminRawReviewsPage() {
   const [page, setPage] = useState(1);
   const [rematching, setRematching] = useState(false);
   const [matchTarget, setMatchTarget] = useState<RawReview | null>(null);
+  const [summarizeTarget, setSummarizeTarget] = useState<RawReview | null>(null);
+  const [summarizing, setSummarizing] = useState(false);
   const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
@@ -146,11 +159,30 @@ export default function AdminRawReviewsPage() {
     }
   }
 
+  async function runSummarize() {
+    if (!token || !summarizeTarget) return;
+    setSummarizing(true);
+    try {
+      const res = await processReview(token, summarizeTarget.id);
+      // 0 chunks is a real outcome, not a failure: the transcript was too
+      // short to chunk. A success toast for it would be misleading.
+      if (res.chunks_saved > 0) {
+        toast.success(`Saved ${res.chunks_saved} chunks from "${summarizeTarget.video_title}".`);
+      } else {
+        toast.info("No chunks saved — the transcript had nothing to summarize.");
+      }
+      setSummarizeTarget(null);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Summarizing failed.");
+    } finally {
+      setSummarizing(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        crumbs={["Reviews", "Raw Reviews"]}
-        title="Raw Reviews"
+        title="Match Queue"
         description="Ingested YouTube reviews and how they matched to catalog laptops."
         action={
           <Button variant="outline" size="sm" onClick={runRematch} disabled={rematching}>
@@ -245,6 +277,16 @@ export default function AdminRawReviewsPage() {
                             <Link2 />
                             Match to laptop…
                           </DropdownMenuItem>
+                          {/* Only matched reviews can be summarized — the
+                              backend 400s on the rest, so the control is
+                              disabled ahead of the error rather than after. */}
+                          <DropdownMenuItem
+                            disabled={r.status !== "matched"}
+                            onClick={() => setSummarizeTarget(r)}
+                          >
+                            <Wand2 />
+                            Summarize transcript…
+                          </DropdownMenuItem>
                         </DropdownMenuGroup>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -264,6 +306,34 @@ export default function AdminRawReviewsPage() {
         onOpenChange={(open) => !open && setMatchTarget(null)}
         onMatched={() => setReloadTick((t) => t + 1)}
       />
+
+      <AlertDialog
+        open={summarizeTarget !== null}
+        onOpenChange={(open) => {
+          // Closing mid-run would leave the request going with nothing showing
+          // its progress, so the dialog stays put until it returns.
+          if (!open && !summarizing) setSummarizeTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Summarize this transcript?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Chunks, sentiment-tags and embeds &quot;{summarizeTarget?.video_title}&quot; so the
+              chatbot can quote it. This runs in the foreground and can take a minute or more.
+              Nothing skips a video that was already summarized — running it again stores a
+              second copy of its chunks.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={summarizing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={runSummarize} disabled={summarizing}>
+              {summarizing && <Spinner data-icon="inline-start" />}
+              {summarizing ? "Summarizing…" : "Summarize"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

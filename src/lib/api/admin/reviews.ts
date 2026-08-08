@@ -139,6 +139,27 @@ export function ingestBulk(
   });
 }
 
+/**
+ * Chunks, sentiment-tags and embeds one matched review. Blocking and slow —
+ * one Gemini call plus one embedding call per chunk, so a single video can
+ * take a minute or more.
+ *
+ * Two things `process-bulk` handles that this one does not, so the caller must:
+ * the backend 400s on a review that isn't `matched`, and nothing here skips
+ * reviews that already have chunks (bulk filters those out of its candidate
+ * list instead), so re-running on a processed video stores a second copy.
+ */
+export function processReview(
+  token: string,
+  reviewId: string,
+): Promise<{ chunks_saved: number }> {
+  return apiFetch<{ chunks_saved: number }>(`/reviews/process/${reviewId}`, {
+    method: "POST",
+    token,
+    next: { revalidate: 0 },
+  });
+}
+
 export function processBulk(token: string, limit?: number): Promise<ProcessBulkResult> {
   const qs = limit !== undefined ? `?limit=${limit}` : "";
   return apiFetch<ProcessBulkResult>(`/reviews/process-bulk${qs}`, {
