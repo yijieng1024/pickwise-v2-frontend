@@ -34,7 +34,8 @@ function EmptyState({
       </div>
       <h1 className="mb-2 text-3xl font-bold tracking-tight">{title}</h1>
       <p className="mb-8 max-w-md text-muted-foreground">{body}</p>
-      <Button size="2xl" shape="pill" render={<Link href={cta.href} />}>
+      {/* Rendering as an anchor, so Base UI must not assume a native <button>. */}
+      <Button size="2xl" shape="pill" render={<Link href={cta.href} />} nativeButton={false}>
         {cta.label}
       </Button>
     </div>

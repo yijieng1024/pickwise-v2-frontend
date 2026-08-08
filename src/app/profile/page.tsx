@@ -409,7 +409,9 @@ function PreferencesCard({ token }: { token: string }) {
         <Button
           variant="tint"
           shape="pill"
+          // Rendering as an anchor, so Base UI must not assume a native <button>.
           render={<Link href="/wizard" />}
+          nativeButton={false}
         >
           <Wand2 data-icon="inline-start" />
           {hasPrefs ? "Update in the wizard" : "Take the Needs Wizard"}
