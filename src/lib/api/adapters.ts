@@ -1,4 +1,5 @@
 import type { Laptop } from "@/lib/laptops";
+import { hiResImageUrl, hiResImageUrls } from "@/lib/api/image-urls";
 import type { RankedLaptopPickScore } from "@/lib/api/pickscore";
 import type { BackendBrand, BackendLaptop } from "@/lib/api/types";
 
@@ -27,8 +28,8 @@ export function mapBackendLaptop(
     price: raw.price_rm > 0 ? `RM ${raw.price_rm.toLocaleString()}` : "Price not available",
     priceValue: raw.price_rm,
     score: 0,
-    image: raw.image_urls[0] ?? FALLBACK_IMAGE,
-    images: raw.image_urls.length > 0 ? raw.image_urls : [FALLBACK_IMAGE],
+    image: raw.image_urls[0] ? hiResImageUrl(raw.image_urls[0]) : FALLBACK_IMAGE,
+    images: raw.image_urls.length > 0 ? hiResImageUrls(raw.image_urls) : [FALLBACK_IMAGE],
     badge: "",
     badgeClass: "",
     specs: {
@@ -62,8 +63,8 @@ export function mapRankedLaptop(row: RankedLaptopPickScore): Laptop {
     price: row.price_rm > 0 ? `RM ${row.price_rm.toLocaleString()}` : "Price not available",
     priceValue: row.price_rm,
     score: row.score,
-    image: row.image_urls[0] ?? FALLBACK_IMAGE,
-    images: row.image_urls.length > 0 ? row.image_urls : [FALLBACK_IMAGE],
+    image: row.image_urls[0] ? hiResImageUrl(row.image_urls[0]) : FALLBACK_IMAGE,
+    images: row.image_urls.length > 0 ? hiResImageUrls(row.image_urls) : [FALLBACK_IMAGE],
     badge: "",
     badgeClass: "",
     specs: {} as Laptop["specs"],
