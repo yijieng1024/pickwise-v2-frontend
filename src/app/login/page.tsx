@@ -192,6 +192,34 @@ export default function LoginPage() {
             </p>
           )}
 
+          {/* Google leads: it is one tap against a form of three fields plus an
+              email round-trip on register, so it goes above the fold of this
+              panel rather than under the form it competes with. The divider
+              then reads as "or do it the long way", which is also why its label
+              names the email path instead of the Google one. */}
+          {GOOGLE_CLIENT_ID && (
+            <>
+              <Script
+                src="https://accounts.google.com/gsi/client"
+                strategy="afterInteractive"
+                onReady={() => setGsiReady(true)}
+              />
+              {/* [color-scheme:light] keeps the GIS iframe transparent: when the
+                  embedder's color-scheme (dark, set on <html> by next-themes)
+                  differs from the iframe's, Chromium paints an opaque backdrop
+                  behind the pill. */}
+              <div
+                ref={googleButtonRef}
+                className="flex min-h-11 justify-center [color-scheme:light]"
+              />
+              <div className="flex items-center gap-3 text-[11.5px] text-muted-foreground">
+                <span className="bg-line h-px flex-1" />
+                {isLogin ? "or sign in with email" : "or sign up with email"}
+                <span className="bg-line h-px flex-1" />
+              </div>
+            </>
+          )}
+
           <form className="flex flex-col gap-4.5" onSubmit={handleSubmit}>
             {isLogin ? (
               <label className="flex flex-col gap-1.5 text-xs font-semibold">
@@ -287,29 +315,6 @@ export default function LoginPage() {
                   : "Create account"}
             </Button>
           </form>
-
-          {GOOGLE_CLIENT_ID && (
-            <>
-              <Script
-                src="https://accounts.google.com/gsi/client"
-                strategy="afterInteractive"
-                onReady={() => setGsiReady(true)}
-              />
-              <div className="flex items-center gap-3 text-[11.5px] text-muted-foreground">
-                <span className="bg-line h-px flex-1" />
-                or continue with
-                <span className="bg-line h-px flex-1" />
-              </div>
-              {/* [color-scheme:light] keeps the GIS iframe transparent: when the
-                  embedder's color-scheme (dark, set on <html> by next-themes)
-                  differs from the iframe's, Chromium paints an opaque backdrop
-                  behind the pill. */}
-              <div
-                ref={googleButtonRef}
-                className="flex min-h-11 justify-center [color-scheme:light]"
-              />
-            </>
-          )}
 
           <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
             By continuing you agree to PickWise&apos;s{" "}
