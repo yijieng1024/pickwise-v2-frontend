@@ -9,7 +9,7 @@ export default async function AdminNewLaptopPage() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        crumbs={["Catalog", "Laptops", "New"]}
+        trail={["New Laptop"]}
         title="New Laptop"
         description="Add a laptop directly to the catalog."
       />

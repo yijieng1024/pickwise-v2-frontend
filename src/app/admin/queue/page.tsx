@@ -222,7 +222,6 @@ export default function AdminQueuePage() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        crumbs={["Collect", "Scrape Queue"]}
         title="Scrape Queue"
         description="Product pages the feed crawler found. Failed rows are retried automatically on the next bulk run, so nothing here needs rescuing by hand."
         action={

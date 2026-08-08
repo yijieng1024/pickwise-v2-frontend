@@ -119,8 +119,7 @@ export default function AdminQuestionnairePage() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        crumbs={["Configuration", "Questionnaire"]}
-        title="Customer Questionnaire"
+        title="Questionnaire"
         description="The questions new customers answer when they set up their preferences. Answers feed their personalized PickScores."
         action={
           <Button size="sm" onClick={() => setEditing("new")}>

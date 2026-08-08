@@ -28,7 +28,6 @@ export default function AdminReviewPipelinePage() {
   return (
     <div className="flex flex-col gap-6">
       <AdminPageHeader
-        crumbs={["Reviews", "Pipeline"]}
         title="Review Pipeline"
         description="Discover, process, and aggregate YouTube reviews. These calls use YouTube quota and Gemini credits — run deliberately."
       />

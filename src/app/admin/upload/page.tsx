@@ -229,7 +229,6 @@ export default function AdminUploadPage() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        crumbs={["Collect", "Acer Upload"]}
         title="Acer Upload"
         description="Acer's store blocks automated access, so their pages come in by hand. Run the capture script below in your browser, then drop the downloaded files here."
         action={

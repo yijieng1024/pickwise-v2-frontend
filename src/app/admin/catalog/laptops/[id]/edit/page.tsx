@@ -31,7 +31,7 @@ export default async function AdminEditLaptopPage({
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        crumbs={["Catalog", "Laptops", laptop.product_name]}
+        trail={[laptop.product_name]}
         title={`Edit ${laptop.product_name}`}
         description={laptop.model_code}
       />

@@ -105,7 +105,6 @@ export default function AdminProcessingPage() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        crumbs={["Catalog", "AI Clean-up"]}
         title="AI Clean-up"
         description="Turns messy vendor text into real catalog entries and adds use-case tags. Tagging is additive: it never removes a tag you set by hand."
       />

@@ -175,7 +175,6 @@ export default function AdminCpuBenchmarksPage() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        crumbs={["Benchmarks", "CPU"]}
         title="CPU Benchmarks"
         description="PassMark CPU scores that feed PickScore's performance factors."
         action={

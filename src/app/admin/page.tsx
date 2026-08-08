@@ -274,7 +274,6 @@ export default function AdminDashboardPage() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        crumbs={["Dashboard"]}
         title="Dashboard"
         description="Every laptop moves through four stages, and each one depends on the stage before it. A number below is a queue — open it to clear it. Re-running any stage is safe: finished items are skipped."
         action={

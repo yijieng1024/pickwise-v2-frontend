@@ -175,7 +175,6 @@ export default function AdminGpuBenchmarksPage() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        crumbs={["Benchmarks", "GPU"]}
         title="GPU Benchmarks"
         description="PassMark GPU scores that feed PickScore's performance factors."
         action={

@@ -163,7 +163,6 @@ export default function AdminUsersPage() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        crumbs={["Users"]}
         title="Users"
         description="Search accounts, change roles, and suspend or deactivate access."
       />

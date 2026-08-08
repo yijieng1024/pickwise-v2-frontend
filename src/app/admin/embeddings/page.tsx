@@ -44,7 +44,6 @@ export default function AdminEmbeddingsPage() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        crumbs={["Rank & Search", "Embeddings"]}
         title="Embeddings"
         description="Vector coverage for hybrid search and recommendations. A laptop with no embedding is invisible to Pico, however good its specs are."
       />

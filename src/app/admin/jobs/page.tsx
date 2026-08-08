@@ -124,7 +124,6 @@ export default function AdminJobsPage() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        crumbs={["Jobs"]}
         title="Jobs"
         description="A run that finished with some items failing is still a completed run. Judge it by the failed count, not the status."
         action={

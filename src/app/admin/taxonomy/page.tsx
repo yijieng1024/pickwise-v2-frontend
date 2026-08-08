@@ -66,8 +66,7 @@ export default function AdminTaxonomyPage() {
   return (
     <div className="flex flex-col gap-6">
       <AdminPageHeader
-        crumbs={["Taxonomy"]}
-        title="Taxonomy"
+        title="Tags & Taxonomy"
         description="Product types (scopes the questionnaire) and categories (frontend use-case tags)."
       />
 
