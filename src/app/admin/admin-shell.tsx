@@ -25,6 +25,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Toaster } from "@/components/ui/sonner";
 import { useAuth } from "@/lib/auth-context";
 
+import { AdminFooter } from "./admin-footer";
 import { navGroups, type NavLink } from "./admin-nav";
 import { AdminTopbar } from "./admin-topbar";
 
@@ -125,7 +126,10 @@ export function AdminShell({
 
       <SidebarInset>
         <AdminTopbar />
+        {/* flex-1 on the content keeps the footer at the bottom of the inset on
+            short screens instead of floating under a half-empty page. */}
         <div className="flex flex-1 flex-col gap-3 p-4">{children}</div>
+        <AdminFooter />
         <Toaster position="top-right" />
       </SidebarInset>
     </SidebarProvider>
