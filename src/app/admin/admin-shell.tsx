@@ -20,6 +20,7 @@ import {
   SidebarProvider,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import { BrandMark } from "@/components/brand-mark";
 import { Spinner } from "@/components/ui/spinner";
 import { Toaster } from "@/components/ui/sonner";
 import { useAuth } from "@/lib/auth-context";
@@ -69,9 +70,7 @@ export function AdminShell({
                 app is expected to be "home within this app"; leaving the portal
                 is the explicit "Back to site" action in the footer. */}
             <Link href="/admin" className="flex min-w-0 items-center gap-2">
-              <span className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-brand text-[12px] font-bold text-white">
-                P
-              </span>
+              <BrandMark className="text-brand size-6 shrink-0" />
               {/* Stacked wordmark: the "Admin" line is what distinguishes this
                   from the storefront, so it rides with the name rather than
                   sitting elsewhere in the chrome. Both hide together on the

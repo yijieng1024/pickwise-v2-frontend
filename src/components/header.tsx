@@ -16,6 +16,7 @@ import {
   User,
 } from "lucide-react";
 
+import { BrandMark } from "@/components/brand-mark";
 import { GlassSurface } from "@/components/glass-surface";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserAvatar } from "@/components/user-avatar";
@@ -115,10 +116,10 @@ export function Header() {
           transition: `gap 0.5s ${SPRING}, height 0.5s ${SPRING}, padding 0.5s ${SPRING}, box-shadow 0.5s ease`,
         }}
       >
+        {/* Mark + wordmark composed live rather than shipping the lockup SVG:
+            the wordmark then uses the page's own font and stays selectable. */}
         <Link href="/" className="flex items-center gap-2">
-          <span className="flex size-6.5 items-center justify-center rounded-lg bg-brand text-[13px] font-bold text-white">
-            P
-          </span>
+          <BrandMark className="text-brand size-6.5 shrink-0" />
           <span className="text-[15px] font-bold tracking-tight">
             PickWise
           </span>
@@ -279,9 +280,7 @@ export function Header() {
                   </>
                 ) : (
                   <>
-                    <span className="flex size-8 items-center justify-center rounded-lg bg-brand text-[14px] font-bold text-white">
-                      P
-                    </span>
+                    <BrandMark className="text-brand size-8 shrink-0" />
                     <span className="text-[15px] font-bold tracking-tight">PickWise</span>
                   </>
                 )}

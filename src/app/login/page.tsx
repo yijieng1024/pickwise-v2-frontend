@@ -7,6 +7,7 @@ import Script from "next/script";
 import { useTheme } from "next-themes";
 import { Check, Eye, EyeOff } from "lucide-react";
 
+import { BrandMark } from "@/components/brand-mark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -129,9 +130,9 @@ export default function LoginPage() {
         {/* Brand panel */}
         <div className="from-brand flex flex-col gap-4 bg-gradient-to-br to-primary px-10 py-11 text-white">
           <div className="flex items-center gap-2">
-            <span className="flex size-7 items-center justify-center rounded-[9px] bg-white/20 text-[13px] font-bold">
-              P
-            </span>
+            {/* No color class: the panel is white-on-navy, so currentColor
+                already resolves to white here. */}
+            <BrandMark className="size-7 shrink-0" />
             <span className="text-[16px] font-bold tracking-tight">
               PickWise
             </span>

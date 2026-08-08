@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" fill="none" role="img" aria-label="PickWise">
+  <!--
+    Tab icon: white mark, no tile, transparent background.
+
+    Two things still differ from src/components/brand-mark.tsx on purpose:
+
+    1. Explicit white, not currentColor. A favicon is fetched as its own
+       document with no page CSS around it, so currentColor resolves to black.
+    2. The micro cut, because this renders at 16-32px where the master cut's
+       nodes merge into each other.
+
+    No transform: without a tile the artwork's own margins (content sits at
+    7.5-91 on both axes) are the clear space, so the mark fills the tab slot.
+  -->
+  <g stroke="#ffffff" fill="#ffffff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M36.5 22 C49.5 22 41 50 54 50" fill="none"/>
+    <path d="M36.5 78 C49.5 78 41 50 54 50" fill="none"/>
+    <path d="M36.5 50 H61" fill="none"/>
+    <circle cx="22" cy="22" r="10" fill="none"/>
+    <circle cx="22" cy="50" r="10" fill="none"/>
+    <circle cx="22" cy="78" r="10" fill="none"/>
+    <circle cx="76" cy="50" r="15" stroke="none"/>
+  </g>
+</svg>
