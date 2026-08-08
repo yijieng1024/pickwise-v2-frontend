@@ -201,8 +201,7 @@ export default function AdminAgentMonitoringPage() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        crumbs={["Agent"]}
-        title="Agent"
+        title="Chatbot Monitoring"
         description="Every Pico turn — tool calls, latency, token usage, and errors."
       />
 

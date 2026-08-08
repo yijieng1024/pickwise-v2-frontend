@@ -139,6 +139,27 @@ export function ingestBulk(
   });
 }
 
+/**
+ * Chunks, sentiment-tags and embeds one matched review. Blocking and slow —
+ * one Gemini call plus one embedding call per chunk, so a single video can
+ * take a minute or more.
+ *
+ * Two things `process-bulk` handles that this one does not, so the caller must:
+ * the backend 400s on a review that isn't `matched`, and nothing here skips
+ * reviews that already have chunks (bulk filters those out of its candidate
+ * list instead), so re-running on a processed video stores a second copy.
+ */
+export function processReview(
+  token: string,
+  reviewId: string,
+): Promise<{ chunks_saved: number }> {
+  return apiFetch<{ chunks_saved: number }>(`/reviews/process/${reviewId}`, {
+    method: "POST",
+    token,
+    next: { revalidate: 0 },
+  });
+}
+
 export function processBulk(token: string, limit?: number): Promise<ProcessBulkResult> {
   const qs = limit !== undefined ? `?limit=${limit}` : "";
   return apiFetch<ProcessBulkResult>(`/reviews/process-bulk${qs}`, {
@@ -151,6 +172,55 @@ export function processBulk(token: string, limit?: number): Promise<ProcessBulkR
 export function aggregateLaptop(token: string, laptopId: string): Promise<AggregateResult> {
   return apiFetch<AggregateResult>(`/reviews/aggregate/${laptopId}`, {
     method: "POST",
+    token,
+    next: { revalidate: 0 },
+  });
+}
+
+// --- Summaries ---
+
+/**
+ * `new` means nothing has ever been aggregated for this laptop; `stale` means
+ * a review chunk arrived after the last aggregation. Laptops already covered
+ * are omitted, so this list is the work queue.
+ */
+export interface PendingSummary {
+  laptop_id: string;
+  product_name: string;
+  model_code: string;
+  chunk_count: number;
+  summary_review_count: number;
+  last_aggregated_at: string | null;
+  state: "new" | "stale";
+}
+
+export function listPendingSummaries(
+  token: string,
+): Promise<{ total: number; items: PendingSummary[] }> {
+  return apiFetch<{ total: number; items: PendingSummary[] }>("/reviews/summaries/pending", {
+    token,
+    next: { revalidate: 0 },
+  });
+}
+
+export interface LaptopReviewSummary {
+  laptop_id: string;
+  review_count: number;
+  strengths: string[];
+  weaknesses: string[];
+  last_updated_at: string;
+}
+
+/**
+ * Reads the stored roll-up. Unlike `aggregateLaptop`, this does not recompute
+ * anything, so previewing what the chatbot quotes costs nothing. 404s when
+ * the laptop has never been aggregated.
+ */
+export function getLaptopReviewSummary(
+  token: string,
+  laptopId: string,
+): Promise<LaptopReviewSummary> {
+  return apiFetch<LaptopReviewSummary>(`/reviews/summaries/${laptopId}`, {
     token,
     next: { revalidate: 0 },
   });

@@ -21,6 +21,7 @@ import { LaptopGallery } from "@/components/laptop-gallery";
 import { PersonalPickScoreRing } from "@/components/personal-pick-score-ring";
 import { PickScoreCard } from "@/components/pick-score-card";
 import { SaveButton } from "@/components/save-button";
+import { Button } from "@/components/ui/button";
 import { apiFetch, ApiError } from "@/lib/api/client";
 import { mapBackendLaptop } from "@/lib/api/adapters";
 import { getLaptopPickScores, labelForUseCase } from "@/lib/api/pickscore";
@@ -247,7 +248,7 @@ export default async function LaptopDetailsPage({
         <section className="border-line bg-surface rounded-3xl border p-7 md:col-span-6">
           <div className="mb-1 flex items-baseline justify-between">
             <h2 className="text-base font-semibold tracking-tight">
-              Price history
+              Price History
             </h2>
             {priceDrop > 0 && (
               <span className="text-positive text-xs font-semibold">
@@ -298,19 +299,17 @@ export default async function LaptopDetailsPage({
               No price history recorded yet.
             </p>
           )}
-          <button
-            type="button"
-            className="bg-surface-2 mt-4 flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold transition hover:opacity-80"
-          >
-            <Bell className="size-3" /> Set price drop alert
-          </button>
+          <Button type="button" variant="soft" size="sm" shape="pill" className="mt-4">
+            <Bell data-icon="inline-start" />
+            Set price drop alert
+          </Button>
         </section>
 
         {/* Accessories fallback */}
         {/* {!laptop.accessories && (
           <section className="border-line bg-surface rounded-3xl border p-7 md:col-span-6">
             <h2 className="mb-2 flex items-center gap-2 text-base font-semibold tracking-tight">
-              <Layers className="text-brand size-4" /> Recommended accessories
+              <Layers className="text-brand size-4" /> Recommended Accessories
             </h2>
             <p className="text-sm text-muted-foreground">
               No specific accessories recommended at this time.
@@ -320,7 +319,7 @@ export default async function LaptopDetailsPage({
         {laptop.accessories && (
           <section className="border-line bg-surface rounded-3xl border p-7 md:col-span-6">
             <h2 className="mb-3 flex items-center gap-2 text-base font-semibold tracking-tight">
-              <Layers className="text-brand size-4" /> Pairs well with
+              <Layers className="text-brand size-4" /> Pairs Well With
             </h2>
             <div className="flex flex-col gap-2.5">
               {laptop.accessories.map((acc) => (

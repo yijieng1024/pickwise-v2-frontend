@@ -18,6 +18,12 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
+        // Two app-token variants. `secondary` is deliberately NOT reused for
+        // these: --secondary and --surface-2 are near-identical in light mode
+        // but diverge hard in dark (a neutral grey vs the app's blue-tinted
+        // panel), and --brand-tint has no shadcn equivalent at all.
+        soft: "bg-surface-2 text-foreground hover:opacity-80",
+        tint: "bg-brand-tint text-brand hover:opacity-80",
       },
       size: {
         default:
@@ -25,6 +31,11 @@ const buttonVariants = cva(
         xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
         sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
         lg: "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
+        // Marketing scale. The admin portal tops out at lg (h-9), which is too
+        // compact for a standalone page CTA on the public side.
+        xl: "h-10 gap-2 px-5 has-data-[icon=inline-end]:pr-4 has-data-[icon=inline-start]:pl-4",
+        "2xl":
+          "h-12 gap-2 px-6 text-base has-data-[icon=inline-end]:pr-5 has-data-[icon=inline-start]:pl-5",
         icon: "size-8",
         "icon-xs":
           "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
@@ -32,10 +43,35 @@ const buttonVariants = cva(
           "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
         "icon-lg": "size-9",
       },
+      /**
+       * Radius, kept orthogonal to `size` so any size can be a pill.
+       *
+       * The public pages use a pill language (glassmorphism brief); the admin
+       * portal uses the default rounded-lg. That split is the documented rule
+       * — don't mix the two within one surface. Declared after `size` so its
+       * rounded-full wins the twMerge against the size variants' own radii.
+       */
+      shape: {
+        default: "",
+        pill: "rounded-full",
+      },
     },
+    /**
+     * Pills need more horizontal padding than rectangles at the same height:
+     * the round ends eat into the optical space beside the label.
+     */
+    compoundVariants: [
+      { shape: "pill", size: "xs", class: "px-3" },
+      { shape: "pill", size: "sm", class: "px-3.5" },
+      { shape: "pill", size: "default", class: "px-4" },
+      { shape: "pill", size: "lg", class: "px-4.5" },
+      { shape: "pill", size: "xl", class: "px-5" },
+      { shape: "pill", size: "2xl", class: "px-6" },
+    ],
     defaultVariants: {
       variant: "default",
       size: "default",
+      shape: "default",
     },
   }
 )
@@ -44,12 +80,13 @@ function Button({
   className,
   variant = "default",
   size = "default",
+  shape = "default",
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
   return (
     <ButtonPrimitive
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(buttonVariants({ variant, size, shape, className }))}
       {...props}
     />
   )

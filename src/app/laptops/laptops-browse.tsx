@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { LayoutGrid, List, Search } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { ChevronLeft, ChevronRight, LayoutGrid, List, Search, X } from "lucide-react";
 
 import { LaptopCard } from "@/components/laptop-card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -12,128 +14,119 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Spinner } from "@/components/ui/spinner";
 import type { Laptop } from "@/lib/laptops";
-import { cn } from "@/lib/utils";
 
-type SortOrder = "reco" | "asc" | "desc";
+import { PAGE_SIZE, type SortOrder, type ViewMode } from "./browse-params";
+import { cn } from "@/lib/utils";
 
 const sortOptions: { value: SortOrder; label: string }[] = [
   { value: "reco", label: "Sort: Recommended" },
   { value: "asc", label: "Price: Low to High" },
   { value: "desc", label: "Price: High to Low" },
 ];
-type ViewMode = "grid" | "list";
 
-/** Cards rendered initially and added per scroll-to-bottom batch. */
-const BATCH_SIZE = 24;
+/**
+ * Presentation only — every control writes to the URL and the server returns
+ * the matching page. There is deliberately no client-side filtering, sorting
+ * or slicing left here: with pagination those would only ever act on the 24
+ * rows already on screen, so the count and the pager would disagree with what
+ * the user sees.
+ */
+export function LaptopsBrowse({
+  laptops,
+  brands,
+  total,
+  page,
+  query,
+  brand,
+  sort,
+  view,
+  priceMin,
+  priceMax,
+}: {
+  laptops: Laptop[];
+  brands: string[];
+  total: number;
+  page: number;
+  query: string;
+  brand: string;
+  sort: SortOrder;
+  view: ViewMode;
+  priceMin?: number;
+  priceMax?: number;
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  // Keeps the previous page on screen (dimmed) while the server renders the
+  // next one, instead of blanking the grid on every keystroke or chip click.
+  const [pending, startTransition] = useTransition();
 
-export function LaptopsBrowse({ laptops }: { laptops: Laptop[] }) {
-  const brands = useMemo(() => ["All", ...new Set(laptops.map((l) => l.brand))], [laptops]);
-  const [brand, setBrand] = useState("All");
-  const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<SortOrder>("reco");
-  const [view, setView] = useState<ViewMode>("grid");
-
-  // Lazy rendering: only `limit` cards are in the DOM; an IntersectionObserver
-  // sentinel below the grid raises it as the user approaches the bottom. The
-  // data itself still arrives in the one upfront fetch — this only defers DOM
-  // and image work for ~250 carousel cards.
-  const [limit, setLimit] = useState(BATCH_SIZE);
-  const sentinelRef = useRef<HTMLDivElement>(null);
-
-  // Reset the window when the result set changes (filter/search/sort/view) —
-  // the "adjust state during render" pattern, not an effect.
-  const filterSig = `${brand}|${query}|${sort}|${view}`;
-  const [prevSig, setPrevSig] = useState(filterSig);
-  if (filterSig !== prevSig) {
-    setPrevSig(filterSig);
-    setLimit(BATCH_SIZE);
+  /** Writes one or more params, always resetting to page 1 unless paging. */
+  function apply(next: Record<string, string | number | undefined>) {
+    const sp = new URLSearchParams(params.toString());
+    for (const [key, value] of Object.entries(next)) {
+      if (value === undefined || value === "" || value === "All") sp.delete(key);
+      else sp.set(key, String(value));
+    }
+    if (!("page" in next)) sp.delete("page");
+    startTransition(() => router.push(`${pathname}?${sp.toString()}`, { scroll: false }));
   }
 
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const filtered = laptops.filter((l) => {
-      const matchesBrand = brand === "All" || l.brand === brand;
-      const haystack = `${l.name} ${l.brand} ${Object.values(l.specs).join(" ")}`.toLowerCase();
-      return matchesBrand && haystack.includes(q);
-    });
-    if (sort !== "reco") {
-      filtered.sort((a, b) =>
-        sort === "asc"
-          ? a.priceValue - b.priceValue
-          : b.priceValue - a.priceValue,
-      );
-    }
-    return filtered;
-  }, [laptops, brand, query, sort]);
-
-  const shown = visible.slice(0, limit);
-  const hasMore = visible.length > limit;
+  // Local mirror so typing feels instant; the URL is updated on a debounce.
+  const [searchDraft, setSearchDraft] = useState(query);
+  // Re-sync when the URL changes underneath us (back button, Clear filters) —
+  // "adjust state during render", since the set-state-in-effect lint forbids
+  // the effect version. See laptops-browse's siblings in /admin.
+  const [prevQuery, setPrevQuery] = useState(query);
+  if (query !== prevQuery) {
+    setPrevQuery(query);
+    setSearchDraft(query);
+  }
 
   useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setLimit((l) => l + BATCH_SIZE);
-        }
-      },
-      // Start loading the next batch well before the sentinel is visible.
-      { rootMargin: "600px 0px" },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-    // Recreate per batch so a sentinel still inside the viewport after a fast
-    // scroll immediately triggers the next load (no new crossing event
-    // otherwise).
-  }, [limit, hasMore]);
+    if (searchDraft === query) return;
+    const t = setTimeout(() => apply({ q: searchDraft || undefined }), 350);
+    return () => clearTimeout(t);
+    // `apply` closes over the current params, which is what we want per keystroke.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchDraft, query]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const to = Math.min(page * PAGE_SIZE, total);
+  const chips = ["All", ...brands];
+  const hasFilters =
+    Boolean(query) || brand !== "All" || priceMin !== undefined || priceMax !== undefined;
 
   return (
     <>
       <div className="mb-7">
-        <h1 className="text-4xl font-bold tracking-tight">All laptops</h1>
+        <h1 className="text-4xl font-bold tracking-tight">All Laptops</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          {visible.length} laptops · ask Pico anytime for a personalised
+          <span className="tabular-nums">{total}</span>{" "}
+          {total === 1 ? "laptop" : "laptops"}
+          {hasFilters ? " match your filters" : ""} · ask Pico anytime for a personalised
           shortlist
         </p>
       </div>
 
-      <div className="mb-7 flex flex-wrap items-center gap-3">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="relative min-w-[240px] flex-1">
           <Search className="absolute top-1/2 left-4 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            value={searchDraft}
+            onChange={(e) => setSearchDraft(e.target.value)}
             placeholder="Search by model, brand or spec…"
             aria-label="Search laptops"
             className="border-line bg-surface dark:bg-surface h-11.5 rounded-full py-0 pr-5 pl-10 text-[13.5px] md:text-[13.5px] transition-shadow focus:shadow-[0_0_0_3px_var(--brand-tint)] focus-visible:border-line focus-visible:ring-0"
           />
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {brands.map((b) => (
-            <button
-              key={b}
-              type="button"
-              onClick={() => setBrand(b)}
-              className={cn(
-                "rounded-full border px-4 py-2 text-xs font-semibold transition-colors",
-                brand === b
-                  ? "border-brand bg-brand text-white"
-                  : "border-line bg-surface text-muted-foreground hover:border-brand",
-              )}
-            >
-              {b}
-            </button>
-          ))}
-        </div>
-
         <Select
           items={sortOptions}
           value={sort}
-          onValueChange={(value) => setSort(value as SortOrder)}
+          onValueChange={(value) => apply({ sort: value === "reco" ? undefined : String(value) })}
         >
           <SelectTrigger
             aria-label="Sort laptops"
@@ -141,10 +134,7 @@ export function LaptopsBrowse({ laptops }: { laptops: Laptop[] }) {
           >
             <SelectValue />
           </SelectTrigger>
-          <SelectContent
-            alignItemWithTrigger={false}
-            className="rounded-2xl p-1"
-          >
+          <SelectContent alignItemWithTrigger={false} className="rounded-2xl p-1">
             {sortOptions.map((option) => (
               <SelectItem
                 key={option.value}
@@ -171,7 +161,7 @@ export function LaptopsBrowse({ laptops }: { laptops: Laptop[] }) {
             <button
               key={mode}
               type="button"
-              onClick={() => setView(mode)}
+              onClick={() => apply({ view: mode === "grid" ? undefined : mode, page })}
               aria-label={label}
               aria-pressed={view === mode}
               className={cn(
@@ -187,29 +177,63 @@ export function LaptopsBrowse({ laptops }: { laptops: Laptop[] }) {
         </div>
       </div>
 
-      {visible.length === 0 ? (
+      <div className="mb-7 flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap gap-2">
+          {chips.map((b) => (
+            <button
+              key={b}
+              type="button"
+              onClick={() => apply({ brand: b })}
+              className={cn(
+                "rounded-full border px-4 py-2 text-xs font-semibold transition-colors",
+                brand === b
+                  ? "border-brand bg-brand text-white"
+                  : "border-line bg-surface text-muted-foreground hover:border-brand",
+              )}
+            >
+              {b}
+            </button>
+          ))}
+        </div>
+
+        <PriceRange min={priceMin} max={priceMax} onApply={(min, max) => apply({ min, max })} />
+
+        {hasFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            shape="pill"
+            onClick={() => apply({ q: undefined, brand: undefined, min: undefined, max: undefined })}
+          >
+            <X data-icon="inline-start" />
+            Clear filters
+          </Button>
+        )}
+      </div>
+
+      {laptops.length === 0 ? (
         <div className="border-line bg-surface flex flex-col items-center gap-2 rounded-3xl border py-16 text-center">
           <p className="font-medium">No laptops match your filters</p>
           <p className="text-sm text-muted-foreground">
-            Try a different brand or search term.
+            Try a different brand, price range or search term.
           </p>
         </div>
       ) : (
         <div
           className={cn(
+            "transition-opacity",
+            pending && "opacity-60",
             view === "grid"
               ? "grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
               : "flex flex-col gap-4",
           )}
         >
-          {shown.map((laptop, i) => (
+          {laptops.map((laptop, i) => (
             <div
-              // Key includes the filter/view state so re-filtering replays the reveal
-              key={`${view}-${brand}-${sort}-${query}-${laptop.id}`}
+              // Key includes the query so a new page replays the reveal.
+              key={`${view}-${brand}-${sort}-${query}-${page}-${laptop.id}`}
               className="motion-safe:animate-fade-in-up"
-              // Stagger within each batch only — appended batches replay a
-              // short cascade instead of inheriting a huge absolute delay.
-              style={{ animationDelay: `${(i % BATCH_SIZE) * 60}ms` }}
+              style={{ animationDelay: `${i * 40}ms` }}
             >
               <LaptopCard laptop={laptop} showScore={false} layout={view} />
             </div>
@@ -217,15 +241,104 @@ export function LaptopsBrowse({ laptops }: { laptops: Laptop[] }) {
         </div>
       )}
 
-      {hasMore && (
-        <div
-          ref={sentinelRef}
-          className="flex items-center justify-center gap-2 py-10 text-xs text-muted-foreground"
+      {totalPages > 1 && (
+        <nav
+          aria-label="Pagination"
+          className="mt-10 flex flex-wrap items-center justify-between gap-3"
         >
-          <Spinner className="text-brand size-4" />
-          Loading more laptops…
-        </div>
+          <span className="text-muted-foreground text-[12.5px] tabular-nums">
+            {from}–{to} of {total}
+          </span>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              shape="pill"
+              disabled={page <= 1 || pending}
+              onClick={() => apply({ page: page - 1 <= 1 ? undefined : page - 1 })}
+            >
+              <ChevronLeft data-icon="inline-start" />
+              Previous
+            </Button>
+            <span className="text-muted-foreground text-[12.5px] tabular-nums">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              shape="pill"
+              disabled={page >= totalPages || pending}
+              onClick={() => apply({ page: page + 1 })}
+            >
+              Next
+              <ChevronRight data-icon="inline-end" />
+            </Button>
+          </div>
+        </nav>
       )}
     </>
+  );
+}
+
+/**
+ * Price bounds, committed on blur/Enter rather than per keystroke — a partially
+ * typed "3" in the max field would otherwise fire a query for "under RM3".
+ */
+function PriceRange({
+  min,
+  max,
+  onApply,
+}: {
+  min?: number;
+  max?: number;
+  onApply: (min: number | undefined, max: number | undefined) => void;
+}) {
+  const [lo, setLo] = useState(min?.toString() ?? "");
+  const [hi, setHi] = useState(max?.toString() ?? "");
+
+  // Same render-phase re-sync as the search box: keeps the inputs honest when
+  // the URL changes from outside (Clear filters, back button).
+  const bounds = `${min ?? ""}|${max ?? ""}`;
+  const [prevBounds, setPrevBounds] = useState(bounds);
+  if (bounds !== prevBounds) {
+    setPrevBounds(bounds);
+    setLo(min?.toString() ?? "");
+    setHi(max?.toString() ?? "");
+  }
+
+  const commit = () => {
+    const l = lo.trim() === "" ? undefined : Number(lo);
+    const h = hi.trim() === "" ? undefined : Number(hi);
+    onApply(
+      Number.isFinite(l) && (l as number) >= 0 ? l : undefined,
+      Number.isFinite(h) && (h as number) >= 0 ? h : undefined,
+    );
+  };
+
+  const field =
+    "border-line bg-surface dark:bg-surface h-11.5 w-24 rounded-full py-0 px-4 text-[12.5px] md:text-[12.5px] focus-visible:border-line focus-visible:ring-0";
+
+  return (
+    <div className="flex items-center gap-2">
+      <Input
+        inputMode="numeric"
+        placeholder="Min RM"
+        aria-label="Minimum price in RM"
+        value={lo}
+        onChange={(e) => setLo(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => e.key === "Enter" && commit()}
+        className={field}
+      />
+      <span className="text-muted-foreground text-xs">to</span>
+      <Input
+        inputMode="numeric"
+        placeholder="Max RM"
+        aria-label="Maximum price in RM"
+        value={hi}
+        onChange={(e) => setHi(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => e.key === "Enter" && commit()}
+        className={field}
+      />
+    </div>
   );
 }

@@ -1,31 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  Activity,
-  ArrowLeft,
-  ChevronRight,
-  Cpu,
-  FileText,
-  FolderTree,
-  Gauge,
-  LayoutDashboard,
-  Laptop,
-  Laptop2,
-  ListChecks,
-  SlidersHorizontal,
-  Sparkles,
-  Tag,
-  Tv,
-  Users,
-  Video,
-  Workflow,
-  Zap,
-} from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Sidebar,
   SidebarContent,
@@ -38,60 +17,17 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
   SidebarProvider,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import { BrandMark } from "@/components/brand-mark";
 import { Spinner } from "@/components/ui/spinner";
 import { Toaster } from "@/components/ui/sonner";
 import { useAuth } from "@/lib/auth-context";
 
+import { AdminFooter } from "./admin-footer";
+import { navGroups, type NavLink } from "./admin-nav";
 import { AdminTopbar } from "./admin-topbar";
-
-interface NavLink {
-  href: string;
-  label: string;
-  icon: React.ComponentType;
-}
-
-const overviewLink: NavLink = { href: "/admin", label: "Dashboard", icon: LayoutDashboard };
-
-const operationsLinks: NavLink[] = [{ href: "/admin/users", label: "Users", icon: Users }];
-
-const catalogLinks: NavLink[] = [
-  { href: "/admin/catalog/laptops", label: "Laptops", icon: Laptop },
-  { href: "/admin/catalog/brands", label: "Brands", icon: Tag },
-  { href: "/admin/catalog/customizations", label: "Customizations", icon: SlidersHorizontal },
-];
-
-const pipelineLink: NavLink = { href: "/admin/pipeline", label: "Pipeline", icon: Workflow };
-
-const reviewsLinks: NavLink[] = [
-  { href: "/admin/reviews/channels", label: "Channels", icon: Tv },
-  { href: "/admin/reviews/raw", label: "Raw reviews", icon: FileText },
-  { href: "/admin/reviews/pipeline", label: "Pipeline", icon: Workflow },
-];
-
-const configLinks: NavLink[] = [
-  { href: "/admin/taxonomy", label: "Taxonomy", icon: FolderTree },
-  { href: "/admin/embeddings", label: "Embeddings", icon: Sparkles },
-];
-
-const benchmarksLinks: NavLink[] = [
-  { href: "/admin/benchmarks/cpu", label: "CPU", icon: Cpu },
-  { href: "/admin/benchmarks/gpu", label: "GPU", icon: Zap },
-];
-
-const monitoringLinks: NavLink[] = [
-  { href: "/admin/agent-monitoring", label: "Agent", icon: Activity },
-];
-
-// Domains the backend already gates behind get_current_admin but this phase
-// doesn't build a UI for yet — shown so the nav communicates the full future
-// shape instead of just omitting them.
-const comingSoonLinks = [{ label: "Questionnaire", icon: ListChecks }];
 
 export function AdminShell({
   children,
@@ -113,33 +49,6 @@ export function AdminShell({
     }
   }, [isLoading, user, router]);
 
-  // Auto-expand the Catalog group when navigating into it; otherwise leave
-  // the open state to the user's own toggling — the "adjust state during
-  // render" pattern, not an effect (see laptops-browse.tsx).
-  const isCatalogPath = pathname.startsWith("/admin/catalog");
-  const [catalogOpen, setCatalogOpen] = useState(isCatalogPath);
-  const [prevIsCatalogPath, setPrevIsCatalogPath] = useState(isCatalogPath);
-  if (isCatalogPath !== prevIsCatalogPath) {
-    setPrevIsCatalogPath(isCatalogPath);
-    if (isCatalogPath) setCatalogOpen(true);
-  }
-
-  const isBenchmarksPath = pathname.startsWith("/admin/benchmarks");
-  const [benchmarksOpen, setBenchmarksOpen] = useState(isBenchmarksPath);
-  const [prevIsBenchmarksPath, setPrevIsBenchmarksPath] = useState(isBenchmarksPath);
-  if (isBenchmarksPath !== prevIsBenchmarksPath) {
-    setPrevIsBenchmarksPath(isBenchmarksPath);
-    if (isBenchmarksPath) setBenchmarksOpen(true);
-  }
-
-  const isReviewsPath = pathname.startsWith("/admin/reviews");
-  const [reviewsOpen, setReviewsOpen] = useState(isReviewsPath);
-  const [prevIsReviewsPath, setPrevIsReviewsPath] = useState(isReviewsPath);
-  if (isReviewsPath !== prevIsReviewsPath) {
-    setPrevIsReviewsPath(isReviewsPath);
-    if (isReviewsPath) setReviewsOpen(true);
-  }
-
   if (isLoading || !user || user.role !== "admin") {
     return (
       <div className="flex min-h-svh w-full items-center justify-center">
@@ -158,188 +67,48 @@ export function AdminShell({
           {/* Toggle lives in the topbar (AdminTopbar) so it stays reachable
               when the rail is collapsed and on mobile. */}
           <div className="flex items-center gap-2 px-2 py-1.5">
-            <Link href="/" className="flex min-w-0 items-center gap-2">
-              <span className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-brand text-[12px] font-bold text-white">
-                P
-              </span>
-              <span className="truncate text-[13.5px] font-bold tracking-tight group-data-[collapsible=icon]:hidden">
-                PickWise
+            {/* Goes to the dashboard, not the storefront. A wordmark inside an
+                app is expected to be "home within this app"; leaving the portal
+                is the explicit "Back to site" action in the footer. */}
+            <Link href="/admin" className="flex min-w-0 items-center gap-2">
+              <BrandMark className="text-brand size-6 shrink-0" />
+              {/* Stacked wordmark: the "Admin" line is what distinguishes this
+                  from the storefront, so it rides with the name rather than
+                  sitting elsewhere in the chrome. Both hide together on the
+                  icon rail, leaving just the P. */}
+              <span className="flex min-w-0 flex-col group-data-[collapsible=icon]:hidden">
+                <span className="truncate text-[13.5px] leading-tight font-bold tracking-tight">
+                  PickWise
+                </span>
+                <span className="text-muted-foreground truncate text-[10.5px] leading-tight font-semibold tracking-[0.08em] uppercase">
+                  Admin Portal
+                </span>
               </span>
             </Link>
           </div>
         </SidebarHeader>
 
         <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <NavItem link={overviewLink} pathname={pathname} exact />
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-
-          <SidebarGroup>
-            <SidebarGroupLabel>Operations</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {operationsLinks.map((link) => (
-                  <NavItem key={link.href} link={link} pathname={pathname} />
-                ))}
-
-                <Collapsible open={catalogOpen} onOpenChange={setCatalogOpen}>
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger
-                      render={
-                        <SidebarMenuButton
-                          className="group data-active:bg-brand-tint data-active:font-semibold data-active:text-brand"
-                          isActive={isCatalogPath}
-                        >
-                          <Laptop2 />
-                          <span>Catalog</span>
-                          <ChevronRight className="ml-auto size-4 shrink-0 transition-transform duration-200 group-data-[panel-open]:rotate-90" />
-                        </SidebarMenuButton>
-                      }
+          {navGroups.map((group) => (
+            <SidebarGroup key={group.label}>
+              <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {group.links.map((link, i) => (
+                    <NavItem
+                      key={link.href}
+                      link={link}
+                      pathname={pathname}
+                      // Only the dashboard needs an exact match; every other
+                      // route would otherwise light up under "/admin".
+                      exact={group.exactFirst && i === 0}
                     />
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        {catalogLinks.map((link) => {
-                          const Icon = link.icon;
-                          return (
-                            <SidebarMenuSubItem key={link.href}>
-                              <SidebarMenuSubButton
-                                render={<Link href={link.href} />}
-                                isActive={pathname === link.href}
-                                className="data-active:bg-brand-tint data-active:font-semibold data-active:text-brand"
-                              >
-                                <Icon />
-                                <span>{link.label}</span>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          );
-                        })}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </SidebarMenuItem>
-                </Collapsible>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))}
 
-                <NavItem link={pipelineLink} pathname={pathname} />
-
-                <Collapsible open={reviewsOpen} onOpenChange={setReviewsOpen}>
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger
-                      render={
-                        <SidebarMenuButton
-                          className="group data-active:bg-brand-tint data-active:font-semibold data-active:text-brand"
-                          isActive={isReviewsPath}
-                        >
-                          <Video />
-                          <span>Reviews</span>
-                          <ChevronRight className="ml-auto size-4 shrink-0 transition-transform duration-200 group-data-[panel-open]:rotate-90" />
-                        </SidebarMenuButton>
-                      }
-                    />
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        {reviewsLinks.map((link) => {
-                          const Icon = link.icon;
-                          return (
-                            <SidebarMenuSubItem key={link.href}>
-                              <SidebarMenuSubButton
-                                render={<Link href={link.href} />}
-                                isActive={pathname === link.href}
-                                className="data-active:bg-brand-tint data-active:font-semibold data-active:text-brand"
-                              >
-                                <Icon />
-                                <span>{link.label}</span>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          );
-                        })}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </SidebarMenuItem>
-                </Collapsible>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-
-          <SidebarGroup>
-            <SidebarGroupLabel>Configuration</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {configLinks.map((link) => (
-                  <NavItem key={link.href} link={link} pathname={pathname} />
-                ))}
-
-                <Collapsible open={benchmarksOpen} onOpenChange={setBenchmarksOpen}>
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger
-                      render={
-                        <SidebarMenuButton
-                          className="group data-active:bg-brand-tint data-active:font-semibold data-active:text-brand"
-                          isActive={isBenchmarksPath}
-                        >
-                          <Gauge />
-                          <span>Benchmarks</span>
-                          <ChevronRight className="ml-auto size-4 shrink-0 transition-transform duration-200 group-data-[panel-open]:rotate-90" />
-                        </SidebarMenuButton>
-                      }
-                    />
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        {benchmarksLinks.map((link) => {
-                          const Icon = link.icon;
-                          return (
-                            <SidebarMenuSubItem key={link.href}>
-                              <SidebarMenuSubButton
-                                render={<Link href={link.href} />}
-                                isActive={pathname === link.href}
-                                className="data-active:bg-brand-tint data-active:font-semibold data-active:text-brand"
-                              >
-                                <Icon />
-                                <span>{link.label}</span>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          );
-                        })}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </SidebarMenuItem>
-                </Collapsible>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-
-          <SidebarGroup>
-            <SidebarGroupLabel>Monitoring</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {monitoringLinks.map((link) => (
-                  <NavItem key={link.href} link={link} pathname={pathname} />
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-
-          <SidebarGroup>
-            <SidebarGroupLabel>Coming soon</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {comingSoonLinks.map(({ label, icon: Icon }) => (
-                  <SidebarMenuItem key={label}>
-                    <SidebarMenuButton
-                      render={<span />}
-                      tooltip={`${label} — not built yet`}
-                      className="cursor-default text-muted-foreground/60 hover:bg-transparent hover:text-muted-foreground/60"
-                    >
-                      <Icon />
-                      <span>{label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
         </SidebarContent>
 
         <SidebarFooter>
@@ -357,7 +126,10 @@ export function AdminShell({
 
       <SidebarInset>
         <AdminTopbar />
+        {/* flex-1 on the content keeps the footer at the bottom of the inset on
+            short screens instead of floating under a half-empty page. */}
         <div className="flex flex-1 flex-col gap-3 p-4">{children}</div>
+        <AdminFooter />
         <Toaster position="top-right" />
       </SidebarInset>
     </SidebarProvider>

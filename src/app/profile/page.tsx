@@ -10,6 +10,7 @@ import {
   Wand2,
 } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import {
@@ -82,7 +83,7 @@ export default function ProfilePage() {
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-10 sm:px-6">
       <div className="motion-safe:animate-fade-in-up">
-        <h1 className="text-3xl font-bold tracking-tight">Your profile</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Your Profile</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Account details and the personal info Pico uses to tailor advice.
         </p>
@@ -262,7 +263,7 @@ function PersonalDetailsCard({
       className="border-line bg-surface rounded-[24px] border p-7 motion-safe:animate-fade-in-up"
       style={{ animationDelay: "120ms" }}
     >
-      <h2 className="text-base font-bold tracking-tight">Personal details</h2>
+      <h2 className="text-base font-bold tracking-tight">Personal Details</h2>
       <p className="mt-0.5 mb-5 text-[13px] text-muted-foreground">
         Optional — helps PickWise put recommendations in context.
       </p>
@@ -345,13 +346,9 @@ function PersonalDetailsCard({
         </label>
 
         <div className="flex items-center gap-3 sm:col-span-2">
-          <button
-            type="submit"
-            disabled={saving}
-            className="bg-brand rounded-full px-6 py-2.5 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-          >
+          <Button type="submit" size="xl" shape="pill" disabled={saving}>
             {saving ? "Saving…" : "Save changes"}
-          </button>
+          </Button>
           {saved && !error && (
             <span className="text-[12.5px] font-medium text-positive">
               Saved.
@@ -403,19 +400,22 @@ function PreferencesCard({ token }: { token: string }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-base font-bold tracking-tight">
-            Laptop preferences
+            Laptop Preferences
           </h2>
           <p className="mt-0.5 text-[13px] text-muted-foreground">
             What Pico uses to personalize your PickScores.
           </p>
         </div>
-        <Link
-          href="/wizard"
-          className="flex items-center gap-1.5 rounded-full bg-brand-tint px-4 py-2 text-[12.5px] font-semibold text-brand transition-opacity hover:opacity-80"
+        <Button
+          variant="tint"
+          shape="pill"
+          // Rendering as an anchor, so Base UI must not assume a native <button>.
+          render={<Link href="/wizard" />}
+          nativeButton={false}
         >
-          <Wand2 className="size-3.5" />
+          <Wand2 data-icon="inline-start" />
           {hasPrefs ? "Update in the wizard" : "Take the Needs Wizard"}
-        </Link>
+        </Button>
       </div>
 
       <div className="mt-5">

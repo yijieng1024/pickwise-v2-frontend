@@ -30,6 +30,21 @@ interface LaptopCardProps {
   onCompareChange?: (checked: boolean) => void;
 }
 
+/**
+ * Widths the image area actually occupies, so the optimizer serves that size
+ * rather than the 640w/1280w it falls back to when `sizes` is absent. Matters
+ * most for ASUS, whose sources are 2400×2400 (1.7–3.4 MB) — without this the
+ * list view's 160px slot was being handed a 1280w render. Rounded up, never
+ * down: an over-estimate costs bytes, an under-estimate costs sharpness.
+ */
+const IMAGE_SIZES = {
+  // Browse: 1 col, 2 at md, 3 at lg (~400px each). Home trending goes to 5 at
+  // lg and simply gets a slightly larger render than it needs.
+  grid: "(min-width: 1024px) 400px, (min-width: 768px) 50vw, 100vw",
+  // Fixed image column: w-40 / sm:w-64.
+  list: "(min-width: 640px) 256px, 160px",
+} as const;
+
 export function LaptopCard({
   laptop,
   showScore = true,
@@ -81,6 +96,7 @@ export function LaptopCard({
                   alt={`${laptop.name} ${index + 1}`}
                   width={600}
                   height={400}
+                  sizes={IMAGE_SIZES[layout]}
                   className="h-full w-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105 dark:mix-blend-normal"
                 />
               </CarouselItem>

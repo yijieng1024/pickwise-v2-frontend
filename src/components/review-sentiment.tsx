@@ -20,7 +20,7 @@ export function ReviewSentiment({ reviews }: { reviews: ReviewPoint[] }) {
   return (
     <>
       <h2 className="mb-1 text-base font-semibold tracking-tight">
-        What reviewers love
+        What Reviewers Love
       </h2>
       <p className="mb-4 text-xs text-muted-foreground">
         From {reviews.length} video reviews · click to see the source
@@ -45,7 +45,7 @@ export function ReviewSentiment({ reviews }: { reviews: ReviewPoint[] }) {
       {weaknesses.length > 0 && (
         <>
           <h2 className="mt-6 mb-4 text-base font-semibold tracking-tight">
-            Watch out for
+            Watch Out For
           </h2>
           <div className="flex flex-col gap-2.5">
             {weaknesses.map((r) => (

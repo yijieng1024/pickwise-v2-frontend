@@ -16,7 +16,42 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { UserAvatar } from "@/components/user-avatar";
+import { jobTypeLabel } from "@/lib/api/admin/jobs";
+import { useActiveJobs } from "@/lib/admin/use-job";
 import { useAuth } from "@/lib/auth-context";
+
+/**
+ * Background jobs outlive the screen that started them, so the fact that one
+ * is running has to live in the chrome rather than on a single page.
+ */
+function ActiveJobIndicator() {
+  const { token } = useAuth();
+  const { count, firstJob } = useActiveJobs(token);
+
+  if (count === 0) return null;
+
+  const label =
+    count === 1 && firstJob
+      ? `${jobTypeLabel(firstJob.job_type)} · ${firstJob.progress_percentage}%`
+      : `${count} jobs running`;
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      // Rendering as an anchor, so Base UI must not assume a native <button>.
+      render={<Link href="/admin/jobs" />}
+      nativeButton={false}
+      className="text-brand hover:text-brand bg-brand-tint hover:bg-brand-tint/70 gap-2 rounded-full"
+    >
+      <span
+        className="bg-brand size-1.5 shrink-0 rounded-full motion-safe:animate-pulse"
+        aria-hidden
+      />
+      <span className="max-w-56 truncate tabular-nums">{label}</span>
+    </Button>
+  );
+}
 
 export function AdminTopbar() {
   const { user, logout } = useAuth();
@@ -30,6 +65,8 @@ export function AdminTopbar() {
           is unreachable there — this is the one that always stays visible. */}
       <SidebarTrigger />
       <Separator orientation="vertical" className="mr-1 ml-1 h-5" />
+
+      <ActiveJobIndicator />
 
       <Button
         variant="ghost"

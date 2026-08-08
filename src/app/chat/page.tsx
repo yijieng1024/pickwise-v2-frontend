@@ -1031,7 +1031,7 @@ export default function ChatPage() {
             style={{ animationDelay: "120ms" }}
           >
             <h2 className="text-[13px] font-semibold tracking-tight">
-              What Pico can do
+              What Pico Can Do
             </h2>
             <p className="mt-0.5 mb-3 text-[11.5px] text-muted-foreground">
               Every answer is grounded in these live tools.
@@ -1071,7 +1071,7 @@ export default function ChatPage() {
           >
             <div className="mb-3 flex items-baseline justify-between">
               <h2 className="text-[13px] font-semibold tracking-tight">
-                Current shortlist
+                Current Shortlist
               </h2>
               {laptops.length > 0 && (
                 <span className="text-[11.5px] text-muted-foreground tabular-nums">

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Globe } from "lucide-react";
 
+import { BrandMark } from "@/components/brand-mark";
+
 const productLinks = [
   { href: "/laptops", label: "All laptops" },
   { href: "/wizard", label: "Needs Wizard" },
@@ -24,9 +26,7 @@ export function Footer() {
         <div className="mb-11 grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
           <div className="flex flex-col gap-3.5">
             <div className="flex items-center gap-2">
-              <span className="bg-brand flex size-6.5 items-center justify-center rounded-lg text-[13px] font-bold text-white">
-                P
-              </span>
+              <BrandMark className="text-brand size-6.5 shrink-0" />
               <span className="text-[16px] font-bold tracking-tight">
                 PickWise
               </span>
@@ -84,7 +84,7 @@ export function Footer() {
 
         <div className="border-line flex flex-wrap items-center justify-between gap-4 border-t pt-5.5">
           <span className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} PickWise. All prices in Malaysian Ringgit.
+            &copy; {new Date().getFullYear()} PickWise.
           </span>
           <div className="flex items-center gap-4.5 text-xs">
             <Link href="/terms" className="hover:text-brand text-muted-foreground">

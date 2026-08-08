@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, Cpu, Monitor, Plug } from "lucide-react";
 import { CompareRadar } from "@/components/charts/compare-radar";
 import { GlassSurface } from "@/components/glass-surface";
 import { PickScoreRing } from "@/components/pick-score-ring";
+import { Button } from "@/components/ui/button";
 import { laptops } from "@/lib/laptops";
 import { cn } from "@/lib/utils";
 
@@ -273,16 +274,23 @@ export default function ComparePage() {
         })}
       </div>
 
-      <button
+      {/* Keeps its own colours: this is a quiet disclosure toggle, not a
+          call to action, so it stays transparent and borrows the brand only
+          on hover rather than taking `outline`'s filled hover state. */}
+      <Button
         type="button"
+        variant="outline"
+        size="lg"
+        shape="pill"
         onClick={() => setTechOpen((o) => !o)}
-        className="border-line mt-7 flex items-center gap-2 rounded-full border px-4.5 py-2 text-xs font-semibold text-muted-foreground transition hover:border-brand hover:text-brand"
+        className="border-line mt-7 bg-transparent text-muted-foreground hover:border-brand hover:bg-transparent hover:text-brand dark:bg-transparent dark:hover:bg-transparent"
       >
         <ChevronRight
-          className={cn("size-3 transition-transform", techOpen && "rotate-90")}
+          data-icon="inline-start"
+          className={cn("transition-transform", techOpen && "rotate-90")}
         />
         {techOpen ? "Hide technical rows" : "Show technical rows (for the tech-savvy)"}
-      </button>
+      </Button>
     </main>
   );
 }

@@ -100,7 +100,6 @@ export default function AdminCatalogBrandsPage() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        crumbs={["Catalog", "Brands"]}
         title="Brands"
         description="Full CRUD — scrape source, icon, active state."
         action={

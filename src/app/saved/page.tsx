@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Heart, LayoutGrid, List, Search } from "lucide-react";
 
 import { LaptopCard } from "@/components/laptop-card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { mapBackendLaptop } from "@/lib/api/adapters";
@@ -33,12 +34,10 @@ function EmptyState({
       </div>
       <h1 className="mb-2 text-3xl font-bold tracking-tight">{title}</h1>
       <p className="mb-8 max-w-md text-muted-foreground">{body}</p>
-      <Link
-        href={cta.href}
-        className="bg-brand rounded-full px-6 py-3 font-medium text-white transition-opacity hover:opacity-90"
-      >
+      {/* Rendering as an anchor, so Base UI must not assume a native <button>. */}
+      <Button size="2xl" shape="pill" render={<Link href={cta.href} />} nativeButton={false}>
         {cta.label}
-      </Link>
+      </Button>
     </div>
   );
 }
@@ -154,7 +153,7 @@ export default function SavedPage() {
       ) : (
         <>
           <div className="mb-6">
-            <h1 className="text-4xl font-bold tracking-tight">Saved laptops</h1>
+            <h1 className="text-4xl font-bold tracking-tight">Saved Laptops</h1>
             <p className="mt-1.5 text-sm text-muted-foreground">
               {laptops?.length} saved · newest first — tap the heart on a card
               to remove it

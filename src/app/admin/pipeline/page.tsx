@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ExternalLink, Eye, Inbox, PlayCircle, RefreshCw, Search } from "lucide-react";
+import Link from "next/link";
+import { ExternalLink, Eye, Inbox, RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +23,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Spinner } from "@/components/ui/spinner";
 import {
   Table,
   TableBody,
@@ -33,35 +33,20 @@ import {
 } from "@/components/ui/table";
 import { type Brand, listBrands } from "@/lib/api/admin/brands";
 import {
-  type BulkScrapeReport,
   type RawPrice,
   type RawScrapLaptop,
-  bulkScrape,
   listRawScrapLaptops,
 } from "@/lib/api/admin/scraper";
-import {
-  type CategorizeUntaggedResult,
-  type ProcessPendingResult,
-  categorizeUntagged,
-  processPending,
-} from "@/lib/api/admin/processor";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
-import { OutcomeAlert, outcomeOf } from "../admin-outcome-alert";
+import { AdminStatusPill } from "../admin-status-pill";
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../admin-states";
 import { AdminPageHeader } from "../admin-page-header";
 import { AdminPagination } from "../admin-pagination";
 
 const PAGE_SIZE = 25;
-
-const statusBadgeClass: Record<RawScrapLaptop["processing_status"], string> = {
-  pending: "bg-warning/10 text-warning",
-  processing: "bg-brand-tint text-brand",
-  completed: "bg-positive/10 text-positive",
-  failed: "bg-negative/10 text-negative",
-};
 
 const statusOptions = [
   { value: "all", label: "All statuses" },
@@ -71,14 +56,27 @@ const statusOptions = [
   { value: "failed", label: "Failed" },
 ];
 
-export default function AdminPipelinePage() {
+/**
+ * Read-only view of `raw_scrap_laptops` — what the scraper collected, before
+ * the AI processor turns it into catalog rows.
+ *
+ * Deliberately has no action buttons. It used to start bulk scrapes and
+ * processor runs itself, duplicating /admin/queue and /admin/processing with
+ * a hardcoded batch of 100 against their 1–1500 — so the same job could be
+ * launched twice, at a limit the UI never showed. Each action now lives on
+ * exactly one screen, at full capability, and this one links to them.
+ */
+export default function AdminRawRecordsPage() {
   const { token } = useAuth();
-  // The raw-scrap queue backs both sections (per-brand counts above, the full
-  // row list below), so it's fetched once here rather than in each section.
   const [brands, setBrands] = useState<Brand[]>([]);
   const [queue, setQueue] = useState<RawScrapLaptop[] | null>(null);
   const [queueError, setQueueError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
+
+  const [status, setStatus] = useState("all");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [detailTarget, setDetailTarget] = useState<RawScrapLaptop | null>(null);
 
   useEffect(() => {
     listBrands()
@@ -101,7 +99,7 @@ export default function AdminPipelinePage() {
     listRawScrapLaptops(token, { limit: 1000 })
       .then((res) => {
         if (cancelled) return;
-        setQueue(res);
+        setQueue(res.items);
         setQueueError(null);
       })
       .catch((err) => {
@@ -119,186 +117,6 @@ export default function AdminPipelinePage() {
     () => new Map(brands.map((b) => [b.id, b.name])),
     [brands],
   );
-  const reload = () => setReloadTick((t) => t + 1);
-
-  return (
-    <div className="flex flex-col gap-6">
-      <AdminPageHeader
-        crumbs={["Pipeline"]}
-        title="Pipeline"
-        description="Trigger the scraper and AI processor, and watch queue depth."
-      />
-
-      <ScraperSection
-        brands={brands}
-        queue={queue}
-        queueError={queueError}
-        onReload={reload}
-      />
-      <ProcessorSection
-        queue={queue}
-        queueError={queueError}
-        brandNames={brandNames}
-        onReload={reload}
-      />
-    </div>
-  );
-}
-
-function ScraperSection({
-  brands,
-  queue,
-  queueError,
-  onReload,
-}: {
-  brands: Brand[];
-  queue: RawScrapLaptop[] | null;
-  queueError: string | null;
-  onReload: () => void;
-}) {
-  const { token } = useAuth();
-  const [brandId, setBrandId] = useState<string>("");
-  const [running, setRunning] = useState(false);
-  const [report, setReport] = useState<BulkScrapeReport | null>(null);
-
-  // Only active brands can be scraped; the list itself covers all of them.
-  const activeBrands = useMemo(() => brands.filter((b) => b.is_active), [brands]);
-  // Default to the first brand once they load, without an effect.
-  const selectedBrandId = brandId || activeBrands[0]?.id || "";
-
-  const queueByBrand = useMemo(() => {
-    const counts = new Map<string, { pending: number; completed: number; failed: number }>();
-    for (const row of queue ?? []) {
-      const entry = counts.get(row.brand_id) ?? { pending: 0, completed: 0, failed: 0 };
-      if (row.processing_status === "pending") entry.pending += 1;
-      else if (row.processing_status === "completed") entry.completed += 1;
-      else if (row.processing_status === "failed") entry.failed += 1;
-      counts.set(row.brand_id, entry);
-    }
-    return counts;
-  }, [queue]);
-
-  async function runBulkScrape() {
-    if (!token || !selectedBrandId) return;
-    setRunning(true);
-    setReport(null);
-    try {
-      const res = await bulkScrape(token, selectedBrandId);
-      setReport(res);
-      toast.success(
-        `Bulk scrape done: ${res.succeeded} succeeded, ${res.failed} failed, ${res.skipped} skipped.`,
-      );
-      onReload();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Bulk scrape failed.");
-    } finally {
-      setRunning(false);
-    }
-  }
-
-  return (
-    <section className="flex flex-col gap-4">
-      <h2 className="text-sm font-bold tracking-tight">Scraper</h2>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <Select
-          items={activeBrands.map((b) => ({ value: b.id, label: b.name }))}
-          value={selectedBrandId}
-          onValueChange={(v) => setBrandId(v as string)}
-        >
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Select a brand" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              {activeBrands.map((b) => (
-                <SelectItem key={b.id} value={b.id}>
-                  {b.name}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-        <Button onClick={runBulkScrape} disabled={running || !selectedBrandId}>
-          {running ? (
-            <Spinner data-icon="inline-start" />
-          ) : (
-            <PlayCircle data-icon="inline-start" />
-          )}
-          {running ? "Scraping…" : "Run bulk scrape"}
-        </Button>
-      </div>
-
-      {report && (
-        <OutcomeAlert
-          status={outcomeOf(report.succeeded, report.failed)}
-          title={`${report.brand} — ${report.succeeded} succeeded, ${report.failed} failed`}
-        >
-          {report.processed} processed of {report.total_pending} pending, {report.skipped} skipped.
-        </OutcomeAlert>
-      )}
-
-      <Card className="py-0">
-        {queueError ? (
-          <AdminErrorState message={queueError} onRetry={onReload} />
-        ) : queue === null ? (
-          <AdminLoadingState />
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Brand</TableHead>
-                <TableHead>Pending</TableHead>
-                <TableHead>Completed</TableHead>
-                <TableHead>Failed</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {activeBrands.map((b) => {
-                const counts = queueByBrand.get(b.id) ?? { pending: 0, completed: 0, failed: 0 };
-                return (
-                  <TableRow key={b.id}>
-                    <TableCell className="font-medium">{b.name}</TableCell>
-                    <TableCell>
-                      <Badge className="bg-warning/10 text-warning tabular-nums">{counts.pending}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className="bg-positive/10 text-positive tabular-nums">{counts.completed}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className="bg-negative/10 text-negative tabular-nums">{counts.failed}</Badge>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        )}
-      </Card>
-    </section>
-  );
-}
-
-function ProcessorSection({
-  queue,
-  queueError,
-  brandNames,
-  onReload,
-}: {
-  queue: RawScrapLaptop[] | null;
-  queueError: string | null;
-  brandNames: Map<string, string>;
-  onReload: () => void;
-}) {
-  const { token } = useAuth();
-  const [processing, setProcessing] = useState(false);
-  const [categorizing, setCategorizing] = useState(false);
-  const [processResult, setProcessResult] = useState<ProcessPendingResult | null>(null);
-  const [categorizeResult, setCategorizeResult] = useState<CategorizeUntaggedResult | null>(null);
-  const [status, setStatus] = useState("all");
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [detailTarget, setDetailTarget] = useState<RawScrapLaptop | null>(null);
 
   // Reset pagination when the effective filter changes — "adjust state during
   // render", not an effect (see laptops-browse.tsx).
@@ -324,143 +142,43 @@ function ProcessorSection({
 
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  async function runProcessPending() {
-    if (!token) return;
-    setProcessing(true);
-    setProcessResult(null);
-    try {
-      const res = await processPending(token);
-      setProcessResult(res);
-      toast.success(res.message);
-      onReload();
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Processing failed.");
-    } finally {
-      setProcessing(false);
-    }
-  }
-
-  async function runCategorizeUntagged() {
-    if (!token) return;
-    setCategorizing(true);
-    setCategorizeResult(null);
-    try {
-      const res = await categorizeUntagged(token);
-      setCategorizeResult(res);
-      toast.success(res.message);
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Categorization failed.");
-    } finally {
-      setCategorizing(false);
-    }
-  }
-
   return (
-    <section className="flex flex-col gap-4">
-      <h2 className="text-sm font-bold tracking-tight">Processor</h2>
+    <div className="flex flex-col gap-4">
+      <AdminPageHeader
+        title="Raw Records"
+        description="The messy vendor text the scraper collected, before AI clean-up turns it into catalog entries. Nothing here is visible to customers."
+        action={
+          <Button variant="outline" size="sm" onClick={() => setReloadTick((t) => t + 1)}>
+            <RefreshCw data-icon="inline-start" />
+            Refresh
+          </Button>
+        }
+      />
 
-      <div className="flex flex-wrap gap-3">
-        <Button onClick={runProcessPending} disabled={processing}>
-          {processing ? (
-            <Spinner data-icon="inline-start" />
-          ) : (
-            <PlayCircle data-icon="inline-start" />
-          )}
-          {processing ? "Processing…" : "Process pending"}
-        </Button>
-        <Button variant="outline" onClick={runCategorizeUntagged} disabled={categorizing}>
-          {categorizing ? (
-            <Spinner data-icon="inline-start" />
-          ) : (
-            <PlayCircle data-icon="inline-start" />
-          )}
-          {categorizing ? "Categorizing…" : "Categorize untagged"}
-        </Button>
-      </div>
-
-      {processResult && (
-        <div className="flex flex-col gap-3 text-[13px]">
-          <OutcomeAlert
-            status={outcomeOf(
-              (processResult.details ?? []).filter((d) => !d.error).length,
-              (processResult.details ?? []).filter((d) => d.error).length,
-            )}
-            title={processResult.message}
-          >
-            {processResult.pending_remaining !== undefined && (
-              <>
-                {processResult.total_new_variants_saved ?? 0} new,{" "}
-                {processResult.total_variants_updated ?? 0} updated — {processResult.pending_remaining}{" "}
-                still pending.
-              </>
-            )}
-          </OutcomeAlert>
-
-          {processResult.details && processResult.details.length > 0 && (
-            <Card className="py-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Extracted</TableHead>
-                    <TableHead className="text-right">Saved</TableHead>
-                    <TableHead className="text-right">Updated</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {processResult.details.map((d) => (
-                    <TableRow key={d.raw_id}>
-                      <TableCell>
-                        <div className="max-w-xs truncate font-medium">{d.product_name}</div>
-                        {d.error && (
-                          <div className="text-[12px] text-negative">{d.error}</div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          className={cn(
-                            "capitalize",
-                            d.error ? "bg-negative/10 text-negative" : "bg-positive/10 text-positive",
-                          )}
-                        >
-                          {d.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">{d.variants_extracted}</TableCell>
-                      <TableCell className="text-right tabular-nums">{d.variants_saved}</TableCell>
-                      <TableCell className="text-right tabular-nums">{d.variants_updated}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-          )}
-        </div>
-      )}
-
-      {categorizeResult && (
-        <OutcomeAlert
-          status={outcomeOf(categorizeResult.tagged, categorizeResult.errors.length)}
-          title={categorizeResult.message}
-        >
-          {categorizeResult.tagged} tagged, {categorizeResult.links_added} links added —{" "}
-          {categorizeResult.untagged_remaining} still untagged.
-          {categorizeResult.errors.length > 0 && (
-            <ul className="mt-1.5 list-disc pl-4 text-[12px]">
-              {categorizeResult.errors.map((e, i) => (
-                <li key={i}>{e}</li>
-              ))}
-            </ul>
-          )}
-        </OutcomeAlert>
-      )}
+      <Card className="gap-0 p-4">
+        <p className="text-muted-foreground text-[12.5px] leading-relaxed">
+          To collect more, run a scrape from the{" "}
+          <Link href="/admin/queue" className="text-brand font-medium hover:underline">
+            scrape queue
+          </Link>
+          . To turn these into catalog entries, run{" "}
+          <Link href="/admin/processing" className="text-brand font-medium hover:underline">
+            AI clean-up
+          </Link>{" "}
+          — it reports how many are pending and lets you choose the batch size.
+        </p>
+      </Card>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-[13px] font-semibold text-muted-foreground">
-          Raw scrape queue
-          {queue && <span className="tabular-nums"> · {filtered.length} of {queue.length}</span>}
-        </h3>
+        <h2 className="text-sm font-bold tracking-tight">
+          Collected records
+          {queue && (
+            <span className="text-muted-foreground font-medium tabular-nums">
+              {" "}
+              · {filtered.length} of {queue.length}
+            </span>
+          )}
+        </h2>
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative w-full sm:w-64">
             <Search className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -485,15 +203,12 @@ function ProcessorSection({
               </SelectGroup>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="icon" onClick={onReload} aria-label="Refresh queue">
-            <RefreshCw />
-          </Button>
         </div>
       </div>
 
       <Card className="py-0">
         {queueError ? (
-          <AdminErrorState message={queueError} onRetry={onReload} />
+          <AdminErrorState message={queueError} onRetry={() => setReloadTick((t) => t + 1)} />
         ) : queue === null ? (
           <AdminLoadingState />
         ) : filtered.length === 0 ? (
@@ -529,9 +244,7 @@ function ProcessorSection({
                     {brandNames.get(row.brand_id) ?? "—"}
                   </TableCell>
                   <TableCell>
-                    <Badge className={cn("capitalize", statusBadgeClass[row.processing_status])}>
-                      {row.processing_status}
-                    </Badge>
+                    <AdminStatusPill kind="raw" value={row.processing_status} />
                   </TableCell>
                   <TableCell className="text-muted-foreground tabular-nums">
                     {row.raw_prices.length === 0
@@ -574,7 +287,7 @@ function ProcessorSection({
         open={detailTarget !== null}
         onOpenChange={(open) => !open && setDetailTarget(null)}
       />
-    </section>
+    </div>
   );
 }
 
@@ -605,9 +318,7 @@ function RawRecordDialog({
           <div className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto text-[13px]">
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
               <Field label="Status">
-                <Badge className={cn("capitalize", statusBadgeClass[record.processing_status])}>
-                  {record.processing_status}
-                </Badge>
+                <AdminStatusPill kind="raw" value={record.processing_status} />
               </Field>
               <Field label="Brand">{brandName ?? "—"}</Field>
               <Field label="Scraped">{formatDateTime(record.created_at)}</Field>

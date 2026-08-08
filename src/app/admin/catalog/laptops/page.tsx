@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { ExternalLink, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { ExternalLink, Laptop, MoreHorizontal, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -24,6 +25,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -47,6 +56,38 @@ const PAGE_SIZE = 25;
 
 type SortKey = "product_name" | "price_rm";
 
+/**
+ * First scraped photo, beside the model name — the same row rhythm as the user
+ * avatar on /admin/users, sized up because a laptop shot needs more than 28px.
+ *
+ * Product photos keep the app-wide conventions: a white panel in both themes so
+ * transparent PNGs read cleanly, `object-contain` so nothing is cropped, and
+ * `mix-blend-multiply dark:mix-blend-normal`. `image_urls` is empty for rows the
+ * scraper couldn't get photos from, so the placeholder is a real state here, not
+ * a defensive branch.
+ */
+function LaptopThumbnail({ src, alt }: { src: string | undefined; alt: string }) {
+  if (!src) {
+    return (
+      <span className="border-line bg-surface-2 flex size-10 shrink-0 items-center justify-center rounded-md border">
+        <Laptop className="size-4 text-muted-foreground" />
+      </span>
+    );
+  }
+
+  return (
+    <span className="border-line flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-white">
+      <Image
+        src={src}
+        alt={alt}
+        width={40}
+        height={40}
+        className="size-full object-contain mix-blend-multiply dark:mix-blend-normal"
+      />
+    </span>
+  );
+}
+
 export default function AdminCatalogLaptopsPage() {
   const { token } = useAuth();
   const [laptops, setLaptops] = useState<BackendLaptop[] | null>(null);
@@ -59,9 +100,22 @@ export default function AdminCatalogLaptopsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [sort, setSort] = useState<SortState<SortKey> | null>(null);
   const [page, setPage] = useState(1);
+  const [brandId, setBrandId] = useState("all");
 
   const [target, setTarget] = useState<BackendLaptop | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Built from the brands already fetched for the table's Brand column, so the
+  // filter costs no extra request.
+  const brandOptions = useMemo(
+    () => [
+      { value: "all", label: "All brands" },
+      ...[...brands.values()]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((b) => ({ value: b.id, label: b.name })),
+    ],
+    [brands],
+  );
 
   useEffect(() => {
     apiFetch<BackendBrand[]>("/brands")
@@ -77,7 +131,7 @@ export default function AdminCatalogLaptopsPage() {
   // Reset pagination when search/sort change, then reset loading state once
   // the effective query changes — the "adjust state during render" pattern,
   // not an effect (see laptops-browse.tsx).
-  const filterSig = `${debouncedSearch}|${sort?.key ?? ""}|${sort?.direction ?? ""}`;
+  const filterSig = `${debouncedSearch}|${brandId}|${sort?.key ?? ""}|${sort?.direction ?? ""}`;
   const [prevFilterSig, setPrevFilterSig] = useState(filterSig);
   if (filterSig !== prevFilterSig) {
     setPrevFilterSig(filterSig);
@@ -96,6 +150,9 @@ export default function AdminCatalogLaptopsPage() {
     let cancelled = false;
     listLaptops({
       search: debouncedSearch || undefined,
+      // Server-side, so `total` and the pager stay correct. Filtering the
+      // 25 rows already on the page would silently mis-count.
+      brandId: brandId === "all" ? undefined : brandId,
       sortBy: sort?.key,
       sortDir: sort?.direction,
       skip: (page - 1) * PAGE_SIZE,
@@ -113,7 +170,7 @@ export default function AdminCatalogLaptopsPage() {
     return () => {
       cancelled = true;
     };
-  }, [debouncedSearch, sort, page, reloadTick]);
+  }, [debouncedSearch, brandId, sort, page, reloadTick]);
 
   function handleSort(key: SortKey) {
     setSort((prev) => toggleSort(prev, key));
@@ -137,7 +194,6 @@ export default function AdminCatalogLaptopsPage() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        crumbs={["Catalog", "Laptops"]}
         title="Laptops"
         description="Full catalog listing and spec editing."
         action={
@@ -149,14 +205,30 @@ export default function AdminCatalogLaptopsPage() {
       />
 
       <Card className="gap-0 p-4">
-        <div className="relative max-w-xs">
-          <Search className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search laptops or brand…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-8"
-          />
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative max-w-xs flex-1">
+            <Search className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search laptops or brand…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-8"
+            />
+          </div>
+          <Select items={brandOptions} value={brandId} onValueChange={(v) => setBrandId(v as string)}>
+            <SelectTrigger className="w-48" aria-label="Filter by brand">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {brandOptions.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
       </Card>
 
@@ -181,8 +253,18 @@ export default function AdminCatalogLaptopsPage() {
               {laptops.map((l) => (
                 <TableRow key={l.id}>
                   <TableCell>
-                    <div className="font-medium">{l.product_name}</div>
-                    <div className="text-[12.5px] text-muted-foreground">{l.model_code}</div>
+                    <div className="flex items-center gap-2.5">
+                      <LaptopThumbnail
+                        src={l.image_urls[0]}
+                        alt={l.product_name}
+                      />
+                      <div className="min-w-0">
+                        <div className="truncate font-medium">{l.product_name}</div>
+                        <div className="truncate text-[12.5px] text-muted-foreground">
+                          {l.model_code}
+                        </div>
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell>{brands.get(l.brand_id)?.name ?? "Unknown"}</TableCell>
                   <TableCell className="tabular-nums">
