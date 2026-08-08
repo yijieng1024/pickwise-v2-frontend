@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { MoreHorizontal, Pencil, Search, SlidersHorizontal, Trash2, X } from "lucide-react";
+import { MoreHorizontal, Pencil, Plus, Search, SlidersHorizontal, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -54,9 +54,7 @@ import { useAuth } from "@/lib/auth-context";
 
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
 import { AdminPageHeader } from "../../admin-page-header";
-
-// Look up by laptop, edit/delete only. Bulk create and bulk-by-pattern are
-// deferred; still available via Swagger for now.
+import { AddOptionsDialog } from "./add-options-dialog";
 
 export default function AdminCatalogCustomizationsPage() {
   const { token } = useAuth();
@@ -75,6 +73,7 @@ export default function AdminCatalogCustomizationsPage() {
   const [editTarget, setEditTarget] = useState<Customization | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Customization | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
@@ -161,9 +160,14 @@ export default function AdminCatalogCustomizationsPage() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        crumbs={["Catalog", "Customizations"]}
-        title="Customizations"
+        title="Upgrade Options"
         description="Laptops that have upgrade options configured — pick one to view and edit them."
+        action={
+          <Button size="sm" onClick={() => setAddOpen(true)}>
+            <Plus data-icon="inline-start" />
+            Add option
+          </Button>
+        }
       />
 
       <Card className="gap-0 p-4">
@@ -196,7 +200,7 @@ export default function AdminCatalogCustomizationsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Model</TableHead>
-                <TableHead>Customizations</TableHead>
+                <TableHead>Upgrade options</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -236,7 +240,7 @@ export default function AdminCatalogCustomizationsPage() {
         <Card className="py-0">
           <div className="flex items-center justify-between border-b border-line p-4">
             <h2 className="text-sm font-bold tracking-tight">
-              Customizations for {selectedLaptop.product_name}
+              Upgrade Options for {selectedLaptop.product_name}
             </h2>
             <Button variant="ghost" size="icon-sm" aria-label="Close" onClick={() => setSelectedLaptop(null)}>
               <X />
@@ -248,7 +252,7 @@ export default function AdminCatalogCustomizationsPage() {
             <AdminLoadingState />
           ) : customizations.length === 0 ? (
             <AdminEmptyState
-              title="No customizations yet"
+              title="No upgrade options yet"
               description={`${selectedLaptop.product_name} has no configurable options.`}
             />
           ) : (
@@ -300,6 +304,17 @@ export default function AdminCatalogCustomizationsPage() {
           )}
         </Card>
       )}
+
+      <AddOptionsDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        onCreated={() => {
+          // A laptop that had none now appears in the summary; one already
+          // open in the detail panel gains a row.
+          setListReloadTick((t) => t + 1);
+          setReloadTick((t) => t + 1);
+        }}
+      />
 
       <CustomizationEditDialog
         customization={editTarget}
