@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { MoreHorizontal, Pencil, PlayCircle, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -209,6 +209,8 @@ export default function AdminGpuBenchmarksPage() {
         <Search className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="Search GPU name…"
+          aria-label="Search GPU benchmarks by name"
+          autoComplete="off"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-8"
@@ -329,6 +331,9 @@ function GpuFormDialog({
   onSaved: () => void;
 }) {
   const { token } = useAuth();
+  // Create and edit dialogs are both mounted at once, so field ids have to be
+  // per-instance rather than hardcoded.
+  const uid = useId();
   const [gpuName, setGpuName] = useState(item?.gpu_name ?? "");
   const [gpuMark, setGpuMark] = useState(String(item?.gpu_mark ?? 0));
   const [saving, setSaving] = useState(false);
@@ -375,12 +380,24 @@ function GpuFormDialog({
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <FieldGroup>
             <Field>
-              <FieldLabel>GPU name</FieldLabel>
-              <Input value={gpuName} onChange={(e) => setGpuName(e.target.value)} required />
+              <FieldLabel htmlFor={`${uid}-name`}>GPU name</FieldLabel>
+              <Input
+                id={`${uid}-name`}
+                value={gpuName}
+                onChange={(e) => setGpuName(e.target.value)}
+                required
+              />
             </Field>
             <Field>
-              <FieldLabel>PassMark score</FieldLabel>
-              <Input type="number" value={gpuMark} onChange={(e) => setGpuMark(e.target.value)} required />
+              <FieldLabel htmlFor={`${uid}-mark`}>PassMark score</FieldLabel>
+              <Input
+                id={`${uid}-mark`}
+                type="number"
+                inputMode="numeric"
+                value={gpuMark}
+                onChange={(e) => setGpuMark(e.target.value)}
+                required
+              />
             </Field>
           </FieldGroup>
           {error && <p className="text-[13px] font-medium text-negative">{error}</p>}

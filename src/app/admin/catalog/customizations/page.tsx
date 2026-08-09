@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { MoreHorizontal, Pencil, Plus, Search, SlidersHorizontal, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -359,6 +359,7 @@ function CustomizationEditDialog({
   onSaved: () => void;
 }) {
   const { token } = useAuth();
+  const uid = useId();
   const [optionName, setOptionName] = useState(customization?.option_name ?? "");
   const [priceAddRm, setPriceAddRm] = useState(String(customization?.price_add_rm ?? 0));
   const [note, setNote] = useState(customization?.dependency_note ?? "");
@@ -408,22 +409,33 @@ function CustomizationEditDialog({
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <FieldGroup>
             <Field>
-              <FieldLabel>Option name</FieldLabel>
-              <Input value={optionName} onChange={(e) => setOptionName(e.target.value)} required />
+              <FieldLabel htmlFor={`${uid}-option-name`}>Option name</FieldLabel>
+              <Input
+                id={`${uid}-option-name`}
+                value={optionName}
+                onChange={(e) => setOptionName(e.target.value)}
+                required
+              />
             </Field>
             <Field>
-              <FieldLabel>Price add-on (RM)</FieldLabel>
+              <FieldLabel htmlFor={`${uid}-price`}>Price add-on (RM)</FieldLabel>
               <Input
+                id={`${uid}-price`}
                 type="number"
                 step="0.01"
+                inputMode="decimal"
                 value={priceAddRm}
                 onChange={(e) => setPriceAddRm(e.target.value)}
                 required
               />
             </Field>
             <Field>
-              <FieldLabel>Note (optional)</FieldLabel>
-              <Input value={note} onChange={(e) => setNote(e.target.value)} />
+              <FieldLabel htmlFor={`${uid}-note`}>Note (optional)</FieldLabel>
+              <Input
+                id={`${uid}-note`}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+              />
             </Field>
           </FieldGroup>
           {error && <p className="text-[13px] font-medium text-negative">{error}</p>}

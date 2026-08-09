@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -233,6 +233,9 @@ function ProductTypeFormDialog({
   onSaved: () => void;
 }) {
   const { token } = useAuth();
+  // Create and edit dialogs are both mounted at once, so field ids have to be
+  // per-instance rather than hardcoded.
+  const uid = useId();
   const [name, setName] = useState(item?.name ?? "");
   const [isActive, setIsActive] = useState(item?.is_active ?? true);
   const [saving, setSaving] = useState(false);
@@ -279,8 +282,13 @@ function ProductTypeFormDialog({
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <FieldGroup>
             <Field>
-              <FieldLabel>Name</FieldLabel>
-              <Input value={name} onChange={(e) => setName(e.target.value)} required />
+              <FieldLabel htmlFor={`${uid}-name`}>Name</FieldLabel>
+              <Input
+                id={`${uid}-name`}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
             </Field>
           </FieldGroup>
           <label className="flex items-center gap-2 text-xs font-semibold">
@@ -456,6 +464,9 @@ function CategoryFormDialog({
   onSaved: () => void;
 }) {
   const { token } = useAuth();
+  // Create and edit dialogs are both mounted at once, so field ids have to be
+  // per-instance rather than hardcoded.
+  const uid = useId();
   const [name, setName] = useState(item?.name ?? "");
   const [iconUrl, setIconUrl] = useState(item?.icon_url ?? "");
   const [isActive, setIsActive] = useState(item?.is_active ?? true);
@@ -508,12 +519,22 @@ function CategoryFormDialog({
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <FieldGroup>
             <Field>
-              <FieldLabel>Name</FieldLabel>
-              <Input value={name} onChange={(e) => setName(e.target.value)} required />
+              <FieldLabel htmlFor={`${uid}-name`}>Name</FieldLabel>
+              <Input
+                id={`${uid}-name`}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
             </Field>
             <Field>
-              <FieldLabel>Icon URL (optional)</FieldLabel>
-              <Input value={iconUrl ?? ""} onChange={(e) => setIconUrl(e.target.value)} />
+              <FieldLabel htmlFor={`${uid}-icon-url`}>Icon URL (optional)</FieldLabel>
+              <Input
+                id={`${uid}-icon-url`}
+                type="url"
+                value={iconUrl ?? ""}
+                onChange={(e) => setIconUrl(e.target.value)}
+              />
             </Field>
           </FieldGroup>
           <label className="flex items-center gap-2 text-xs font-semibold">

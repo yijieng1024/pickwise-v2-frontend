@@ -210,6 +210,8 @@ export default function AdminCatalogLaptopsPage() {
             <Search className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search laptops or brand…"
+              aria-label="Search laptops by name or brand"
+              autoComplete="off"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-8"

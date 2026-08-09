@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import Image from "next/image";
 import { MoreHorizontal, Pencil, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -199,6 +199,7 @@ function AddChannelDialog({
   onSaved: () => void;
 }) {
   const { token } = useAuth();
+  const uid = useId();
   const [url, setUrl] = useState("");
   const [tier, setTier] = useState<TrustTier>("tier_2");
   const [active, setActive] = useState(true);
@@ -243,11 +244,15 @@ function AddChannelDialog({
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <FieldGroup>
             <Field>
-              <FieldLabel>Channel URL, @handle, or UC… ID</FieldLabel>
+              <FieldLabel htmlFor={`${uid}-channel`}>
+                Channel URL, @handle, or UC… ID
+              </FieldLabel>
               <Input
+                id={`${uid}-channel`}
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://youtube.com/@…"
+                spellCheck={false}
                 required
               />
             </Field>
@@ -358,13 +363,16 @@ function TierAndActiveFields({
     <>
       <FieldGroup>
         <Field>
+          {/* A Select's trigger is a <button>, and `<label for>` doesn't feed a
+              button's accessible name — so the label text is repeated as
+              aria-label rather than wired with htmlFor. */}
           <FieldLabel>Trust tier</FieldLabel>
           <Select
             items={tierOptions}
             value={tier}
             onValueChange={(v) => setTier(v as TrustTier)}
           >
-            <SelectTrigger>
+            <SelectTrigger aria-label="Trust tier">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

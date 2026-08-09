@@ -235,6 +235,8 @@ export default function AdminQueuePage() {
       <Card className="gap-0 p-4">
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col gap-1.5">
+            {/* A Select's trigger is a <button>, whose accessible name doesn't
+                come from `<label for>` — hence aria-label beside the visible text. */}
             <span className="text-[12.5px] font-medium">Brand</span>
             <Select
               items={[
@@ -244,7 +246,7 @@ export default function AdminQueuePage() {
               value={brandId}
               onValueChange={(v) => setBrandId(v as string)}
             >
-              <SelectTrigger className="w-44">
+              <SelectTrigger aria-label="Brand" className="w-44">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -261,11 +263,16 @@ export default function AdminQueuePage() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-[12.5px] font-medium">Search this page</span>
+            <label htmlFor="queue-search" className="text-[12.5px] font-medium">
+              Search this page
+            </label>
             <div className="relative">
               <Search className="text-muted-foreground absolute top-1/2 left-3 size-3.5 -translate-y-1/2" />
               <Input
+                id="queue-search"
                 placeholder="URL or brand…"
+                autoComplete="off"
+                spellCheck={false}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-56 pl-8"

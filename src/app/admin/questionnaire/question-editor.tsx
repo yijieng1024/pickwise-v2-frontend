@@ -199,7 +199,7 @@ export function QuestionEditor({
                   value={type}
                   onValueChange={(v) => setType(v as QuestionType)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger aria-label="Answer type">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -221,7 +221,7 @@ export function QuestionEditor({
                   value={targetField}
                   onValueChange={(v) => setTargetField(v as string)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger aria-label="Stores the answer in">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -273,13 +273,21 @@ export function QuestionEditor({
 
             {!optionsAreLive && simpleMode && (
               <Field>
-                <FieldLabel>Choices</FieldLabel>
-                <div className="flex flex-col gap-2">
+                {/* Labels a repeating list rather than one control, so it names
+                    a group; each row's two inputs carry their own labels since
+                    otherwise only the placeholder tells them apart. */}
+                <FieldLabel id="q-choices-label">Choices</FieldLabel>
+                <div
+                  role="group"
+                  aria-labelledby="q-choices-label"
+                  className="flex flex-col gap-2"
+                >
                   {options.map((o, i) => (
                     <div key={i} className="flex items-center gap-2">
                       <Input
                         value={o.label}
                         placeholder="What the customer reads"
+                        aria-label={`Choice ${i + 1} label`}
                         onChange={(e) =>
                           setOptions((prev) =>
                             prev.map((p, j) =>
@@ -291,6 +299,8 @@ export function QuestionEditor({
                       <Input
                         value={typeof o.value === "string" ? o.value : ""}
                         placeholder="Stored value"
+                        aria-label={`Choice ${i + 1} stored value`}
+                        spellCheck={false}
                         className="max-w-[11rem] font-mono text-[12.5px]"
                         onChange={(e) =>
                           setOptions((prev) =>

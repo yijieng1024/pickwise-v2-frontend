@@ -7,7 +7,10 @@ const productLinks = [
   { href: "/laptops", label: "All laptops" },
   { href: "/wizard", label: "Needs Wizard" },
   { href: "/chat", label: "Ask Pico" },
-  { href: "/compare", label: "Compare" },
+  // Hidden alongside the header's entry (see header.tsx navLinks): /compare
+  // still renders two hardcoded mock laptops with no way to choose them.
+  // The route stays so existing links don't 404.
+  // { href: "/compare", label: "Compare" },
 ];
 
 const aboutLinks = [

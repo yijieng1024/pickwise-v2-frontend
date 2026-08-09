@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { toast } from "sonner";
 
@@ -63,6 +63,7 @@ export function AddOptionsDialog({
   onCreated: () => void;
 }) {
   const { token } = useAuth();
+  const uid = useId();
 
   const [mode, setMode] = useState<Mode>("laptops");
   const [catalog, setCatalog] = useState<BackendLaptop[] | null>(null);
@@ -230,6 +231,8 @@ export function AddOptionsDialog({
                   <Search className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     placeholder="Search laptops by name or model code…"
+                    aria-label="Search laptops by name or model code"
+                    autoComplete="off"
                     value={laptopSearch}
                     onChange={(e) => setLaptopSearch(e.target.value)}
                     className="pl-8"
@@ -266,11 +269,16 @@ export function AddOptionsDialog({
             ) : (
               <div className="flex min-w-0 flex-col gap-2">
                 <Field>
-                  <FieldLabel>Model code contains</FieldLabel>
+                  <FieldLabel htmlFor={`${uid}-pattern`}>Model code contains</FieldLabel>
                   <Input
+                    id={`${uid}-pattern`}
                     placeholder="e.g. m5-max"
                     value={pattern}
                     onChange={(e) => setPattern(e.target.value)}
+                    // Matching is case-sensitive against model codes, so
+                    // autocorrect must not touch what is typed here.
+                    spellCheck={false}
+                    autoComplete="off"
                   />
                 </Field>
                 {pattern.trim() === "" ? (
@@ -324,8 +332,9 @@ export function AddOptionsDialog({
                 </Select>
               </Field>
               <Field>
-                <FieldLabel>Option name</FieldLabel>
+                <FieldLabel htmlFor={`${uid}-option-name`}>Option name</FieldLabel>
                 <Input
+                  id={`${uid}-option-name`}
                   placeholder="e.g. +16GB RAM"
                   value={optionName}
                   onChange={(e) => setOptionName(e.target.value)}
@@ -333,18 +342,21 @@ export function AddOptionsDialog({
                 />
               </Field>
               <Field>
-                <FieldLabel>Price add-on (RM)</FieldLabel>
+                <FieldLabel htmlFor={`${uid}-price`}>Price add-on (RM)</FieldLabel>
                 <Input
+                  id={`${uid}-price`}
                   type="number"
                   step="0.01"
+                  inputMode="decimal"
                   value={priceAddRm}
                   onChange={(e) => setPriceAddRm(e.target.value)}
                   required
                 />
               </Field>
               <Field>
-                <FieldLabel>Note (optional)</FieldLabel>
+                <FieldLabel htmlFor={`${uid}-note`}>Note (optional)</FieldLabel>
                 <Input
+                  id={`${uid}-note`}
                   placeholder="e.g. requires the 512GB SSD"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}

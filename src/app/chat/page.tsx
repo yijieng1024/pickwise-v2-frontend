@@ -318,7 +318,7 @@ function ThinkingFlow({ text, active }: { text: string; active: boolean }) {
         <Brain className="text-brand size-3.5" />
         Thinking
         {active && (
-          <span className="border-brand-tint border-t-brand size-3 animate-spin rounded-full border-2" />
+          <span className="border-brand-tint border-t-brand size-3 motion-safe:animate-spin rounded-full border-2" />
         )}
         <ChevronDown
           className={cn(
@@ -562,14 +562,36 @@ export default function ChatPage() {
     setPersonalScores(null);
   };
 
-  const removeConversation = async (id: string) => {
-    if (!token || isStreaming) return;
+  // Delete confirmation — the row and thread are gone server-side with no
+  // undo, so the menu item opens this rather than deleting on click.
+  const [deleteTarget, setDeleteTarget] = useState<ConversationSummary | null>(
+    null,
+  );
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const openDelete = (chat: ConversationSummary) => {
+    setDeleteTarget(chat);
+    setDeleteError(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!token || !deleteTarget || isStreaming || deleting) return;
+    const id = deleteTarget.id;
+    setDeleting(true);
+    setDeleteError(null);
     try {
       await deleteConversation(id, token);
       setConversations((cs) => cs.filter((c) => c.id !== id));
       if (id === activeId) startNewConversation();
-    } catch {
+      setDeleteTarget(null);
+    } catch (e) {
       // Leave the row; a later refresh will reconcile.
+      setDeleteError(
+        e instanceof Error ? e.message : "Couldn't delete the conversation.",
+      );
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -709,6 +731,15 @@ export default function ChatPage() {
   const showEmptyState = messages.length === 0 && !threadLoading && !isStreaming;
   const activeTool = activity.find((c) => !c.done)?.tool ?? null;
 
+  // Announced once the turn lands. The streaming bubble itself is hidden from
+  // AT: a polite region whose text grows token by token gets either re-read
+  // from the top on every frame or queued into a backlog, neither of which is
+  // usable. Waiting for the finished reply gives one clean announcement.
+  const lastAssistantReply =
+    !isStreaming && messages[messages.length - 1]?.role === "assistant"
+      ? messages[messages.length - 1].content
+      : "";
+
   const shortlist = (
     <>
       {personalScores && (
@@ -783,7 +814,7 @@ export default function ChatPage() {
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             variant="destructive"
-                            onClick={() => removeConversation(chat.id)}
+                            onClick={() => openDelete(chat)}
                             className="cursor-pointer gap-2 text-[12.5px] font-medium data-[variant=destructive]:text-negative data-[variant=destructive]:focus:bg-negative/10 data-[variant=destructive]:focus:text-negative"
                           >
                             <Trash2 className="size-3.5" />
@@ -821,9 +852,15 @@ export default function ChatPage() {
               </span>
             </div>
             {isStreaming && (
-              <span className="border-brand-tint border-t-brand ml-auto size-3.5 animate-spin rounded-full border-2" />
+              <span className="border-brand-tint border-t-brand ml-auto size-3.5 motion-safe:animate-spin rounded-full border-2" />
             )}
           </div>
+
+          {/* Screen-reader announcer for finished replies — see
+              lastAssistantReply for why the live bubble is hidden instead. */}
+          <p className="sr-only" aria-live="polite" aria-atomic="true">
+            {lastAssistantReply}
+          </p>
 
           {/* Messages — MessageScroller follows streamed output at the live
               edge but stops when the user scrolls up to read. */}
@@ -898,10 +935,13 @@ export default function ChatPage() {
                 ),
               )}
 
-              {/* Thinking flow + tool activity for the in-flight turn */}
+              {/* Thinking flow + tool activity for the in-flight turn.
+                  role="status" (implicit aria-live="polite") announces which
+                  tool Pico reached for without interrupting the reply itself. */}
               {isStreaming && (
                 <MessageScrollerItem
                   messageId="live-activity"
+                  role="status"
                   className="flex flex-col items-start gap-2 pl-11"
                 >
                   {thinkingText && (
@@ -922,14 +962,14 @@ export default function ChatPage() {
                         key={chip.id}
                         className="motion-safe:animate-shimmer flex items-center gap-2 rounded-full border border-line bg-[linear-gradient(100deg,var(--glass)_40%,var(--brand-tint)_50%,var(--glass)_60%)] bg-[length:200%_100%] px-3.5 py-1.5 text-xs text-muted-foreground shadow-[0_4px_16px_var(--shadow)]"
                       >
-                        <span className="border-brand-tint border-t-brand size-3 animate-spin rounded-full border-2" />
+                        <span className="border-brand-tint border-t-brand size-3 motion-safe:animate-spin rounded-full border-2" />
                         {chip.label}…
                       </div>
                     ),
                   )}
                   {activity.length === 0 && !streamText && !thinkingText && (
                     <div className="motion-safe:animate-shimmer flex items-center gap-2 rounded-full border border-line bg-[linear-gradient(100deg,var(--glass)_40%,var(--brand-tint)_50%,var(--glass)_60%)] bg-[length:200%_100%] px-3.5 py-1.5 text-xs text-muted-foreground shadow-[0_4px_16px_var(--shadow)]">
-                      <span className="border-brand-tint border-t-brand size-3 animate-spin rounded-full border-2" />
+                      <span className="border-brand-tint border-t-brand size-3 motion-safe:animate-spin rounded-full border-2" />
                       Pico is thinking…
                     </div>
                   )}
@@ -940,6 +980,9 @@ export default function ChatPage() {
               {isStreaming && streamText && (
                 <MessageScrollerItem
                   messageId="live-reply"
+                  // Hidden from AT while it grows; the finished text is
+                  // announced once by the sr-only region above.
+                  aria-hidden="true"
                   className="flex items-start gap-3"
                 >
                   <div className="bg-brand mt-0.5 flex size-8 flex-none items-center justify-center rounded-full text-white">
@@ -1054,7 +1097,7 @@ export default function ChatPage() {
                     )}
                   >
                     {activeTool === tool ? (
-                      <span className="size-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                      <span className="size-3 motion-safe:animate-spin rounded-full border-2 border-white/40 border-t-white" />
                     ) : (
                       <Icon className="text-brand size-3.5" />
                     )}
@@ -1140,6 +1183,49 @@ export default function ChatPage() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete-conversation confirmation */}
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(isOpen) => {
+          if (!isOpen && !deleting) setDeleteTarget(null);
+        }}
+      >
+        <DialogContent showCloseButton={false} className="sm:max-w-sm">
+          <DialogTitle className="font-sans text-[15px] font-semibold tracking-tight">
+            Delete this conversation?
+          </DialogTitle>
+          <p className="text-[13px] leading-relaxed text-muted-foreground">
+            <span className="text-foreground font-medium">
+              {deleteTarget?.title}
+            </span>{" "}
+            and every message in it will be removed. This can&apos;t be undone.
+          </p>
+          {deleteError && (
+            <p className="text-negative text-[12px] font-medium">{deleteError}</p>
+          )}
+          <div className="flex justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-full"
+              disabled={deleting}
+              onClick={() => setDeleteTarget(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              className="rounded-full"
+              disabled={deleting}
+              onClick={confirmDelete}
+            >
+              {deleting ? "Deleting…" : "Delete conversation"}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </main>

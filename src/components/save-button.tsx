@@ -61,18 +61,20 @@ export function SaveButton({ laptopId }: { laptopId: string }) {
   };
 
   return (
+    // size-8 rather than a bare icon: the tap target was the 16px glyph
+    // itself, well under the 24px minimum. Matches ShareButton beside it.
     <button
       type="button"
       aria-label={saved ? "Remove from saved" : "Save to favorites"}
       aria-pressed={saved}
       onClick={toggle}
+      className={cn(
+        "flex size-8 cursor-pointer items-center justify-center rounded-full transition-colors",
+        "focus-visible:ring-ring/50 focus-visible:ring-3 focus-visible:outline-none",
+        saved ? "text-negative" : "hover:bg-surface-2 hover:text-negative",
+      )}
     >
-      <Heart
-        className={cn(
-          "size-4 transition-colors",
-          saved ? "fill-negative text-negative" : "hover:text-negative",
-        )}
-      />
+      <Heart className={cn("size-4", saved && "fill-negative")} />
     </button>
   );
 }

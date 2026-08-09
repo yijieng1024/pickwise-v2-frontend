@@ -44,6 +44,10 @@ export function LaptopPicker({
       <Search className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
       <Input
         placeholder={placeholder}
+        // The placeholder is the only visible description of this control, so
+        // it doubles as the accessible name once focus clears it.
+        aria-label={placeholder.replace(/…$/, "")}
+        autoComplete="off"
         value={selected ? selected.product_name : search}
         onChange={(e) => {
           onSelect(null);

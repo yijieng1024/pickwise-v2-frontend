@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  Bell,
   Bot,
   ChevronLeft,
   Cpu,
@@ -9,7 +8,6 @@ import {
   HardDrive,
   Monitor,
   RectangleEllipsis,
-  Share,
   Sparkles,
   TrendingDown,
   Zap,
@@ -21,7 +19,7 @@ import { LaptopGallery } from "@/components/laptop-gallery";
 import { PersonalPickScoreRing } from "@/components/personal-pick-score-ring";
 import { PickScoreCard } from "@/components/pick-score-card";
 import { SaveButton } from "@/components/save-button";
-import { Button } from "@/components/ui/button";
+import { ShareButton } from "@/components/share-button";
 import { apiFetch, ApiError } from "@/lib/api/client";
 import { mapBackendLaptop } from "@/lib/api/adapters";
 import { getLaptopPickScores, labelForUseCase } from "@/lib/api/pickscore";
@@ -140,10 +138,8 @@ export default async function LaptopDetailsPage({
         >
           <ChevronLeft className="size-4" /> Back to Browse
         </Link>
-        <div className="flex items-center gap-3 text-muted-foreground">
-          <button type="button" aria-label="Share">
-            <Share className="size-4 transition-colors hover:text-foreground" />
-          </button>
+        <div className="flex items-center gap-1 text-muted-foreground">
+          <ShareButton name={laptop.name} />
           <SaveButton laptopId={laptop.id} />
         </div>
       </div>
@@ -299,10 +295,13 @@ export default async function LaptopDetailsPage({
               No price history recorded yet.
             </p>
           )}
-          <Button type="button" variant="soft" size="sm" shape="pill" className="mt-4">
+          {/* Price-drop alerts aren't built yet — nothing subscribes, and the
+              button did nothing when pressed. Restore this once there's an
+              endpoint behind it. */}
+          {/* <Button type="button" variant="soft" size="sm" shape="pill" className="mt-4">
             <Bell data-icon="inline-start" />
             Set price drop alert
-          </Button>
+          </Button> */}
         </section>
 
         {/* Accessories fallback */}

@@ -106,6 +106,18 @@ const sections: {
   },
 ];
 
+/**
+ * Comparison grid template. Below `sm` the spec label can't share a row with
+ * two value cells — at 360px that left the three columns ~100px wide and the
+ * page scrolled sideways — so the label stacks above and the two laptops sit
+ * side by side beneath it. From `sm` up it's the original three-column table.
+ */
+const COMPARE_GRID =
+  "grid grid-cols-2 gap-2 sm:grid-cols-[minmax(0,260px)_1fr_1fr]";
+
+/** The label cell: full-width own row on mobile, first column from `sm`. */
+const COMPARE_LABEL = "col-span-2 sm:col-span-1";
+
 function MatrixCell({ value, highlighted }: { value: [string, string]; highlighted?: boolean }) {
   return (
     <div
@@ -197,9 +209,11 @@ export default function ComparePage() {
         <GlassSurface
           cornerRadius={16}
           fullWidth
-          className="grid grid-cols-[minmax(0,260px)_1fr_1fr] gap-2 p-3"
+          className={cn(COMPARE_GRID, "p-3")}
         >
-          <div className="flex items-center pl-2 text-xs font-semibold text-muted-foreground">
+          {/* Pure scaffolding — on mobile it would cost a whole row above the
+              two laptops it labels, so it only appears once there's a column. */}
+          <div className="hidden items-center pl-2 text-xs font-semibold text-muted-foreground sm:flex">
             Specification
           </div>
           {[left, right].map((laptop) => (
@@ -225,8 +239,8 @@ export default function ComparePage() {
       </div>
 
       {/* PickScore row */}
-      <div className="bg-brand-tint mb-7 grid grid-cols-[minmax(0,260px)_1fr_1fr] items-center gap-2 rounded-2xl p-3">
-        <div className="pl-2">
+      <div className={cn(COMPARE_GRID, "bg-brand-tint mb-7 items-center rounded-2xl p-3")}>
+        <div className={cn(COMPARE_LABEL, "pl-2")}>
           <div className="text-brand text-[13px] font-semibold">PickScore</div>
           <div className="text-[11px] text-muted-foreground">
             Personalised to your needs
@@ -256,9 +270,12 @@ export default function ComparePage() {
                 {section.rows.map((row) => (
                   <div
                     key={row.label}
-                    className="border-line grid grid-cols-[minmax(0,260px)_1fr_1fr] items-center gap-2 border-b py-1"
+                    className={cn(
+                      COMPARE_GRID,
+                      "border-line items-center border-b py-1",
+                    )}
                   >
-                    <div className="py-3 pr-4 pl-2">
+                    <div className={cn(COMPARE_LABEL, "pt-3 pr-4 pb-1 pl-2 sm:py-3")}>
                       <div className="text-[13.5px] font-medium">{row.label}</div>
                       <div className="text-[11.5px] text-muted-foreground">
                         {row.sub}

@@ -187,6 +187,13 @@
 }
 
 :root {
+  /* Tells the UA which palette to paint its own widgets in — scrollbars, the
+     native date picker, form controls, the canvas behind the page. Without it
+     the .dark class only restyles our own CSS and the browser chrome stays
+     light. Set on both themes rather than dark alone: next-themes can put
+     `.dark` on <html> while the OS is in light mode and vice versa. */
+  color-scheme: light;
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -237,6 +244,8 @@
 }
 
 .dark {
+  color-scheme: dark;
+
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);

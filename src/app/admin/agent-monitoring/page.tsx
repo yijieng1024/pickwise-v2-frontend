@@ -249,6 +249,8 @@ export default function AdminAgentMonitoringPage() {
           <Search className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search message…"
+            aria-label="Search agent runs by message"
+            autoComplete="off"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-8"

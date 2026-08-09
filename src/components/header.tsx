@@ -52,7 +52,8 @@ const navLinks = [
   { href: "/wizard", label: "Needs Wizard", icon: Sparkles },
   { href: "/chat", label: "Chat", icon: MessageSquare },
   { href: "/saved", label: "Saved", icon: Heart },
-  // { href: "/compare", label: "Compare" },
+  // Hidden — mirrored in footer.tsx productLinks. Restore both together.
+  // { href: "/compare", label: "Compare", icon: Columns2 },
 ];
 
 export function Header() {
