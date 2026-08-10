@@ -42,6 +42,34 @@ export function getPickScoreStatus(): Promise<PickScoreStatus> {
   });
 }
 
+/** One day of `GET /embeddings/laptops/coverage-history`. Both totals are cumulative. */
+export interface CoverageHistoryDay {
+  /** `YYYY-MM-DD`, bucketed UTC server-side — render it with `formatDayKey`. */
+  date: string;
+  catalog_total: number;
+  embedded_total: number;
+}
+
+export interface CoverageHistory {
+  days: CoverageHistoryDay[];
+}
+
+/**
+ * Search coverage against catalog size over time.
+ *
+ * Laptops are bucketed by when they entered the catalog and counted as embedded
+ * if they have a vector *now* — so this reads as cohorts, not as a work log.
+ * The backend comment explains why: `LaptopEmbedding` only has `updated_at`, and
+ * a re-run restamps every row, which would flatten a "work done" chart into one
+ * vertical jump. Per-run history lives on the jobs list instead.
+ */
+export function getCoverageHistory(token: string, days = 90): Promise<CoverageHistory> {
+  return apiFetch<CoverageHistory>(`/embeddings/laptops/coverage-history?days=${days}`, {
+    token,
+    next: { revalidate: 0 },
+  });
+}
+
 /**
  * Recomputes every stored PickScore. Pure arithmetic (no AI, no external
  * service), so it is comparatively quick and safe to re-run — worth doing

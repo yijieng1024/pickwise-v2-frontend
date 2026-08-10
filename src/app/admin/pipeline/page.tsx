@@ -41,6 +41,7 @@ import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
+import { useAdminQuery, useSearchDraft } from "../admin-query-state";
 import { AdminStatusPill } from "../admin-status-pill";
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../admin-states";
 import { AdminPageHeader } from "../admin-page-header";
@@ -74,11 +75,14 @@ export default function AdminRawRecordsPage() {
   const [queueError, setQueueError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
 
-  const [status, setStatus] = useState("all");
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [page, setPage] = useState(1);
   const [detailTarget, setDetailTarget] = useState<RawScrapLaptop | null>(null);
+
+  const query = useAdminQuery({ filters: { status: "all", q: "" } });
+  const { status, q: debouncedSearch } = query.values;
+  const { page } = query;
+  const [search, setSearch] = useSearchDraft(debouncedSearch, (value) =>
+    query.set({ q: value }),
+  );
 
   useEffect(() => {
     listBrands()
@@ -86,23 +90,9 @@ export default function AdminRawRecordsPage() {
       .catch(() => toast.error("Failed to load brands."));
   }, []);
 
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
-    return () => clearTimeout(t);
-  }, [search]);
-
-  // Reset pagination when the filters change, then drop stale rows once the
-  // effective query changes — "adjust state during render", not an effect (see
-  // laptops-browse.tsx). Two signatures, because a page change must blank the
-  // table but must not reset the page to 1.
-  const filterSig = `${status}|${debouncedSearch}`;
-  const [prevFilterSig, setPrevFilterSig] = useState(filterSig);
-  if (filterSig !== prevFilterSig) {
-    setPrevFilterSig(filterSig);
-    setPage(1);
-  }
-
-  const paramsSig = `${filterSig}|${page}|${reloadTick}`;
+  // Drop stale rows once the effective query changes — "adjust state during
+  // render", not an effect (see laptops-browse.tsx).
+  const paramsSig = `${query.signature}|${reloadTick}`;
   const [prevParamsSig, setPrevParamsSig] = useState(paramsSig);
   if (paramsSig !== prevParamsSig) {
     setPrevParamsSig(paramsSig);
@@ -197,7 +187,7 @@ export default function AdminRawRecordsPage() {
               className="pl-8"
             />
           </div>
-          <Select items={statusOptions} value={status} onValueChange={(v) => setStatus(v as string)}>
+          <Select items={statusOptions} value={status} onValueChange={(v) => query.set({ status: v as string })}>
             <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>
@@ -287,7 +277,7 @@ export default function AdminRawRecordsPage() {
         )}
       </Card>
 
-      <AdminPagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
+      <AdminPagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={query.setPage} />
 
       <RawRecordDialog
         record={detailTarget}

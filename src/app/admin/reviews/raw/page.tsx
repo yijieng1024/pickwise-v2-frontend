@@ -62,6 +62,7 @@ import type { BackendLaptop } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
+import { useAdminQuery, useSearchDraft } from "../../admin-query-state";
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
 import { AdminPageHeader } from "../../admin-page-header";
 import { AdminPagination } from "../../admin-pagination";
@@ -87,33 +88,22 @@ export default function AdminRawReviewsPage() {
   const [reviews, setReviews] = useState<RawReview[] | null>(null);
   const [total, setTotal] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [status, setStatus] = useState("all");
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [page, setPage] = useState(1);
   const [rematching, setRematching] = useState(false);
   const [matchTarget, setMatchTarget] = useState<RawReview | null>(null);
   const [summarizeTarget, setSummarizeTarget] = useState<RawReview | null>(null);
   const [summarizing, setSummarizing] = useState(false);
   const [reloadTick, setReloadTick] = useState(0);
 
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
-    return () => clearTimeout(t);
-  }, [search]);
+  const query = useAdminQuery({ filters: { status: "all", q: "" } });
+  const { status, q: debouncedSearch } = query.values;
+  const { page } = query;
+  const [search, setSearch] = useSearchDraft(debouncedSearch, (value) =>
+    query.set({ q: value }),
+  );
 
-  // Reset pagination when the filters change, then drop stale rows once the
-  // effective query changes — the "adjust state during render" pattern, not an
-  // effect (see laptops-browse.tsx). Two signatures, because a page change
-  // must blank the table but must not reset the page to 1.
-  const filterSig = `${status}|${debouncedSearch}`;
-  const [prevFilterSig, setPrevFilterSig] = useState(filterSig);
-  if (filterSig !== prevFilterSig) {
-    setPrevFilterSig(filterSig);
-    setPage(1);
-  }
-
-  const paramsSig = `${filterSig}|${page}`;
+  // Drop stale rows once the effective query changes — the "adjust state
+  // during render" pattern, not an effect (see laptops-browse.tsx).
+  const paramsSig = query.signature;
   const [prevParamsSig, setPrevParamsSig] = useState(paramsSig);
   if (paramsSig !== prevParamsSig) {
     setPrevParamsSig(paramsSig);
@@ -207,7 +197,7 @@ export default function AdminRawReviewsPage() {
             className="pl-8"
           />
         </div>
-        <Select items={statusOptions} value={status} onValueChange={(v) => setStatus(v as string)}>
+        <Select items={statusOptions} value={status} onValueChange={(v) => query.set({ status: v as string })}>
           <SelectTrigger className="w-full sm:w-40">
             <SelectValue />
           </SelectTrigger>
@@ -299,7 +289,7 @@ export default function AdminRawReviewsPage() {
         )}
       </Card>
 
-      <AdminPagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
+      <AdminPagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={query.setPage} />
 
       <ManualMatchDialog
         review={matchTarget}

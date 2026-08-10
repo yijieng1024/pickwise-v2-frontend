@@ -54,14 +54,15 @@ import { generateAllPickScores } from "@/lib/api/admin/embeddings";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 
+import { useAdminQuery, useSearchDraft } from "../../admin-query-state";
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
 import { AdminPageHeader } from "../../admin-page-header";
 import { OutcomeAlert } from "../../admin-outcome-alert";
 import { AdminPagination } from "../../admin-pagination";
-import { type SortState, SortableTableHead, toggleSort } from "../../admin-sortable-head";
+import { SortableTableHead } from "../../admin-sortable-head";
 
 const PAGE_SIZE = 25;
-type GpuSortKey = "gpu_name" | "gpu_mark";
+const GPU_SORT_KEYS = ["gpu_name", "gpu_mark"] as const;
 
 export default function AdminGpuBenchmarksPage() {
   const { token } = useAuth();
@@ -79,27 +80,16 @@ export default function AdminGpuBenchmarksPage() {
   const [scrapeStarted, setScrapeStarted] = useState(false);
   const [rescoring, setRescoring] = useState(false);
   const [reloadTick, setReloadTick] = useState(0);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [sort, setSort] = useState<SortState<GpuSortKey> | null>(null);
-  const [page, setPage] = useState(1);
+  const query = useAdminQuery({ filters: { q: "" }, sortKeys: GPU_SORT_KEYS });
+  const { q: debouncedSearch } = query.values;
+  const { page, sort } = query;
+  const [search, setSearch] = useSearchDraft(debouncedSearch, (value) =>
+    query.set({ q: value }),
+  );
 
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
-    return () => clearTimeout(t);
-  }, [search]);
-
-  // Reset pagination when search/sort change, then reset loading state once
-  // the effective query changes — the "adjust state during render" pattern,
-  // not an effect (see laptops-browse.tsx).
-  const filterSig = `${debouncedSearch}|${sort?.key ?? ""}|${sort?.direction ?? ""}`;
-  const [prevFilterSig, setPrevFilterSig] = useState(filterSig);
-  if (filterSig !== prevFilterSig) {
-    setPrevFilterSig(filterSig);
-    setPage(1);
-  }
-
-  const paramsSig = `${filterSig}|${page}`;
+  // Reset the loading state once the effective query changes — the "adjust
+  // state during render" pattern, not an effect (see laptops-browse.tsx).
+  const paramsSig = query.signature;
   const [prevParamsSig, setPrevParamsSig] = useState(paramsSig);
   if (paramsSig !== prevParamsSig) {
     setPrevParamsSig(paramsSig);
@@ -232,13 +222,13 @@ export default function AdminGpuBenchmarksPage() {
                   label="GPU"
                   sortKey="gpu_name"
                   sort={sort}
-                  onSort={(key) => setSort((prev) => toggleSort(prev, key))}
+                  onSort={query.sortBy}
                 />
                 <SortableTableHead
                   label="Mark"
                   sortKey="gpu_mark"
                   sort={sort}
-                  onSort={(key) => setSort((prev) => toggleSort(prev, key))}
+                  onSort={query.sortBy}
                 />
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -277,7 +267,7 @@ export default function AdminGpuBenchmarksPage() {
         )}
       </Card>
 
-      <AdminPagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
+      <AdminPagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={query.setPage} />
 
       <GpuFormDialog
         mode="create"

@@ -1,19 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -26,14 +16,22 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { Brand } from "@/lib/api/admin/brands";
-import { type LaptopInput, createLaptop, updateLaptop } from "@/lib/api/admin/laptops";
+import {
+  type LaptopInput,
+  createLaptop,
+  updateLaptop,
+} from "@/lib/api/admin/laptops";
 import { ApiError } from "@/lib/api/client";
 import type { BackendLaptop } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth-context";
 
+import { useAdminNavigation, useUnsavedChanges } from "../../unsaved-changes";
 import { type FieldDef, LAPTOP_FORM_GROUPS } from "./laptop-form-config";
 
 type Values = Record<string, string | boolean>;
+
+/** Where both saving and cancelling return to. */
+const LIST_HREF = "/admin/catalog/laptops";
 
 function seedValues(laptop?: BackendLaptop): Values {
   const values: Values = {};
@@ -47,7 +45,8 @@ function seedValues(laptop?: BackendLaptop): Values {
       } else if (field.type === "textarea") {
         values[field.key] = raw ? JSON.stringify(raw, null, 2) : "";
       } else {
-        values[field.key] = raw === null || raw === undefined ? "" : String(raw);
+        values[field.key] =
+          raw === null || raw === undefined ? "" : String(raw);
       }
     }
   }
@@ -74,7 +73,9 @@ function buildPayload(values: Values, brandId: string): LaptopInput {
             .filter(Boolean);
           break;
         case "textarea":
-          payload[field.key] = String(raw).trim() ? JSON.parse(String(raw)) : {};
+          payload[field.key] = String(raw).trim()
+            ? JSON.parse(String(raw))
+            : {};
           break;
         default:
           payload[field.key] = String(raw).trim() || null;
@@ -95,12 +96,12 @@ export function LaptopForm({
   brands: Brand[];
 }) {
   const router = useRouter();
+  const { requestNavigate } = useAdminNavigation();
   const { token } = useAuth();
   const [brandId, setBrandId] = useState(laptop?.brand_id ?? "");
   const [values, setValues] = useState<Values>(() => seedValues(laptop));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [confirmingDiscard, setConfirmingDiscard] = useState(false);
 
   // Snapshot of the form as it was seeded, to compare against on the way out.
   // A string rather than a deep-equality helper: `values` is a flat map of
@@ -108,40 +109,24 @@ export function LaptopForm({
   // setField spreads the previous object, so key order never changes and
   // stringify is a sound comparison here.
   const [initialSnapshot] = useState(() =>
-    JSON.stringify({ brandId: laptop?.brand_id ?? "", values: seedValues(laptop) }),
+    JSON.stringify({
+      brandId: laptop?.brand_id ?? "",
+      values: seedValues(laptop),
+    }),
   );
   // Set on a successful save, so the edits that were just persisted don't
   // count as unsaved while the redirect is in flight.
   const [saved, setSaved] = useState(false);
-  const isDirty = !saved && JSON.stringify({ brandId, values }) !== initialSnapshot;
+  const isDirty =
+    !saved && JSON.stringify({ brandId, values }) !== initialSnapshot;
 
-  // Covers reloads, tab closes and typed-in URLs. It cannot cover in-app
-  // navigation: the App Router exposes no route-change interception, so the
-  // sidebar and breadcrumbs still leave without asking. Cancel is guarded
-  // below because it's the one in-app exit this component owns.
-  useEffect(() => {
-    if (!isDirty) return;
-    const warn = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      // Older browsers only show the prompt when returnValue is set. The
-      // message itself is the browser's own — custom text is ignored.
-      e.returnValue = "";
-    };
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [isDirty]);
+  // Registers the dirty state with the portal-wide guard: this covers reloads
+  // and tab closes here, and lets the sidebar and breadcrumbs confirm before
+  // navigating away (see unsaved-changes.tsx).
+  useUnsavedChanges(isDirty);
 
   function setField(key: string, value: string | boolean) {
     setValues((prev) => ({ ...prev, [key]: value }));
-  }
-
-  function leave() {
-    router.push("/admin/catalog/laptops");
-  }
-
-  function handleCancel() {
-    if (isDirty) setConfirmingDiscard(true);
-    else leave();
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -167,9 +152,11 @@ export function LaptopForm({
         toast.success(`Updated ${updated.product_name}.`);
       }
       setSaved(true);
-      leave();
+      router.push(LIST_HREF);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to save laptop.");
+      setError(
+        err instanceof ApiError ? err.message : "Failed to save laptop.",
+      );
     } finally {
       setSaving(false);
     }
@@ -198,8 +185,13 @@ export function LaptopForm({
       </section>
 
       {LAPTOP_FORM_GROUPS.map((group) => (
-        <section key={group.title} className="border-line bg-surface rounded-lg border p-4">
-          <h2 className="mb-3 text-sm font-bold tracking-tight">{group.title}</h2>
+        <section
+          key={group.title}
+          className="border-line bg-surface rounded-lg border p-4"
+        >
+          <h2 className="mb-3 text-sm font-bold tracking-tight">
+            {group.title}
+          </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {group.fields.map((field) => (
               <FieldControl
@@ -213,33 +205,28 @@ export function LaptopForm({
         </section>
       ))}
 
-      {error && <p className="text-[13px] font-medium text-negative">{error}</p>}
+      {error && (
+        <p className="text-[13px] font-medium text-negative">{error}</p>
+      )}
 
       <div className="flex gap-3">
         <Button type="submit" disabled={saving || !brandId}>
-          {saving ? "Saving…" : mode === "create" ? "Create laptop" : "Save changes"}
+          {saving
+            ? "Saving…"
+            : mode === "create"
+              ? "Create laptop"
+              : "Save changes"}
         </Button>
-        <Button type="button" variant="outline" onClick={handleCancel}>
+        {/* Routed through the shared guard so Cancel raises the same
+            confirmation the sidebar and breadcrumbs do. */}
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => requestNavigate(LIST_HREF)}
+        >
           Cancel
         </Button>
       </div>
-
-      <AlertDialog open={confirmingDiscard} onOpenChange={setConfirmingDiscard}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Discard your changes?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This form has edits that haven&apos;t been saved. Leaving now throws them away.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Keep editing</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={leave}>
-              Discard changes
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </form>
   );
 }
@@ -258,7 +245,10 @@ function FieldControl({
   if (field.type === "boolean") {
     return (
       <label className="flex items-center gap-2 text-xs font-semibold">
-        <Checkbox checked={Boolean(value)} onCheckedChange={(c) => onChange(c === true)} />
+        <Checkbox
+          checked={Boolean(value)}
+          onCheckedChange={(c) => onChange(c === true)}
+        />
         {field.label}
       </label>
     );
@@ -266,7 +256,9 @@ function FieldControl({
 
   if (field.type === "stringlist" || field.type === "textarea") {
     return (
-      <label className={`flex flex-col gap-1 text-xs font-semibold ${fullWidth ? "sm:col-span-2" : ""}`}>
+      <label
+        className={`flex flex-col gap-1 text-xs font-semibold ${fullWidth ? "sm:col-span-2" : ""}`}
+      >
         {field.label}
         <Textarea
           value={String(value)}

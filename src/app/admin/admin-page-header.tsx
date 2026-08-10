@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/breadcrumb";
 
 import { adminCrumbsFor } from "./admin-nav";
+import { useAdminNavigation } from "./unsaved-changes";
 
 export function AdminPageHeader({
   trail,
@@ -32,6 +33,7 @@ export function AdminPageHeader({
 }) {
   const pathname = usePathname();
   const crumbs = adminCrumbsFor(pathname, trail);
+  const { guardNavigate } = useAdminNavigation();
 
   return (
     <div className="flex flex-col gap-2">
@@ -44,7 +46,16 @@ export function AdminPageHeader({
             {pathname === "/admin" ? (
               <BreadcrumbPage>Dashboard</BreadcrumbPage>
             ) : (
-              <BreadcrumbLink render={<Link href="/admin" />}>Dashboard</BreadcrumbLink>
+              <BreadcrumbLink
+                render={
+                  <Link
+                    href="/admin"
+                    onNavigate={(e) => guardNavigate(e, "/admin")}
+                  />
+                }
+              >
+                Dashboard
+              </BreadcrumbLink>
             )}
           </BreadcrumbItem>
           {crumbs.map((crumb, i) => (
@@ -62,7 +73,9 @@ export function AdminPageHeader({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold tracking-tight">{title}</h1>
-          <p className="mt-0.5 text-[13px] text-muted-foreground">{description}</p>
+          <p className="mt-0.5 text-[13px] text-muted-foreground">
+            {description}
+          </p>
         </div>
         {action}
       </div>
@@ -77,6 +90,7 @@ function Crumb({
   crumb: { label: string; href?: string };
   isLast: boolean;
 }) {
+  const { guardNavigate } = useAdminNavigation();
   return (
     <>
       <BreadcrumbSeparator />
@@ -84,7 +98,16 @@ function Crumb({
         {isLast ? (
           <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
         ) : crumb.href ? (
-          <BreadcrumbLink render={<Link href={crumb.href} />}>{crumb.label}</BreadcrumbLink>
+          <BreadcrumbLink
+            render={
+              <Link
+                href={crumb.href}
+                onNavigate={(e) => guardNavigate(e, crumb.href!)}
+              />
+            }
+          >
+            {crumb.label}
+          </BreadcrumbLink>
         ) : (
           crumb.label
         )}

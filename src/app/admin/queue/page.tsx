@@ -43,6 +43,7 @@ import { cn } from "@/lib/utils";
 
 import { AdminJobPanel } from "../admin-job-panel";
 import { AdminStatusPill } from "../admin-status-pill";
+import { useAdminQuery, useSearchDraft } from "../admin-query-state";
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../admin-states";
 import { AdminPageHeader } from "../admin-page-header";
 import { AdminPagination } from "../admin-pagination";
@@ -62,10 +63,19 @@ const TABS: Array<{ value: ScrapeStatus | "all"; label: string }> = [
 export default function AdminQueuePage() {
   const { token } = useAuth();
   const [brands, setBrands] = useState<Brand[]>([]);
-  const [brandId, setBrandId] = useState("all");
-  const [tab, setTab] = useState<ScrapeStatus | "all">("all");
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
+  const query = useAdminQuery({ filters: { status: "all", brand: "all", q: "" } });
+  const { brand: brandId } = query.values;
+  const { page } = query;
+  // Validated against the tab list before it reaches the API — the URL is
+  // user-editable and this value becomes a `scrape_status` filter.
+  const rawTab = query.values.status;
+  const tab: ScrapeStatus | "all" = TABS.some((t) => t.value === rawTab)
+    ? (rawTab as ScrapeStatus | "all")
+    : "all";
+  // Filters the rows already fetched, so it leads and the URL follows.
+  const [search, setSearch] = useSearchDraft(query.values.q, (value) =>
+    query.set({ q: value }, { resetPage: false }),
+  );
 
   const [targets, setTargets] = useState<ScrapeTarget[] | null>(null);
   const [total, setTotal] = useState(0);
@@ -84,13 +94,15 @@ export default function AdminQueuePage() {
       .catch(() => toast.error("Couldn't load brands."));
   }, []);
 
-  // Reset paging and selection whenever the effective filter changes —
-  // "adjust state during render", not an effect (see laptops-browse.tsx).
+  // Drop the selection whenever the server-side filter changes — the rows it
+  // referred to are no longer on screen. "Adjust state during render", not an
+  // effect (see laptops-browse.tsx). The in-page search is left out on
+  // purpose: it hides rows without unfetching them, so a selection made before
+  // typing is still valid.
   const filterSig = `${tab}|${brandId}`;
   const [prevFilterSig, setPrevFilterSig] = useState(filterSig);
   if (filterSig !== prevFilterSig) {
     setPrevFilterSig(filterSig);
-    setPage(1);
     setSelected(new Set());
   }
 
@@ -244,7 +256,7 @@ export default function AdminQueuePage() {
                 ...brands.map((b) => ({ value: b.id, label: b.name })),
               ]}
               value={brandId}
-              onValueChange={(v) => setBrandId(v as string)}
+              onValueChange={(v) => query.set({ brand: v as string })}
             >
               <SelectTrigger aria-label="Brand" className="w-44">
                 <SelectValue />
@@ -313,7 +325,7 @@ export default function AdminQueuePage() {
             <button
               key={t.value}
               type="button"
-              onClick={() => setTab(t.value)}
+              onClick={() => query.set({ status: t.value })}
               aria-pressed={active}
               className={cn(
                 "focus-visible:ring-ring/50 flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] font-medium transition-colors outline-none focus-visible:ring-3",
@@ -424,7 +436,7 @@ export default function AdminQueuePage() {
         )}
       </Card>
 
-      <AdminPagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
+      <AdminPagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={query.setPage} />
     </div>
   );
 }

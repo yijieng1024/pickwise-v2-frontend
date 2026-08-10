@@ -45,6 +45,7 @@ import {
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 
+import { useAdminQuery, useSearchDraft } from "../admin-query-state";
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../admin-states";
 import { AdminPageHeader } from "../admin-page-header";
 import { AdminStatusPill } from "../admin-status-pill";
@@ -74,11 +75,13 @@ type PendingAction =
 export default function AdminUsersPage() {
   const { token, user: currentAdmin } = useAuth();
 
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [role, setRole] = useState("all");
-  const [status, setStatus] = useState("all");
-  const [skip, setSkip] = useState(0);
+  const query = useAdminQuery({ filters: { q: "", role: "all", status: "all" } });
+  const { q: debouncedSearch, role, status } = query.values;
+  const { page } = query;
+  const skip = (page - 1) * PAGE_SIZE;
+  const [search, setSearch] = useSearchDraft(debouncedSearch, (value) =>
+    query.set({ q: value }),
+  );
 
   const [users, setUsers] = useState<AdminUser[] | null>(null);
   const [total, setTotal] = useState(0);
@@ -87,22 +90,9 @@ export default function AdminUsersPage() {
   const [saving, setSaving] = useState(false);
   const [reloadTick, setReloadTick] = useState(0);
 
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
-    return () => clearTimeout(t);
-  }, [search]);
-
-  // Reset pagination when filters change, then reset the loading state once
-  // the effective query (filters + skip) changes — the "adjust state during
-  // render" pattern, not an effect (see laptops-browse.tsx).
-  const filterSig = `${debouncedSearch}|${role}|${status}`;
-  const [prevFilterSig, setPrevFilterSig] = useState(filterSig);
-  if (filterSig !== prevFilterSig) {
-    setPrevFilterSig(filterSig);
-    setSkip(0);
-  }
-
-  const paramsSig = `${filterSig}|${skip}`;
+  // Reset the loading state once the effective query changes — the "adjust
+  // state during render" pattern, not an effect (see laptops-browse.tsx).
+  const paramsSig = query.signature;
   const [prevParamsSig, setPrevParamsSig] = useState(paramsSig);
   if (paramsSig !== prevParamsSig) {
     setPrevParamsSig(paramsSig);
@@ -179,7 +169,7 @@ export default function AdminUsersPage() {
             className="pl-8"
           />
         </div>
-        <Select items={roleOptions} value={role} onValueChange={(v) => setRole(v as string)}>
+        <Select items={roleOptions} value={role} onValueChange={(v) => query.set({ role: v as string })}>
           <SelectTrigger className="w-full sm:w-40">
             <SelectValue />
           </SelectTrigger>
@@ -193,7 +183,7 @@ export default function AdminUsersPage() {
             </SelectGroup>
           </SelectContent>
         </Select>
-        <Select items={statusOptions} value={status} onValueChange={(v) => setStatus(v as string)}>
+        <Select items={statusOptions} value={status} onValueChange={(v) => query.set({ status: v as string })}>
           <SelectTrigger className="w-full sm:w-40">
             <SelectValue />
           </SelectTrigger>
@@ -212,8 +202,7 @@ export default function AdminUsersPage() {
           size="sm"
           onClick={() => {
             setSearch("");
-            setRole("all");
-            setStatus("all");
+            query.set({ q: "", role: "all", status: "all" });
           }}
         >
           Reset
@@ -346,10 +335,10 @@ export default function AdminUsersPage() {
       </Card>
 
       <AdminPagination
-        page={Math.floor(skip / PAGE_SIZE) + 1}
+        page={page}
         pageSize={PAGE_SIZE}
         total={total}
-        onPageChange={(p) => setSkip((p - 1) * PAGE_SIZE)}
+        onPageChange={query.setPage}
       />
 
       <AlertDialog
