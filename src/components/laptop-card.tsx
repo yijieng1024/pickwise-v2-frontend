@@ -26,8 +26,11 @@ interface LaptopCardProps {
   showScore?: boolean;
   /** "grid" (default): vertical card. "list": horizontal row — image left, content right. */
   layout?: "grid" | "list";
-  compareChecked?: boolean;
+  /** Providing this shows the compare checkbox, in either score mode. */
   onCompareChange?: (checked: boolean) => void;
+  compareChecked?: boolean;
+  /** Blocks ticking a fifth laptop, rather than silently ignoring the click. */
+  compareDisabled?: boolean;
 }
 
 /**
@@ -51,6 +54,7 @@ export function LaptopCard({
   layout = "grid",
   compareChecked,
   onCompareChange,
+  compareDisabled = false,
 }: LaptopCardProps) {
   const router = useRouter();
   const specEntries = Object.entries(laptop.specs);
@@ -172,12 +176,18 @@ export function LaptopCard({
           >
             {laptop.price}
           </span>
-          {showScore && onCompareChange ? (
-            <label className="relative z-20 flex cursor-pointer items-center gap-1.5 text-xs font-medium text-muted-foreground">
+          {onCompareChange ? (
+            <label
+              className={cn(
+                "relative z-20 flex items-center gap-1.5 text-xs font-medium text-muted-foreground",
+                compareDisabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
+              )}
+            >
               <Checkbox
                 checked={compareChecked ?? false}
+                disabled={compareDisabled}
                 onCheckedChange={(checked) => onCompareChange(checked === true)}
-                className="size-3.5 cursor-pointer"
+                className="size-3.5"
               />
               Compare
             </label>

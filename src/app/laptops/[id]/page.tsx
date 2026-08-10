@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import {
   Bot,
   ChevronLeft,
+  Columns2,
   Cpu,
   Feather,
   HardDrive,
@@ -20,6 +21,8 @@ import { PersonalPickScoreRing } from "@/components/personal-pick-score-ring";
 import { PickScoreCard } from "@/components/pick-score-card";
 import { SaveButton } from "@/components/save-button";
 import { ShareButton } from "@/components/share-button";
+import { Button } from "@/components/ui/button";
+import { compareHref } from "@/lib/compare";
 import { apiFetch, ApiError } from "@/lib/api/client";
 import { mapBackendLaptop } from "@/lib/api/adapters";
 import { getLaptopPickScores, labelForUseCase } from "@/lib/api/pickscore";
@@ -138,9 +141,26 @@ export default async function LaptopDetailsPage({
         >
           <ChevronLeft className="size-4" /> Back to Browse
         </Link>
-        <div className="flex items-center gap-1 text-muted-foreground">
-          <ShareButton name={laptop.name} />
-          <SaveButton laptopId={laptop.id} />
+        {/* gap-3 between the labelled action and the icon cluster, gap-1 inside
+            the cluster — the portal-wide button spacing scale. */}
+        <div className="flex items-center gap-3 text-muted-foreground">
+          {/* Opens the comparison with this laptop already in it; the compare
+              page's own "Add another laptop" carries on from there. Not a
+              second CTA — purchase intent still resolves to Pico below. */}
+          {/* <Button
+            variant="soft"
+            size="sm"
+            shape="pill"
+            render={<Link href={compareHref([laptop.id])} />}
+            nativeButton={false}
+          >
+            <Columns2 data-icon="inline-start" />
+            Compare
+          </Button> */}
+          <span className="flex items-center gap-1">
+            <ShareButton name={laptop.name} />
+            <SaveButton laptopId={laptop.id} />
+          </span>
         </div>
       </div>
 

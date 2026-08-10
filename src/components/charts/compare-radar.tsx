@@ -20,12 +20,18 @@ export interface RadarSeries {
 
 export function CompareRadar({
   series,
+  axes = RADAR_AXES,
   height = 360,
 }: {
   series: RadarSeries[];
+  /**
+   * Axis labels, in the same order as each series' `values`. Defaults to the
+   * mock `RADAR_AXES`; `/compare` passes the eight real PickScore factors.
+   */
+  axes?: readonly string[];
   height?: number;
 }) {
-  const data = RADAR_AXES.map((axis, i) => {
+  const data = axes.map((axis, i) => {
     const row: Record<string, string | number> = { axis };
     for (const s of series) row[s.name] = s.values[i];
     return row;

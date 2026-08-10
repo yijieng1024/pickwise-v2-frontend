@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Cog,
+  Columns2,
   Heart,
   Home,
   Laptop,
@@ -51,9 +52,8 @@ const navLinks = [
   { href: "/laptops", label: "Laptops", icon: Laptop },
   { href: "/wizard", label: "Needs Wizard", icon: Sparkles },
   { href: "/chat", label: "Chat", icon: MessageSquare },
+  { href: "/compare", label: "Compare", icon: Columns2 },
   { href: "/saved", label: "Saved", icon: Heart },
-  // Hidden — mirrored in footer.tsx productLinks. Restore both together.
-  // { href: "/compare", label: "Compare", icon: Columns2 },
 ];
 
 export function Header() {
