@@ -1,15 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Input } from "@/components/ui/input";
-import { apiFetch } from "@/lib/api/client";
+import { listLaptops } from "@/lib/api/admin/laptops";
 import type { BackendLaptop } from "@/lib/api/types";
 
-/** Search-and-select a single laptop. Fetches the catalog once and filters
- * client-side (same approach as the customizations page). */
+/** Max suggestions shown at once. Asked of the server, not sliced locally. */
+const MAX_MATCHES = 8;
+
+/** Search-and-select a single laptop. Queries the server per keystroke
+ * (debounced) rather than downloading the catalog to filter it locally — at
+ * ~277 rows that was a ~700 KB request to show at most eight names. */
 export function LaptopPicker({
   selected,
   onSelect,
@@ -19,25 +23,36 @@ export function LaptopPicker({
   onSelect: (laptop: BackendLaptop | null) => void;
   placeholder?: string;
 }) {
-  const [laptops, setLaptops] = useState<BackendLaptop[]>([]);
+  const [matches, setMatches] = useState<BackendLaptop[]>([]);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   useEffect(() => {
-    apiFetch<BackendLaptop[]>("/laptops/")
-      .then(setLaptops)
-      .catch(() => toast.error("Failed to load laptops."));
-  }, []);
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
-  const matches = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return [];
-    return laptops
-      .filter(
-        (l) =>
-          l.product_name.toLowerCase().includes(q) || l.model_code.toLowerCase().includes(q),
-      )
-      .slice(0, 8);
-  }, [laptops, search]);
+  useEffect(() => {
+    if (!debouncedSearch) return;
+    // Guards against a slow earlier keystroke landing after a newer one and
+    // overwriting its results.
+    let cancelled = false;
+    listLaptops({ search: debouncedSearch, limit: MAX_MATCHES })
+      .then((res) => {
+        if (!cancelled) setMatches(res.items);
+      })
+      .catch(() => {
+        if (!cancelled) toast.error("Failed to search laptops.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedSearch]);
+
+  // Derived rather than cleared from the effect: emptying the box has to hide
+  // the previous term's results immediately, and writing state from an effect
+  // to do that costs a second render pass (and trips the lint rule).
+  const visibleMatches = debouncedSearch && !selected ? matches : [];
 
   return (
     <div className="relative">
@@ -55,9 +70,9 @@ export function LaptopPicker({
         }}
         className="pl-8"
       />
-      {matches.length > 0 && !selected && (
+      {visibleMatches.length > 0 && (
         <div className="border-line bg-popover absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border p-1 shadow-md">
-          {matches.map((l) => (
+          {visibleMatches.map((l) => (
             <button
               key={l.id}
               type="button"

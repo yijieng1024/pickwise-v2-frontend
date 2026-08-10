@@ -1,9 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -90,9 +100,48 @@ export function LaptopForm({
   const [values, setValues] = useState<Values>(() => seedValues(laptop));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false);
+
+  // Snapshot of the form as it was seeded, to compare against on the way out.
+  // A string rather than a deep-equality helper: `values` is a flat map of
+  // primitives built by iterating LAPTOP_FORM_GROUPS in a fixed order, and
+  // setField spreads the previous object, so key order never changes and
+  // stringify is a sound comparison here.
+  const [initialSnapshot] = useState(() =>
+    JSON.stringify({ brandId: laptop?.brand_id ?? "", values: seedValues(laptop) }),
+  );
+  // Set on a successful save, so the edits that were just persisted don't
+  // count as unsaved while the redirect is in flight.
+  const [saved, setSaved] = useState(false);
+  const isDirty = !saved && JSON.stringify({ brandId, values }) !== initialSnapshot;
+
+  // Covers reloads, tab closes and typed-in URLs. It cannot cover in-app
+  // navigation: the App Router exposes no route-change interception, so the
+  // sidebar and breadcrumbs still leave without asking. Cancel is guarded
+  // below because it's the one in-app exit this component owns.
+  useEffect(() => {
+    if (!isDirty) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      // Older browsers only show the prompt when returnValue is set. The
+      // message itself is the browser's own — custom text is ignored.
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [isDirty]);
 
   function setField(key: string, value: string | boolean) {
     setValues((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function leave() {
+    router.push("/admin/catalog/laptops");
+  }
+
+  function handleCancel() {
+    if (isDirty) setConfirmingDiscard(true);
+    else leave();
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -117,7 +166,8 @@ export function LaptopForm({
         const updated = await updateLaptop(token, laptop.id, payload);
         toast.success(`Updated ${updated.product_name}.`);
       }
-      router.push("/admin/catalog/laptops");
+      setSaved(true);
+      leave();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to save laptop.");
     } finally {
@@ -169,10 +219,27 @@ export function LaptopForm({
         <Button type="submit" disabled={saving || !brandId}>
           {saving ? "Saving…" : mode === "create" ? "Create laptop" : "Save changes"}
         </Button>
-        <Button type="button" variant="outline" onClick={() => router.push("/admin/catalog/laptops")}>
+        <Button type="button" variant="outline" onClick={handleCancel}>
           Cancel
         </Button>
       </div>
+
+      <AlertDialog open={confirmingDiscard} onOpenChange={setConfirmingDiscard}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard your changes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This form has edits that haven&apos;t been saved. Leaving now throws them away.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep editing</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={leave}>
+              Discard changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </form>
   );
 }

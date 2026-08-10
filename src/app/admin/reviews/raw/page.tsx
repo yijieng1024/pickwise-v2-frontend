@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link2, MoreHorizontal, RefreshCw, Search, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -57,7 +57,7 @@ import {
   processReview,
   rematchPending,
 } from "@/lib/api/admin/reviews";
-import { apiFetch, ApiError } from "@/lib/api/client";
+import { ApiError } from "@/lib/api/client";
 import type { BackendLaptop } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
@@ -85,10 +85,11 @@ const statusBadgeClass: Record<RawReviewStatus, string> = {
 export default function AdminRawReviewsPage() {
   const { token } = useAuth();
   const [reviews, setReviews] = useState<RawReview[] | null>(null);
-  const [laptopNames, setLaptopNames] = useState<Map<string, string>>(new Map());
+  const [total, setTotal] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [status, setStatus] = useState("all");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
   const [rematching, setRematching] = useState(false);
   const [matchTarget, setMatchTarget] = useState<RawReview | null>(null);
@@ -97,24 +98,25 @@ export default function AdminRawReviewsPage() {
   const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
-    apiFetch<BackendLaptop[]>("/laptops/")
-      .then((laptops) => setLaptopNames(new Map(laptops.map((l) => [l.id, l.product_name]))))
-      .catch(() => {});
-  }, []);
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
-  // Reset page + loading state when the effective query changes — the "adjust
-  // state during render" pattern, not an effect (see laptops-browse.tsx).
-  const querySig = `${status}|${search}`;
-  const [prevQuerySig, setPrevQuerySig] = useState(querySig);
-  if (querySig !== prevQuerySig) {
-    setPrevQuerySig(querySig);
+  // Reset pagination when the filters change, then drop stale rows once the
+  // effective query changes — the "adjust state during render" pattern, not an
+  // effect (see laptops-browse.tsx). Two signatures, because a page change
+  // must blank the table but must not reset the page to 1.
+  const filterSig = `${status}|${debouncedSearch}`;
+  const [prevFilterSig, setPrevFilterSig] = useState(filterSig);
+  if (filterSig !== prevFilterSig) {
+    setPrevFilterSig(filterSig);
     setPage(1);
   }
 
-  const statusSig = status;
-  const [prevStatusSig, setPrevStatusSig] = useState(statusSig);
-  if (statusSig !== prevStatusSig) {
-    setPrevStatusSig(statusSig);
+  const paramsSig = `${filterSig}|${page}`;
+  const [prevParamsSig, setPrevParamsSig] = useState(paramsSig);
+  if (paramsSig !== prevParamsSig) {
+    setPrevParamsSig(paramsSig);
     setReviews(null);
     setLoadError(null);
   }
@@ -122,10 +124,16 @@ export default function AdminRawReviewsPage() {
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
-    listRawReviews(token, status === "all" ? undefined : (status as RawReviewStatus))
+    listRawReviews(token, {
+      status: status === "all" ? undefined : (status as RawReviewStatus),
+      search: debouncedSearch || undefined,
+      skip: (page - 1) * PAGE_SIZE,
+      limit: PAGE_SIZE,
+    })
       .then((res) => {
         if (cancelled) return;
-        setReviews(res);
+        setReviews(res.items);
+        setTotal(res.total);
         setLoadError(null);
       })
       .catch((err) => {
@@ -134,16 +142,7 @@ export default function AdminRawReviewsPage() {
     return () => {
       cancelled = true;
     };
-  }, [token, status, reloadTick]);
-
-  const filtered = useMemo(() => {
-    if (!reviews) return [];
-    const q = search.trim().toLowerCase();
-    if (!q) return reviews;
-    return reviews.filter((r) => r.video_title.toLowerCase().includes(q));
-  }, [reviews, search]);
-
-  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  }, [token, status, debouncedSearch, page, reloadTick]);
 
   async function runRematch() {
     if (!token) return;
@@ -229,7 +228,7 @@ export default function AdminRawReviewsPage() {
           <AdminErrorState message={loadError} onRetry={() => setReloadTick((t) => t + 1)} />
         ) : reviews === null ? (
           <AdminLoadingState />
-        ) : filtered.length === 0 ? (
+        ) : reviews.length === 0 ? (
           <AdminEmptyState title="No reviews match" />
         ) : (
           <Table>
@@ -242,7 +241,7 @@ export default function AdminRawReviewsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paged.map((r) => (
+              {reviews.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell>
                     <div className="max-w-md truncate font-medium">{r.video_title}</div>
@@ -254,7 +253,7 @@ export default function AdminRawReviewsPage() {
                   <TableCell className="text-muted-foreground">
                     {r.matched_laptop_id ? (
                       <div className="max-w-xs">
-                        <div className="truncate">{laptopNames.get(r.matched_laptop_id) ?? "Matched"}</div>
+                        <div className="truncate">{r.matched_laptop_name ?? "Matched"}</div>
                         {r.match_confidence !== null && (
                           <div className="text-[12px] tabular-nums">
                             {Math.round(r.match_confidence)}% confidence
@@ -300,7 +299,7 @@ export default function AdminRawReviewsPage() {
         )}
       </Card>
 
-      <AdminPagination page={page} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} />
+      <AdminPagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
 
       <ManualMatchDialog
         review={matchTarget}
