@@ -25,6 +25,8 @@ import { type Job, type JobStatus, jobTypeLabel, listJobs } from "@/lib/api/admi
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 
+import { AdminJobTrendCard } from "../admin-job-trend";
+import { useAdminQuery } from "../admin-query-state";
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../admin-states";
 import { AdminStatusPill } from "../admin-status-pill";
 import { AdminPageHeader } from "../admin-page-header";
@@ -69,23 +71,15 @@ export default function AdminJobsPage() {
   const [jobs, setJobs] = useState<Job[] | null>(null);
   const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [jobType, setJobType] = useState("all");
-  const [status, setStatus] = useState("all");
   const [reloadTick, setReloadTick] = useState(0);
 
-  // Changing a filter must reset to page 1, or a page-3 view of a narrower
-  // result set lands past the end and shows nothing.
-  const filterSig = `${jobType}|${status}`;
-  const [prevFilterSig, setPrevFilterSig] = useState(filterSig);
-  if (filterSig !== prevFilterSig) {
-    setPrevFilterSig(filterSig);
-    setPage(1);
-  }
+  const query = useAdminQuery({ filters: { type: "all", status: "all" } });
+  const { type: jobType, status } = query.values;
+  const { page } = query;
 
   // Drop stale rows the moment the fetch key changes — "adjust state during
   // render", since the set-state-in-effect lint forbids the effect version.
-  const fetchSig = `${filterSig}|${page}|${reloadTick}`;
+  const fetchSig = `${query.signature}|${reloadTick}`;
   const [prevFetchSig, setPrevFetchSig] = useState(fetchSig);
   if (fetchSig !== prevFetchSig) {
     setPrevFetchSig(fetchSig);
@@ -134,9 +128,19 @@ export default function AdminJobsPage() {
         }
       />
 
+      {/* Throughput sits above the filter bar because it describes the whole
+          job history, not the filtered table under it. */}
+      <AdminJobTrendCard
+        title="Items processed per day"
+        description="Every job type. A rising failed line is the signal to open the runs below and read their errors."
+        emptyTitle="No runs to chart yet"
+        emptyDescription="Throughput appears once a scrape, processor or embedding run has finished."
+        reloadTick={reloadTick}
+      />
+
       {/* gap-3: filter bar, same as every other control row in the portal. */}
       <div className="flex flex-wrap items-center gap-3">
-        <Select items={TYPE_OPTIONS} value={jobType} onValueChange={(v) => setJobType(v as string)}>
+        <Select items={TYPE_OPTIONS} value={jobType} onValueChange={(v) => query.set({ type: v as string })}>
           <SelectTrigger className="w-60" aria-label="Filter by job type">
             <SelectValue />
           </SelectTrigger>
@@ -150,7 +154,7 @@ export default function AdminJobsPage() {
             </SelectGroup>
           </SelectContent>
         </Select>
-        <Select items={STATUS_OPTIONS} value={status} onValueChange={(v) => setStatus(v as string)}>
+        <Select items={STATUS_OPTIONS} value={status} onValueChange={(v) => query.set({ status: v as string })}>
           <SelectTrigger className="w-44" aria-label="Filter by status">
             <SelectValue />
           </SelectTrigger>
@@ -235,7 +239,7 @@ export default function AdminJobsPage() {
         page={page}
         pageSize={PAGE_SIZE}
         total={total}
-        onPageChange={setPage}
+        onPageChange={query.setPage}
       />
     </div>
   );

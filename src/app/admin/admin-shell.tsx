@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -27,6 +27,7 @@ import { useAuth } from "@/lib/auth-context";
 
 import { AdminFooter } from "./admin-footer";
 import { navGroups, type NavLink } from "./admin-nav";
+import { UnsavedChangesProvider, useAdminNavigation } from "./unsaved-changes";
 import { AdminTopbar } from "./admin-topbar";
 
 export function AdminShell({
@@ -58,81 +59,122 @@ export function AdminShell({
   }
 
   return (
-    <SidebarProvider
-      defaultOpen={defaultOpen}
-      style={{ "--sidebar-width": "15rem" } as React.CSSProperties}
-    >
-      <Sidebar collapsible="icon">
-        <SidebarHeader>
-          {/* Toggle lives in the topbar (AdminTopbar) so it stays reachable
+    // Wraps the whole portal so a form's unsaved work is visible to the
+    // sidebar and breadcrumbs it would be lost to. Every link below therefore
+    // lives in a child component — this one renders the provider, so it can't
+    // read from it.
+    <UnsavedChangesProvider>
+      <SidebarProvider
+        defaultOpen={defaultOpen}
+        style={{ "--sidebar-width": "15rem" } as React.CSSProperties}
+      >
+        <Sidebar collapsible="icon">
+          <SidebarHeader>
+            {/* Toggle lives in the topbar (AdminTopbar) so it stays reachable
               when the rail is collapsed and on mobile. */}
-          <div className="flex items-center gap-2 px-2 py-1.5">
-            {/* Goes to the dashboard, not the storefront. A wordmark inside an
+            <div className="flex items-center gap-2 px-2 py-1.5">
+              {/* Goes to the dashboard, not the storefront. A wordmark inside an
                 app is expected to be "home within this app"; leaving the portal
                 is the explicit "Back to site" action in the footer. */}
-            <Link href="/admin" className="flex min-w-0 items-center gap-2">
-              <BrandMark className="text-brand size-6 shrink-0" />
-              {/* Stacked wordmark: the "Admin" line is what distinguishes this
-                  from the storefront, so it rides with the name rather than
-                  sitting elsewhere in the chrome. Both hide together on the
-                  icon rail, leaving just the P. */}
-              <span className="flex min-w-0 flex-col group-data-[collapsible=icon]:hidden">
-                <span className="truncate text-[13.5px] leading-tight font-bold tracking-tight">
-                  PickWise
-                </span>
-                <span className="text-muted-foreground truncate text-[10.5px] leading-tight font-semibold tracking-[0.08em] uppercase">
-                  Admin Portal
-                </span>
-              </span>
-            </Link>
-          </div>
-        </SidebarHeader>
+              <BrandLink />
+            </div>
+          </SidebarHeader>
 
-        <SidebarContent>
-          {navGroups.map((group) => (
-            <SidebarGroup key={group.label}>
-              <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {group.links.map((link, i) => (
-                    <NavItem
-                      key={link.href}
-                      link={link}
-                      pathname={pathname}
-                      // Only the dashboard needs an exact match; every other
-                      // route would otherwise light up under "/admin".
-                      exact={group.exactFirst && i === 0}
-                    />
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          ))}
+          <SidebarContent>
+            {navGroups.map((group) => (
+              <SidebarGroup key={group.label}>
+                <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {group.links.map((link, i) => (
+                      <NavItem
+                        key={link.href}
+                        link={link}
+                        pathname={pathname}
+                        // Only the dashboard needs an exact match; every other
+                        // route would otherwise light up under "/admin".
+                        exact={group.exactFirst && i === 0}
+                      />
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            ))}
+          </SidebarContent>
 
-        </SidebarContent>
+          <SidebarFooter>
+            <SidebarMenu>
+              <BackToSiteLink />
+            </SidebarMenu>
+          </SidebarFooter>
+          <SidebarRail />
+        </Sidebar>
 
-        <SidebarFooter>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton render={<Link href="/" />} tooltip="Back to site">
-                <ArrowLeft />
-                <span>Back to site</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
-        <SidebarRail />
-      </Sidebar>
-
-      <SidebarInset>
-        <AdminTopbar />
-        {/* flex-1 on the content keeps the footer at the bottom of the inset on
+        <SidebarInset>
+          <AdminTopbar />
+          {/* flex-1 on the content keeps the footer at the bottom of the inset on
             short screens instead of floating under a half-empty page. */}
-        <div className="flex flex-1 flex-col gap-3 p-4">{children}</div>
-        <AdminFooter />
-        <Toaster position="top-right" />
-      </SidebarInset>
-    </SidebarProvider>
+          <div className="flex flex-1 flex-col gap-3 p-4">
+            {/* The listing screens read their filters from useSearchParams,
+                which a production build refuses to prerender without a Suspense
+                boundary above it. One boundary here covers every page, and the
+                sidebar and topbar keep prerendering around it. */}
+            <Suspense
+              fallback={
+                <div className="flex flex-1 items-center justify-center">
+                  <Spinner className="size-5 text-muted-foreground" />
+                </div>
+              }
+            >
+              {children}
+            </Suspense>
+          </div>
+          <AdminFooter />
+          <Toaster position="top-right" />
+        </SidebarInset>
+      </SidebarProvider>
+    </UnsavedChangesProvider>
+  );
+}
+
+/** The wordmark. Goes to the dashboard, not the storefront. */
+function BrandLink() {
+  const { guardNavigate } = useAdminNavigation();
+  return (
+    <Link
+      href="/admin"
+      onNavigate={(e) => guardNavigate(e, "/admin")}
+      className="flex min-w-0 items-center gap-2"
+    >
+      <BrandMark className="text-brand size-6 shrink-0" />
+      {/* Stacked wordmark: the "Admin" line is what distinguishes this from
+          the storefront, so it rides with the name rather than sitting
+          elsewhere in the chrome. Both hide together on the icon rail,
+          leaving just the P. */}
+      <span className="flex min-w-0 flex-col group-data-[collapsible=icon]:hidden">
+        <span className="truncate text-[13.5px] leading-tight font-bold tracking-tight">
+          PickWise
+        </span>
+        <span className="text-muted-foreground truncate text-[10.5px] leading-tight font-semibold tracking-[0.08em] uppercase">
+          Admin Portal
+        </span>
+      </span>
+    </Link>
+  );
+}
+
+function BackToSiteLink() {
+  const { guardNavigate } = useAdminNavigation();
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        render={<Link href="/" onNavigate={(e) => guardNavigate(e, "/")} />}
+        tooltip="Back to site"
+      >
+        <ArrowLeft />
+        <span>Back to site</span>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
   );
 }
 
@@ -146,11 +188,19 @@ function NavItem({
   exact?: boolean;
 }) {
   const Icon = link.icon;
-  const active = exact ? pathname === link.href : pathname.startsWith(link.href);
+  const { guardNavigate } = useAdminNavigation();
+  const active = exact
+    ? pathname === link.href
+    : pathname.startsWith(link.href);
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
-        render={<Link href={link.href} />}
+        render={
+          <Link
+            href={link.href}
+            onNavigate={(e) => guardNavigate(e, link.href)}
+          />
+        }
         isActive={active}
         tooltip={link.label}
         className="data-active:bg-brand-tint data-active:font-semibold data-active:text-brand"

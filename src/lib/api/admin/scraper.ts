@@ -279,12 +279,15 @@ export function listRawScrapLaptops(
   token: string,
   params: {
     processingStatus?: RawScrapLaptop["processing_status"];
+    /** Case-insensitive match on the raw product name or the source URL. */
+    search?: string;
     offset?: number;
     limit?: number;
   } = {},
 ): Promise<{ items: RawScrapLaptop[]; total: number }> {
   const query = new URLSearchParams();
   if (params.processingStatus) query.set("processing_status", params.processingStatus);
+  if (params.search) query.set("search", params.search);
   query.set("offset", String(params.offset ?? 0));
   query.set("limit", String(params.limit ?? 50));
   // Bare-array body, filtered count in X-Total-Count — so `limit: 1` is a

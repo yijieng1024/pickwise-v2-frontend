@@ -27,11 +27,14 @@ import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   type CustomizationCreateInput,
+  type PatternMatchLaptop,
   createCustomizations,
   createCustomizationsByPattern,
+  previewCustomizationsByPattern,
 } from "@/lib/api/admin/customizations";
+import { listLaptops } from "@/lib/api/admin/laptops";
 import { type Category, listCategories } from "@/lib/api/admin/taxonomy";
-import { apiFetch, ApiError } from "@/lib/api/client";
+import { ApiError } from "@/lib/api/client";
 import type { BackendLaptop } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth-context";
 
@@ -39,17 +42,22 @@ import { OutcomeAlert } from "../../admin-outcome-alert";
 
 type Mode = "laptops" | "pattern";
 
+/** How many laptops the picker requests at a time. Search narrows the rest. */
+const LAPTOP_PAGE = 40;
+
 /**
  * The two create paths, behind one form: pick laptops explicitly
  * (`POST /customizations/`) or match a model-code fragment
  * (`POST /customizations/bulk-by-pattern`).
  *
  * The pattern path is blind and has no undo, so it never submits without
- * showing exactly which laptops it will hit. The preview filters the catalog
- * with `model_code.includes(pattern)` — a **case-sensitive** substring test,
- * because the backend matches with SQLAlchemy `.contains()`, which compiles to
- * `LIKE '%…%'`, not `ILIKE`. Lower-casing here would promise matches the server
- * won't make.
+ * showing exactly which laptops it will hit. That preview comes from
+ * `GET /customizations/bulk-by-pattern/preview`, which runs the *same* query
+ * the write runs — matching is a case-sensitive `LIKE '%…%'` (SQLAlchemy
+ * `.contains()`, not `ILIKE`), and asking the server means the preview cannot
+ * drift from the write. This used to be re-derived here against a locally
+ * downloaded catalog, which was both a ~700 KB fetch and a second copy of a
+ * predicate that had to stay in sync by hand.
  *
  * Neither endpoint de-duplicates: adding the same option twice stores it twice.
  */
@@ -66,13 +74,18 @@ export function AddOptionsDialog({
   const uid = useId();
 
   const [mode, setMode] = useState<Mode>("laptops");
-  const [catalog, setCatalog] = useState<BackendLaptop[] | null>(null);
   const [categories, setCategories] = useState<Category[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [laptopSearch, setLaptopSearch] = useState("");
+  const [debouncedLaptopSearch, setDebouncedLaptopSearch] = useState("");
+  const [laptopMatches, setLaptopMatches] = useState<BackendLaptop[] | null>(null);
+  const [laptopTotal, setLaptopTotal] = useState(0);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
   const [pattern, setPattern] = useState("");
+  const [debouncedPattern, setDebouncedPattern] = useState("");
+  const [patternMatches, setPatternMatches] = useState<PatternMatchLaptop[] | null>(null);
 
   // null, not "" — base-ui shows the Select placeholder only when nothing is
   // selected, and an empty string counts as a selection with no matching item.
@@ -92,8 +105,11 @@ export function AddOptionsDialog({
     if (open) {
       setMode("laptops");
       setLaptopSearch("");
+      setDebouncedLaptopSearch("");
       setSelectedIds([]);
       setPattern("");
+      setDebouncedPattern("");
+      setPatternMatches(null);
       setCategoryId(null);
       setOptionName("");
       setPriceAddRm("0");
@@ -102,28 +118,79 @@ export function AddOptionsDialog({
     }
   }
 
-  // Both the picker and the pattern preview need every model code, and
-  // `GET /laptops/` with no params returns the unpaginated catalog. Fetched
-  // once per mount, not per open.
+  // Categories are a small reference list and every mode needs them, so this
+  // is the one thing fetched up front — once per mount, not per open.
   useEffect(() => {
-    if (!open || !token || catalog) return;
+    if (!open || !token || categories) return;
     let cancelled = false;
-    Promise.all([apiFetch<BackendLaptop[]>("/laptops/"), listCategories()])
-      .then(([laptops, cats]) => {
+    listCategories()
+      .then((cats) => {
         if (cancelled) return;
-        setCatalog(laptops);
         setCategories(cats);
         setLoadError(null);
       })
       .catch((err) => {
         if (!cancelled) {
-          setLoadError(err instanceof ApiError ? err.message : "Failed to load the catalog.");
+          setLoadError(err instanceof ApiError ? err.message : "Failed to load categories.");
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [open, token, catalog]);
+  }, [open, token, categories]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedLaptopSearch(laptopSearch.trim()), 300);
+    return () => clearTimeout(t);
+  }, [laptopSearch]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedPattern(pattern), 300);
+    return () => clearTimeout(t);
+  }, [pattern]);
+
+  // The picker asks the server for the rows it shows. It used to download the
+  // whole catalog (~277 rows) to render at most 40 of them.
+  useEffect(() => {
+    if (!open || mode !== "laptops") return;
+    let cancelled = false;
+    listLaptops({ search: debouncedLaptopSearch || undefined, limit: LAPTOP_PAGE })
+      .then((res) => {
+        if (cancelled) return;
+        setLaptopMatches(res.items);
+        setLaptopTotal(res.total);
+        setLoadError(null);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setLoadError(err instanceof ApiError ? err.message : "Failed to search laptops.");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, mode, debouncedLaptopSearch]);
+
+  // The preview is answered by the same query the write runs, rather than
+  // re-deriving a case-sensitive LIKE over a locally held catalog.
+  useEffect(() => {
+    if (!open || mode !== "pattern" || !token || !debouncedPattern.trim()) return;
+    let cancelled = false;
+    previewCustomizationsByPattern(token, debouncedPattern)
+      .then((rows) => {
+        if (cancelled) return;
+        setPatternMatches(rows);
+        setLoadError(null);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setLoadError(err instanceof ApiError ? err.message : "Failed to preview matches.");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, mode, token, debouncedPattern]);
 
   const categoryOptions = useMemo(
     () =>
@@ -134,31 +201,16 @@ export function AddOptionsDialog({
     [categories],
   );
 
-  const laptopMatches = useMemo(() => {
-    if (!catalog) return [];
-    const q = laptopSearch.trim().toLowerCase();
-    if (!q) return catalog.slice(0, 40);
-    return catalog
-      .filter(
-        (l) =>
-          l.product_name.toLowerCase().includes(q) || l.model_code.toLowerCase().includes(q),
-      )
-      .slice(0, 40);
-  }, [catalog, laptopSearch]);
-
-  // Case-sensitive on purpose — see the component comment.
-  const patternMatches = useMemo(() => {
-    if (!catalog || !pattern) return [];
-    return catalog.filter((l) => l.model_code.includes(pattern));
-  }, [catalog, pattern]);
-
-  const targetCount = mode === "laptops" ? selectedIds.length : patternMatches.length;
+  const targetCount =
+    mode === "laptops" ? selectedIds.length : (patternMatches?.length ?? 0);
   const canSubmit =
     !submitting &&
     targetCount > 0 &&
     categoryId !== null &&
     optionName.trim() !== "" &&
-    (mode === "laptops" || pattern.trim() !== "");
+    // Never submit against a stale preview: while the debounce is still
+    // catching up, what's on screen isn't what this pattern would hit.
+    (mode === "laptops" || (pattern.trim() !== "" && debouncedPattern === pattern));
 
   function toggleLaptop(id: string) {
     setSelectedIds((prev) =>
@@ -220,10 +272,10 @@ export function AddOptionsDialog({
 
             {loadError ? (
               <p className="text-[13px] font-medium text-negative">{loadError}</p>
-            ) : catalog === null ? (
+            ) : categories === null ? (
               <div className="flex items-center gap-2 py-6 text-[13px] text-muted-foreground">
                 <Spinner />
-                Loading the catalog…
+                Loading…
               </div>
             ) : mode === "laptops" ? (
               <div className="flex min-w-0 flex-col gap-2">
@@ -239,7 +291,12 @@ export function AddOptionsDialog({
                   />
                 </div>
                 <div className="border-line max-h-56 min-w-0 overflow-y-auto rounded-lg border p-1">
-                  {laptopMatches.length === 0 ? (
+                  {laptopMatches === null ? (
+                    <p className="flex items-center gap-2 p-3 text-[13px] text-muted-foreground">
+                      <Spinner />
+                      Searching…
+                    </p>
+                  ) : laptopMatches.length === 0 ? (
                     <p className="p-3 text-[13px] text-muted-foreground">No laptops match.</p>
                   ) : (
                     laptopMatches.map((l) => (
@@ -261,8 +318,8 @@ export function AddOptionsDialog({
                 </div>
                 <p className="text-[12.5px] text-muted-foreground">
                   {selectedIds.length} selected
-                  {laptopSearch.trim() === "" && catalog.length > laptopMatches.length
-                    ? ` · showing the first ${laptopMatches.length} of ${catalog.length} — search to narrow`
+                  {laptopMatches !== null && laptopTotal > laptopMatches.length
+                    ? ` · showing ${laptopMatches.length} of ${laptopTotal} — search to narrow`
                     : ""}
                 </p>
               </div>
@@ -284,6 +341,14 @@ export function AddOptionsDialog({
                 {pattern.trim() === "" ? (
                   <p className="text-[12.5px] text-muted-foreground">
                     Matching is case-sensitive, and every matching laptop gets the option.
+                  </p>
+                ) : patternMatches === null || debouncedPattern !== pattern ? (
+                  // Distinct from "no matches": showing that warning while the
+                  // preview is still in flight would tell the admin their
+                  // pattern is wrong when it may be about to match.
+                  <p className="flex items-center gap-2 text-[12.5px] text-muted-foreground">
+                    <Spinner />
+                    Checking which laptops match…
                   </p>
                 ) : patternMatches.length === 0 ? (
                   <OutcomeAlert status="warning" title="No laptops match this pattern">

@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 
 import { StatusBarChart } from "@/components/charts/status-bar-chart";
+import { TREND_COLORS, TrendLine } from "@/components/charts/trend-line";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -48,16 +49,39 @@ import {
 } from "@/lib/api/admin/agent-monitoring";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
+import { bucketByDay, daySpanToToday, parseUtc, percentile } from "@/lib/daily-series";
 import { cn } from "@/lib/utils";
 
+import { useAdminQuery, useSearchDraft } from "../admin-query-state";
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../admin-states";
 import { AdminPageHeader } from "../admin-page-header";
 import { AdminPagination } from "../admin-pagination";
-import { type SortState, SortableTableHead, toggleSort } from "../admin-sortable-head";
+import {
+  AdminTrendRange,
+  DEFAULT_TREND_RANGE,
+  type TrendRange,
+} from "../admin-trend-range";
+import { SortableTableHead } from "../admin-sortable-head";
 
 const PAGE_SIZE = 25;
 
-type SortKey = "created_at" | "latency_ms";
+/**
+ * The trend charts read a separate, unfiltered page of runs — deliberately not
+ * the table's rows. Bucketing whatever the table currently shows would make
+ * filtering to "error" draw an error line labelled as total volume.
+ *
+ * 1000 is the backend's `MAX_LIMIT`, and the same window its own /stats
+ * endpoint aggregates over. The timeframe control re-buckets that one window
+ * rather than refetching; when traffic outruns it the axis shortens to the days
+ * the window actually covers rather than drawing zeros (see `daySpanToToday`),
+ * and the caption says so.
+ */
+const TREND_WINDOW = 1000;
+
+const SORT_KEYS = ["created_at", "latency_ms"] as const;
+
+/** Newest first — the run you most likely came here to read. */
+const DEFAULT_SORT = { key: "created_at", direction: "desc" } as const;
 
 const statusOptions = [
   { value: "all", label: "All statuses" },
@@ -77,38 +101,38 @@ export default function AdminAgentMonitoringPage() {
   const [statsError, setStatsError] = useState<string | null>(null);
   const [statsReloadTick, setStatsReloadTick] = useState(0);
 
+  const [trendRuns, setTrendRuns] = useState<AgentRunSummary[] | null>(null);
+  const [trendTotal, setTrendTotal] = useState(0);
+  const [trendError, setTrendError] = useState<string | null>(null);
+  // One control drives all three trend charts — they read the same days, so
+  // separate pickers would let the page show volume and latency over
+  // different periods and invite a false comparison between them.
+  const [trendRange, setTrendRange] = useState<TrendRange>(DEFAULT_TREND_RANGE);
+
   const [runs, setRuns] = useState<AgentRunSummary[] | null>(null);
   const [total, setTotal] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
 
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [status, setStatus] = useState("all");
-  const [sort, setSort] = useState<SortState<SortKey> | null>({ key: "created_at", direction: "desc" });
-  const [page, setPage] = useState(1);
+  const query = useAdminQuery({
+    filters: { q: "", status: "all" },
+    sortKeys: SORT_KEYS,
+    defaultSort: DEFAULT_SORT,
+  });
+  const { q: debouncedSearch, status } = query.values;
+  const { page, sort } = query;
+  const [search, setSearch] = useSearchDraft(debouncedSearch, (value) =>
+    query.set({ q: value }),
+  );
 
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [selectedRun, setSelectedRun] = useState<AgentRunDetail | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [detailReloadTick, setDetailReloadTick] = useState(0);
 
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
-    return () => clearTimeout(t);
-  }, [search]);
-
-  // Reset pagination when filters/sort change, then reset loading state once
-  // the effective query changes — the "adjust state during render" pattern,
-  // not an effect (see laptops-browse.tsx).
-  const filterSig = `${debouncedSearch}|${status}|${sort?.key ?? ""}|${sort?.direction ?? ""}`;
-  const [prevFilterSig, setPrevFilterSig] = useState(filterSig);
-  if (filterSig !== prevFilterSig) {
-    setPrevFilterSig(filterSig);
-    setPage(1);
-  }
-
-  const paramsSig = `${filterSig}|${page}`;
+  // Reset the loading state once the effective query changes — the "adjust
+  // state during render" pattern, not an effect (see laptops-browse.tsx).
+  const paramsSig = query.signature;
   const [prevParamsSig, setPrevParamsSig] = useState(paramsSig);
   if (paramsSig !== prevParamsSig) {
     setPrevParamsSig(paramsSig);
@@ -162,6 +186,28 @@ export default function AdminAgentMonitoringPage() {
     };
   }, [token, statsReloadTick]);
 
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+
+    listAgentRuns(token, { sortBy: "created_at", sortDir: "desc", limit: TREND_WINDOW })
+      .then((res) => {
+        if (cancelled) return;
+        setTrendRuns(res.items);
+        setTrendTotal(res.total);
+        setTrendError(null);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setTrendError(err instanceof ApiError ? err.message : "Failed to load trends.");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, statsReloadTick]);
+
   // Reset detail state whenever the selected run changes — the "adjust
   // state during render" pattern, not an effect (see laptops-browse.tsx).
   const [prevSelectedRunId, setPrevSelectedRunId] = useState(selectedRunId);
@@ -198,6 +244,55 @@ export default function AdminAgentMonitoringPage() {
     [stats],
   );
 
+  const trend = useMemo(() => {
+    if (!trendRuns || trendRuns.length === 0) return null;
+
+    // Size the axis to the fetched window, never past its oldest run.
+    const oldestMs = Math.min(...trendRuns.map((r) => parseUtc(r.created_at).getTime()));
+    const windowDays = daySpanToToday(new Date(oldestMs));
+    // When the window filled up before reaching the end of history, its oldest
+    // day holds only the turns that fit — a partial count that would plot as a
+    // real dip. Drop that day rather than charting an undercount.
+    const partialOldest = trendTotal > trendRuns.length;
+    const days = Math.min(trendRange, partialOldest ? Math.max(1, windowDays - 1) : windowDays);
+    const buckets = bucketByDay(trendRuns, (r) => r.created_at, days);
+
+    const rows = buckets.map((b) => {
+      const errors = b.items.filter((r) => r.status === "error").length;
+      const latencies = b.items.map((r) => r.latency_ms);
+      return {
+        key: b.date,
+        label: b.label,
+        turns: b.items.length,
+        errors,
+        // A day with no turns has no rate and no latency — plotted as a gap,
+        // because 0% error and 0ms would both read as a good day.
+        errorRate: b.items.length === 0 ? null : (errors / b.items.length) * 100,
+        median: percentile(latencies, 50),
+        p95: percentile(latencies, 95),
+      };
+    });
+
+    return {
+      points: rows.map((r) => ({
+        key: r.key,
+        label: r.label,
+        note:
+          r.turns === 0
+            ? "No turns this day"
+            : `${r.errors} of ${r.turns} turn${r.turns === 1 ? "" : "s"} ended in an error`,
+      })),
+      turns: rows.map((r) => r.turns),
+      errorRate: rows.map((r) => r.errorRate),
+      median: rows.map((r) => (r.median === null ? null : Math.round(r.median))),
+      p95: rows.map((r) => (r.p95 === null ? null : Math.round(r.p95))),
+      days,
+      // Short because the window ran out, not because the range is short —
+      // only the former is a caveat worth printing.
+      capped: days < trendRange,
+    };
+  }, [trendRuns, trendTotal, trendRange]);
+
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
@@ -225,6 +320,92 @@ export default function AdminAgentMonitoringPage() {
             error={!!statsError}
           />
         </div>
+
+        {/* Trends. A stat tile says where Pico is now; these say which way it
+            is heading, which is the thing you cannot get from a single
+            number — a 4% error rate is fine if it was 9% yesterday and alarming
+            if it was 0.2%. Volume, reliability and speed are three different
+            scales, so they are three charts and never a second y-axis. */}
+        <div className="mt-1 flex items-center justify-between gap-3">
+          <h2 className="text-sm font-bold tracking-tight">Trends</h2>
+          <AdminTrendRange
+            value={trendRange}
+            onChange={setTrendRange}
+            label="Timeframe for the trend charts"
+          />
+        </div>
+
+        {trendError ? (
+          <Card className="gap-0 p-4">
+            <AdminErrorState message={trendError} onRetry={() => setStatsReloadTick((t) => t + 1)} />
+          </Card>
+        ) : trendRuns === null ? (
+          <Card className="gap-0 p-4">
+            <AdminLoadingState />
+          </Card>
+        ) : trend === null ? (
+          <Card className="gap-0 p-4">
+            <AdminEmptyState
+              icon={Activity}
+              title="No turns recorded yet"
+              description="Trends appear once someone has chatted with Pico."
+            />
+          </Card>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              <Card className="gap-0 p-4">
+                <ChartHeading
+                  title="Turns per day"
+                  caption={trendWindowCaption(trend.days, trend.capped)}
+                />
+                <TrendLine
+                  points={trend.points}
+                  series={[
+                    { name: "Turns", color: TREND_COLORS[0], values: trend.turns },
+                  ]}
+                />
+              </Card>
+
+              <Card className="gap-0 p-4">
+                <ChartHeading
+                  title="Error rate per day"
+                  caption="Days with no turns are left as a gap — hover for the counts behind each rate."
+                />
+                <TrendLine
+                  points={trend.points}
+                  series={[
+                    { name: "Error rate", color: TREND_COLORS[0], values: trend.errorRate },
+                  ]}
+                  formatValue={(v) => `${v.toFixed(1)}%`}
+                  allowDecimals
+                  yWidth={52}
+                />
+              </Card>
+            </div>
+
+            <Card className="gap-0 p-4">
+              <ChartHeading
+                title="Response time per day"
+                caption="The median is the typical turn; the 95th percentile is the slow tail an average hides."
+              />
+              <TrendLine
+                points={trend.points}
+                series={[
+                  { name: "Median", color: TREND_COLORS[0], values: trend.median },
+                  {
+                    name: "95th percentile",
+                    color: TREND_COLORS[1],
+                    dashed: true,
+                    values: trend.p95,
+                  },
+                ]}
+                formatValue={(v) => `${v.toLocaleString()} ms`}
+                yWidth={72}
+              />
+            </Card>
+          </>
+        )}
 
         <Card className="gap-0 p-4">
           {statsError ? (
@@ -256,7 +437,7 @@ export default function AdminAgentMonitoringPage() {
             className="pl-8"
           />
         </div>
-        <Select items={statusOptions} value={status} onValueChange={(v) => setStatus(v as string)}>
+        <Select items={statusOptions} value={status} onValueChange={(v) => query.set({ status: v as string })}>
           <SelectTrigger className="w-full sm:w-40">
             <SelectValue />
           </SelectTrigger>
@@ -291,13 +472,13 @@ export default function AdminAgentMonitoringPage() {
                   label="Latency"
                   sortKey="latency_ms"
                   sort={sort}
-                  onSort={(key) => setSort((prev) => toggleSort(prev, key))}
+                  onSort={query.sortBy}
                 />
                 <SortableTableHead
                   label="Created"
                   sortKey="created_at"
                   sort={sort}
-                  onSort={(key) => setSort((prev) => toggleSort(prev, key))}
+                  onSort={query.sortBy}
                 />
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -334,7 +515,7 @@ export default function AdminAgentMonitoringPage() {
         )}
       </Card>
 
-      <AdminPagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
+      <AdminPagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={query.setPage} />
 
       <Dialog open={selectedRunId !== null} onOpenChange={(open) => !open && setSelectedRunId(null)}>
         <DialogContent className="max-h-[85vh] w-[calc(100vw-2rem)] sm:max-w-4xl overflow-y-auto">
@@ -350,6 +531,23 @@ export default function AdminAgentMonitoringPage() {
           )}
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+/** Says what the axis covers, and admits when history was cut off by the window. */
+function trendWindowCaption(days: number, capped: boolean): string {
+  const span = `Last ${days} day${days === 1 ? "" : "s"}`;
+  return capped
+    ? `${span}, from the most recent ${TREND_WINDOW.toLocaleString()} turns — older history isn't charted.`
+    : `${span}, every turn on record.`;
+}
+
+function ChartHeading({ title, caption }: { title: string; caption: string }) {
+  return (
+    <div className="mb-2.5">
+      <h3 className="text-[13px] font-semibold">{title}</h3>
+      <p className="text-muted-foreground mt-0.5 text-[12px] leading-snug">{caption}</p>
     </div>
   );
 }

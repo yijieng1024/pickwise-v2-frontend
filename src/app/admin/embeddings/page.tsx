@@ -16,14 +16,21 @@ import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
 import { AdminJobPanel } from "../admin-job-panel";
+import { AdminJobTrendCard } from "../admin-job-trend";
 import { AdminPageHeader } from "../admin-page-header";
+import { CoverageHistoryCard } from "./coverage-history-card";
 
 export default function AdminEmbeddingsPage() {
   const { token } = useAuth();
   const [starting, setStarting] = useState(false);
   const { status, loadError, refresh } = useEmbeddingStatus();
-  // Refresh coverage when the run stops, so the bar catches up on its own.
-  const job = useJob(token, refresh);
+  // A finished run changes both the coverage bar and the run history, so it
+  // has to refresh the chart too — the job row only lands once it stops.
+  const [trendTick, setTrendTick] = useState(0);
+  const job = useJob(token, () => {
+    refresh();
+    setTrendTick((t) => t + 1);
+  });
 
   async function runGenerateAll() {
     if (!token) return;
@@ -97,6 +104,23 @@ export default function AdminEmbeddingsPage() {
       {job.accepted && (
         <AdminJobPanel accepted={job.accepted} job={job.job} pollError={job.pollError} />
       )}
+
+      <CoverageHistoryCard reloadTick={trendTick} />
+
+      {/* Coverage says where the catalog stands; this says how it got there.
+          A run that dies a third of the way in leaves coverage looking merely
+          low rather than interrupted, and a failed count that climbs run after
+          run is the Gemini rate limit biting — neither is visible in a
+          percentage. Charted per day like every other admin trend, though
+          embedding runs are sporadic enough that most days will read zero. */}
+      <AdminJobTrendCard
+        jobType="embeddings.generate_all"
+        title="Laptops embedded per run day"
+        description="Only embedding runs. Failures are usually the embedding API's rate limit, and those laptops stay unsearchable until a later run picks them up."
+        emptyTitle="No embedding runs recorded yet"
+        emptyDescription="Start one above and its history will build here."
+        reloadTick={trendTick}
+      />
 
       <p className="text-muted-foreground text-[12px] leading-relaxed">
         The run continues on the server and is recorded as a job, so leaving this page is safe —

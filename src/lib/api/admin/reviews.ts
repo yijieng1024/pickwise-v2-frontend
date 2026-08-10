@@ -33,6 +33,8 @@ export interface RawReview {
   video_title: string;
   published_at: string | null;
   matched_laptop_id: string | null;
+  /** Resolved server-side from `matched_laptop_id`. Null when unmatched. */
+  matched_laptop_name: string | null;
   match_confidence: number | null;
   status: RawReviewStatus;
   created_at: string;
@@ -101,9 +103,37 @@ export function updateChannel(
 
 // --- Raw reviews ---
 
-export function listRawReviews(token: string, status?: RawReviewStatus): Promise<RawReview[]> {
-  const qs = status ? `?status=${status}` : "";
-  return apiFetch<RawReview[]>(`/reviews/raw${qs}`, { token, next: { revalidate: 0 } });
+/** Mirrors the backend's generic `Page[RawYoutubeReviewRead]` envelope. */
+export interface RawReviewPage {
+  items: RawReview[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
+export interface ListRawReviewsParams {
+  status?: RawReviewStatus;
+  /** Case-insensitive match on the video title. */
+  search?: string;
+  skip?: number;
+  limit?: number;
+}
+
+/** Real server-side search/filter/pagination. Pass `limit: 1` to read a count
+ * without pulling rows. */
+export function listRawReviews(
+  token: string,
+  params: ListRawReviewsParams = {},
+): Promise<RawReviewPage> {
+  const query = new URLSearchParams();
+  if (params.status) query.set("status", params.status);
+  if (params.search) query.set("search", params.search);
+  query.set("skip", String(params.skip ?? 0));
+  query.set("limit", String(params.limit ?? 25));
+  return apiFetch<RawReviewPage>(`/reviews/raw?${query.toString()}`, {
+    token,
+    next: { revalidate: 0 },
+  });
 }
 
 export function manualMatch(token: string, reviewId: string, laptopId: string): Promise<RawReview> {

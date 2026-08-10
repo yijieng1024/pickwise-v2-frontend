@@ -75,6 +75,31 @@ export function createCustomizationsByPattern(
   });
 }
 
+/** Identity of one laptop a pattern would hit. */
+export interface PatternMatchLaptop {
+  id: string;
+  product_name: string;
+  model_code: string;
+}
+
+/**
+ * Which laptops `createCustomizationsByPattern` would write to, without
+ * writing anything. Server-side, and sharing the write's exact predicate, so
+ * the preview can't drift from what actually happens — matching is
+ * case-sensitive `LIKE`, which no client-side approximation should be
+ * re-deriving. Returns `[]` when nothing matches.
+ */
+export function previewCustomizationsByPattern(
+  token: string,
+  targetPattern: string,
+): Promise<PatternMatchLaptop[]> {
+  const query = new URLSearchParams({ target_pattern: targetPattern });
+  return apiFetch<PatternMatchLaptop[]>(
+    `/customizations/bulk-by-pattern/preview?${query.toString()}`,
+    { token, next: { revalidate: 0 } },
+  );
+}
+
 export function listLaptopsWithCustomizations(
   token: string,
 ): Promise<LaptopCustomizationSummary[]> {

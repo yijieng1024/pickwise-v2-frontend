@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, LayoutGrid, List, Search, X } from "lucide-react";
 
+import { CompareBar, type CompareSelection } from "@/components/compare-bar";
 import { LaptopCard } from "@/components/laptop-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { MAX_COMPARE } from "@/lib/compare";
 import type { Laptop } from "@/lib/laptops";
 
 import { PAGE_SIZE, type SortOrder, type ViewMode } from "./browse-params";
@@ -91,6 +93,23 @@ export function LaptopsBrowse({
     // `apply` closes over the current params, which is what we want per keystroke.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchDraft, query]);
+
+  // Compare selection. Kept in state rather than the URL — it is a scratchpad
+  // built up across filters and pages, and it survives paging because this
+  // component stays mounted through `router.push` to the same route. The name
+  // is carried alongside the id so the tray can label a laptop that has since
+  // scrolled off the current page.
+  const [selected, setSelected] = useState<CompareSelection[]>([]);
+  const selectedIds = new Set(selected.map((s) => s.id));
+  const compareFull = selected.length >= MAX_COMPARE;
+
+  function toggleCompare(laptop: Laptop, checked: boolean) {
+    setSelected((prev) => {
+      if (!checked) return prev.filter((s) => s.id !== laptop.id);
+      if (prev.some((s) => s.id === laptop.id) || prev.length >= MAX_COMPARE) return prev;
+      return [...prev, { id: laptop.id, name: laptop.name }];
+    });
+  }
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
@@ -235,7 +254,14 @@ export function LaptopsBrowse({
               className="motion-safe:animate-fade-in-up"
               style={{ animationDelay: `${i * 40}ms` }}
             >
-              <LaptopCard laptop={laptop} showScore={false} layout={view} />
+              <LaptopCard
+                laptop={laptop}
+                showScore={false}
+                layout={view}
+                compareChecked={selectedIds.has(laptop.id)}
+                compareDisabled={compareFull && !selectedIds.has(laptop.id)}
+                onCompareChange={(checked) => toggleCompare(laptop, checked)}
+              />
             </div>
           ))}
         </div>
@@ -274,6 +300,15 @@ export function LaptopsBrowse({
           </div>
         </nav>
       )}
+
+      {/* Reserves the tray's height so it never covers the last row or the
+          pager — the tray itself is fixed and out of flow. */}
+      {selected.length > 0 && <div aria-hidden className="h-24" />}
+      <CompareBar
+        selected={selected}
+        onRemove={(id) => setSelected((prev) => prev.filter((s) => s.id !== id))}
+        onClear={() => setSelected([])}
+      />
     </>
   );
 }

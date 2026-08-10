@@ -52,6 +52,7 @@ import {
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 
+import { useAdminQuery, useSearchDraft } from "../../admin-query-state";
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
 import { AdminPageHeader } from "../../admin-page-header";
 import { AddOptionsDialog } from "./add-options-dialog";
@@ -62,8 +63,14 @@ export default function AdminCatalogCustomizationsPage() {
     LaptopCustomizationSummary[] | null
   >(null);
   const [listError, setListError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
   const [listReloadTick, setListReloadTick] = useState(0);
+
+  // Filters the summary list already in hand, so the input leads and the URL
+  // follows on a debounce. This screen has no pager to reset.
+  const query = useAdminQuery({ filters: { q: "" } });
+  const [search, setSearch] = useSearchDraft(query.values.q, (value) =>
+    query.set({ q: value }),
+  );
 
   const [selectedLaptop, setSelectedLaptop] = useState<LaptopCustomizationSummary | null>(
     null,

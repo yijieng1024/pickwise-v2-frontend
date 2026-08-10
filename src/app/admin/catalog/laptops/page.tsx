@@ -47,14 +47,15 @@ import { apiFetch, ApiError } from "@/lib/api/client";
 import type { BackendBrand, BackendLaptop } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth-context";
 
+import { useAdminQuery, useSearchDraft } from "../../admin-query-state";
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
 import { AdminPageHeader } from "../../admin-page-header";
 import { AdminPagination } from "../../admin-pagination";
-import { type SortState, SortableTableHead, toggleSort } from "../../admin-sortable-head";
+import { SortableTableHead } from "../../admin-sortable-head";
 
 const PAGE_SIZE = 25;
 
-type SortKey = "product_name" | "price_rm";
+const SORT_KEYS = ["product_name", "price_rm"] as const;
 
 /**
  * First scraped photo, beside the model name — the same row rhythm as the user
@@ -96,11 +97,15 @@ export default function AdminCatalogLaptopsPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
 
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [sort, setSort] = useState<SortState<SortKey> | null>(null);
-  const [page, setPage] = useState(1);
-  const [brandId, setBrandId] = useState("all");
+  const query = useAdminQuery({
+    filters: { q: "", brand: "all" },
+    sortKeys: SORT_KEYS,
+  });
+  const { q: debouncedSearch, brand: brandId } = query.values;
+  const { page, sort } = query;
+  const [search, setSearch] = useSearchDraft(debouncedSearch, (value) =>
+    query.set({ q: value }),
+  );
 
   const [target, setTarget] = useState<BackendLaptop | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -123,22 +128,10 @@ export default function AdminCatalogLaptopsPage() {
       .catch(() => toast.error("Failed to load brands."));
   }, []);
 
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
-    return () => clearTimeout(t);
-  }, [search]);
-
-  // Reset pagination when search/sort change, then reset loading state once
-  // the effective query changes — the "adjust state during render" pattern,
-  // not an effect (see laptops-browse.tsx).
-  const filterSig = `${debouncedSearch}|${brandId}|${sort?.key ?? ""}|${sort?.direction ?? ""}`;
-  const [prevFilterSig, setPrevFilterSig] = useState(filterSig);
-  if (filterSig !== prevFilterSig) {
-    setPrevFilterSig(filterSig);
-    setPage(1);
-  }
-
-  const paramsSig = `${filterSig}|${page}`;
+  // Drop stale rows the moment the query changes, so the table shows a spinner
+  // rather than the previous filter's results — "adjust state during render",
+  // since the set-state-in-effect lint forbids the effect version.
+  const paramsSig = query.signature;
   const [prevParamsSig, setPrevParamsSig] = useState(paramsSig);
   if (paramsSig !== prevParamsSig) {
     setPrevParamsSig(paramsSig);
@@ -171,10 +164,6 @@ export default function AdminCatalogLaptopsPage() {
       cancelled = true;
     };
   }, [debouncedSearch, brandId, sort, page, reloadTick]);
-
-  function handleSort(key: SortKey) {
-    setSort((prev) => toggleSort(prev, key));
-  }
 
   async function confirmDelete() {
     if (!target || !token) return;
@@ -217,7 +206,11 @@ export default function AdminCatalogLaptopsPage() {
               className="pl-8"
             />
           </div>
-          <Select items={brandOptions} value={brandId} onValueChange={(v) => setBrandId(v as string)}>
+          <Select
+            items={brandOptions}
+            value={brandId}
+            onValueChange={(v) => query.set({ brand: v as string })}
+          >
             <SelectTrigger className="w-48" aria-label="Filter by brand">
               <SelectValue />
             </SelectTrigger>
@@ -245,9 +238,9 @@ export default function AdminCatalogLaptopsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <SortableTableHead label="Model" sortKey="product_name" sort={sort} onSort={handleSort} />
+                <SortableTableHead label="Model" sortKey="product_name" sort={sort} onSort={query.sortBy} />
                 <TableHead>Brand</TableHead>
-                <SortableTableHead label="Price" sortKey="price_rm" sort={sort} onSort={handleSort} />
+                <SortableTableHead label="Price" sortKey="price_rm" sort={sort} onSort={query.sortBy} />
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -305,7 +298,7 @@ export default function AdminCatalogLaptopsPage() {
         )}
       </Card>
 
-      <AdminPagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
+      <AdminPagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={query.setPage} />
 
       <AlertDialog open={target !== null} onOpenChange={(open) => !open && setTarget(null)}>
         <AlertDialogContent>

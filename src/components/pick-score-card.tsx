@@ -137,7 +137,7 @@ export function PickScoreCard({
           PickScore by Use Case
         </h2>
         <span className="text-[11px] text-muted-foreground">
-          Deterministic — real benchmarks, no AI opinion
+          Deterministic: real benchmarks, no AI opinion
         </span>
       </div>
       <p className="mb-5 text-[12.5px] text-muted-foreground">
@@ -262,10 +262,10 @@ export function PickScoreCard({
           })}
           <p className="mt-1.5 text-[10.5px] leading-relaxed text-muted-foreground">
             {isPersonal
-              ? "Bars show each factor's 0–100 score; the weights come from your Needs Wizard answers, and price scores against your own budget. Sorted by contribution."
-              : "Bars show each factor's 0–100 score; the weight is how much it counts toward this use case. Sorted by contribution."}
+              ? "Bars show each factor's 0-100 score; the weights come from your Needs Wizard answers, and price scores against your own budget. Sorted by contribution."
+              : "Bars show each factor's 0-100 score; the weight is how much it counts toward this use case. Sorted by contribution."}
             {gpuProxied &&
-              " * Apple silicon has no separate GPU benchmark — GPU is scored via the CPU as a proxy."}
+              " * Apple silicon has no separate GPU benchmark, so GPU is scored via the CPU as a proxy."}
           </p>
         </div>
       </div>

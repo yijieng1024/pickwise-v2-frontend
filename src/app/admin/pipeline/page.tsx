@@ -41,6 +41,7 @@ import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
+import { useAdminQuery, useSearchDraft } from "../admin-query-state";
 import { AdminStatusPill } from "../admin-status-pill";
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../admin-states";
 import { AdminPageHeader } from "../admin-page-header";
@@ -70,13 +71,18 @@ export default function AdminRawRecordsPage() {
   const { token } = useAuth();
   const [brands, setBrands] = useState<Brand[]>([]);
   const [queue, setQueue] = useState<RawScrapLaptop[] | null>(null);
+  const [total, setTotal] = useState(0);
   const [queueError, setQueueError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
 
-  const [status, setStatus] = useState("all");
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
   const [detailTarget, setDetailTarget] = useState<RawScrapLaptop | null>(null);
+
+  const query = useAdminQuery({ filters: { status: "all", q: "" } });
+  const { status, q: debouncedSearch } = query.values;
+  const { page } = query;
+  const [search, setSearch] = useSearchDraft(debouncedSearch, (value) =>
+    query.set({ q: value }),
+  );
 
   useEffect(() => {
     listBrands()
@@ -84,11 +90,12 @@ export default function AdminRawRecordsPage() {
       .catch(() => toast.error("Failed to load brands."));
   }, []);
 
-  // Drop stale rows the moment a refresh is requested — "adjust state during
-  // render", since the set-state-in-effect lint forbids the effect version.
-  const [prevReloadTick, setPrevReloadTick] = useState(reloadTick);
-  if (reloadTick !== prevReloadTick) {
-    setPrevReloadTick(reloadTick);
+  // Drop stale rows once the effective query changes — "adjust state during
+  // render", not an effect (see laptops-browse.tsx).
+  const paramsSig = `${query.signature}|${reloadTick}`;
+  const [prevParamsSig, setPrevParamsSig] = useState(paramsSig);
+  if (paramsSig !== prevParamsSig) {
+    setPrevParamsSig(paramsSig);
     setQueue(null);
     setQueueError(null);
   }
@@ -96,10 +103,19 @@ export default function AdminRawRecordsPage() {
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
-    listRawScrapLaptops(token, { limit: 1000 })
+    listRawScrapLaptops(token, {
+      processingStatus:
+        status === "all"
+          ? undefined
+          : (status as RawScrapLaptop["processing_status"]),
+      search: debouncedSearch || undefined,
+      offset: (page - 1) * PAGE_SIZE,
+      limit: PAGE_SIZE,
+    })
       .then((res) => {
         if (cancelled) return;
         setQueue(res.items);
+        setTotal(res.total);
         setQueueError(null);
       })
       .catch((err) => {
@@ -111,36 +127,12 @@ export default function AdminRawRecordsPage() {
     return () => {
       cancelled = true;
     };
-  }, [token, reloadTick]);
+  }, [token, status, debouncedSearch, page, reloadTick]);
 
   const brandNames = useMemo(
     () => new Map(brands.map((b) => [b.id, b.name])),
     [brands],
   );
-
-  // Reset pagination when the effective filter changes — "adjust state during
-  // render", not an effect (see laptops-browse.tsx).
-  const filterSig = `${status}|${search}`;
-  const [prevFilterSig, setPrevFilterSig] = useState(filterSig);
-  if (filterSig !== prevFilterSig) {
-    setPrevFilterSig(filterSig);
-    setPage(1);
-  }
-
-  const filtered = useMemo(() => {
-    if (!queue) return [];
-    const q = search.trim().toLowerCase();
-    return queue.filter((row) => {
-      if (status !== "all" && row.processing_status !== status) return false;
-      if (!q) return true;
-      return (
-        row.raw_product_name.toLowerCase().includes(q) ||
-        row.source_url.toLowerCase().includes(q)
-      );
-    });
-  }, [queue, status, search]);
-
-  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div className="flex flex-col gap-4">
@@ -173,9 +165,13 @@ export default function AdminRawRecordsPage() {
         <h2 className="text-sm font-bold tracking-tight">
           Collected records
           {queue && (
+            // The count matching the current filter. It used to read
+            // "42 of 1000" against the whole table, which is no longer
+            // downloaded — the unfiltered total would now cost a second
+            // request to show.
             <span className="text-muted-foreground font-medium tabular-nums">
               {" "}
-              · {filtered.length} of {queue.length}
+              · {total}
             </span>
           )}
         </h2>
@@ -191,7 +187,7 @@ export default function AdminRawRecordsPage() {
               className="pl-8"
             />
           </div>
-          <Select items={statusOptions} value={status} onValueChange={(v) => setStatus(v as string)}>
+          <Select items={statusOptions} value={status} onValueChange={(v) => query.set({ status: v as string })}>
             <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>
@@ -213,7 +209,7 @@ export default function AdminRawRecordsPage() {
           <AdminErrorState message={queueError} onRetry={() => setReloadTick((t) => t + 1)} />
         ) : queue === null ? (
           <AdminLoadingState />
-        ) : filtered.length === 0 ? (
+        ) : queue.length === 0 ? (
           <AdminEmptyState
             icon={Inbox}
             title="No raw records match"
@@ -234,7 +230,7 @@ export default function AdminRawRecordsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paged.map((row) => (
+              {queue.map((row) => (
                 <TableRow key={row.id}>
                   <TableCell>
                     <div className="max-w-xs truncate font-medium">{row.raw_product_name}</div>
@@ -281,7 +277,7 @@ export default function AdminRawRecordsPage() {
         )}
       </Card>
 
-      <AdminPagination page={page} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} />
+      <AdminPagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={query.setPage} />
 
       <RawRecordDialog
         record={detailTarget}
