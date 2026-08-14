@@ -27,6 +27,7 @@ import { useAuth } from "@/lib/auth-context";
 
 import { useAdminNavigation, useUnsavedChanges } from "../../unsaved-changes";
 import { type FieldDef, LAPTOP_FORM_GROUPS } from "./laptop-form-config";
+import { laptops } from "@/lib/laptops";
 
 type Values = Record<string, string | boolean>;
 
@@ -164,25 +165,38 @@ export function LaptopForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <section className="border-line bg-surface rounded-lg border p-4">
-        <h2 className="mb-3 text-sm font-bold tracking-tight">Brand</h2>
-        <Select
-          items={brands.map((b) => ({ value: b.id, label: b.name }))}
-          value={brandId}
-          onValueChange={(v) => setBrandId(v as string)}
-        >
-          <SelectTrigger className="w-full sm:w-64">
-            <SelectValue placeholder="Select a brand" />
-          </SelectTrigger>
-          <SelectContent>
-            {brands.map((b) => (
-              <SelectItem key={b.id} value={b.id}>
-                {b.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </section>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <section className="border-line bg-surface rounded-lg border p-4">
+          <h2 className="mb-3 text-sm font-bold tracking-tight">Brand</h2>
+          <Select
+            items={brands.map((b) => ({ value: b.id, label: b.name }))}
+            value={brandId}
+            onValueChange={(v) => setBrandId(v as string)}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select a brand" />
+            </SelectTrigger>
+            <SelectContent>
+              {brands.map((b) => (
+                <SelectItem key={b.id} value={b.id}>
+                  {b.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </section>
+
+        <section className="border-line bg-surface rounded-lg border p-4">
+          <h2 className="mb-3 text-sm font-bold tracking-tight">Laptop ID</h2>
+          <Input
+            type="text"
+            value={laptop?.id ?? ""}
+            readOnly
+            placeholder={mode === "create" ? "Will be assigned on save" : ""}
+            className="bg-muted/40 text-muted-foreground"
+          />
+        </section>
+      </div>
 
       {LAPTOP_FORM_GROUPS.map((group) => (
         <section

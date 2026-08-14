@@ -40,6 +40,7 @@ export function listLaptops(
 /** Mirrors the backend's `LaptopCreate`/`LaptopUpdate` schemas — the write side of `BackendLaptop`. */
 export interface LaptopInput {
   // Part 1: Core Identifiers & Categorization
+  id: string;
   brand_id: string;
   model_code: string;
   product_name: string;
