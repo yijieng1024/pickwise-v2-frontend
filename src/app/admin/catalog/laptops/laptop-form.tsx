@@ -41,6 +41,14 @@ function seedValues(laptop?: BackendLaptop): Values {
       const raw = laptop?.[field.key as keyof BackendLaptop];
       if (field.type === "boolean") {
         values[field.key] = Boolean(raw);
+      } else if (field.type === "select") {
+        // A create form must seed a real option, never "" — the backend
+        // rejects an unknown status, and a blank Select reads as "unset"
+        // when the column actually has a default.
+        values[field.key] =
+          typeof raw === "string" && raw
+            ? raw
+            : (field.defaultValue ?? field.options?.[0]?.value ?? "");
       } else if (field.type === "stringlist") {
         values[field.key] = Array.isArray(raw) ? raw.join("\n") : "";
       } else if (field.type === "textarea") {
@@ -66,6 +74,11 @@ function buildPayload(values: Values, brandId: string): LaptopInput {
           break;
         case "boolean":
           payload[field.key] = Boolean(raw);
+          break;
+        case "select":
+          // Never send null: the default `String(raw).trim() || null` branch
+          // would blank a NOT NULL column on an edit that didn't touch it.
+          payload[field.key] = String(raw);
           break;
         case "stringlist":
           payload[field.key] = String(raw)
@@ -264,6 +277,34 @@ function FieldControl({
           onCheckedChange={(c) => onChange(c === true)}
         />
         {field.label}
+      </label>
+    );
+  }
+
+  if (field.type === "select") {
+    const options = field.options ?? [];
+    return (
+      <label className="flex flex-col gap-1 text-xs font-semibold">
+        <span>{field.label}</span>
+        <Select
+          items={options}
+          value={String(value)}
+          onValueChange={(v) => onChange(v as string)}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((o) => (
+              <SelectItem key={o.value} value={o.value}>
+                {o.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {field.hint && (
+          <span className="font-normal text-muted-foreground">{field.hint}</span>
+        )}
       </label>
     );
   }

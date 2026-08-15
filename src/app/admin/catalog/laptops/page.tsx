@@ -42,20 +42,32 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
-import { deleteLaptop, listLaptops } from "@/lib/api/admin/laptops";
+import { deleteLaptop, listLaptops, updateLaptop } from "@/lib/api/admin/laptops";
 import { apiFetch, ApiError } from "@/lib/api/client";
-import type { BackendBrand, BackendLaptop } from "@/lib/api/types";
+import type { BackendBrand, BackendLaptop, LaptopStatus } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth-context";
 
 import { useAdminQuery, useSearchDraft } from "../../admin-query-state";
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
 import { AdminPageHeader } from "../../admin-page-header";
 import { AdminPagination } from "../../admin-pagination";
+import { AdminStatusPill } from "../../admin-status-pill";
 import { SortableTableHead } from "../../admin-sortable-head";
 
 const PAGE_SIZE = 25;
 
 const SORT_KEYS = ["product_name", "price_rm"] as const;
+
+/** "all" is the default because GET /laptops/ is unfiltered by default — the
+ * admin catalog is the one view that should show retired rows. */
+const STATUS_OPTIONS = [
+  { value: "all", label: "All statuses" },
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+  { value: "suspended", label: "Suspended" },
+];
+
+const STATUS_VALUES: LaptopStatus[] = ["active", "inactive", "suspended"];
 
 /**
  * First scraped photo, beside the model name — the same row rhythm as the user
@@ -98,10 +110,10 @@ export default function AdminCatalogLaptopsPage() {
   const [reloadTick, setReloadTick] = useState(0);
 
   const query = useAdminQuery({
-    filters: { q: "", brand: "all" },
+    filters: { q: "", brand: "all", status: "all" },
     sortKeys: SORT_KEYS,
   });
-  const { q: debouncedSearch, brand: brandId } = query.values;
+  const { q: debouncedSearch, brand: brandId, status } = query.values;
   const { page, sort } = query;
   const [search, setSearch] = useSearchDraft(debouncedSearch, (value) =>
     query.set({ q: value }),
@@ -109,6 +121,12 @@ export default function AdminCatalogLaptopsPage() {
 
   const [target, setTarget] = useState<BackendLaptop | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // Set when a delete comes back 409 (still referenced by a wishlist, a
+  // conversation, or review data). Kept on the dialog rather than fired as a
+  // toast: the fix is "retire it instead", which needs to be readable next to
+  // the action that failed.
+  const [deleteBlocked, setDeleteBlocked] = useState<string | null>(null);
+  const [statusPending, setStatusPending] = useState<string | null>(null);
 
   // Built from the brands already fetched for the table's Brand column, so the
   // filter costs no extra request.
@@ -146,6 +164,7 @@ export default function AdminCatalogLaptopsPage() {
       // Server-side, so `total` and the pager stay correct. Filtering the
       // 25 rows already on the page would silently mis-count.
       brandId: brandId === "all" ? undefined : brandId,
+      status: status === "all" ? undefined : (status as LaptopStatus),
       sortBy: sort?.key,
       sortDir: sort?.direction,
       skip: (page - 1) * PAGE_SIZE,
@@ -163,20 +182,53 @@ export default function AdminCatalogLaptopsPage() {
     return () => {
       cancelled = true;
     };
-  }, [debouncedSearch, brandId, sort, page, reloadTick]);
+  }, [debouncedSearch, brandId, status, sort, page, reloadTick]);
 
   async function confirmDelete() {
     if (!target || !token) return;
     setDeleting(true);
+    setDeleteBlocked(null);
     try {
       await deleteLaptop(token, target.id);
       toast.success(`Deleted ${target.product_name}.`);
       setTarget(null);
       setReloadTick((t) => t + 1);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Failed to delete laptop.");
+      // 409 = the backend's reference guard. It carries a readable tally of
+      // what is still pointing at the laptop, so show that verbatim and keep
+      // the dialog open rather than closing on a toast the admin may miss.
+      if (err instanceof ApiError && err.status === 409) {
+        setDeleteBlocked(err.message);
+      } else {
+        toast.error(err instanceof ApiError ? err.message : "Failed to delete laptop.");
+      }
     } finally {
       setDeleting(false);
+    }
+  }
+
+  /** Retiring a listing: the alternative the delete guard points admins to. */
+  async function changeStatus(laptop: BackendLaptop, next: LaptopStatus) {
+    if (!token || next === laptop.status) return;
+    setStatusPending(laptop.id);
+    // Optimistic, so the pill in the trigger doesn't lag the click. Rolled
+    // back from the server response on failure.
+    setLaptops((prev) =>
+      prev?.map((l) => (l.id === laptop.id ? { ...l, status: next } : l)) ?? prev,
+    );
+    try {
+      await updateLaptop(token, laptop.id, { status: next });
+      toast.success(`${laptop.product_name} is now ${next}.`);
+      // A row that no longer matches the active status filter has to leave the
+      // page, and `total` has to follow it — only a refetch gets both right.
+      if (status !== "all") setReloadTick((t) => t + 1);
+    } catch (err) {
+      setLaptops((prev) =>
+        prev?.map((l) => (l.id === laptop.id ? { ...l, status: laptop.status } : l)) ?? prev,
+      );
+      toast.error(err instanceof ApiError ? err.message : "Failed to update status.");
+    } finally {
+      setStatusPending(null);
     }
   }
 
@@ -224,6 +276,24 @@ export default function AdminCatalogLaptopsPage() {
               </SelectGroup>
             </SelectContent>
           </Select>
+          <Select
+            items={STATUS_OPTIONS}
+            value={status}
+            onValueChange={(v) => query.set({ status: v as string })}
+          >
+            <SelectTrigger className="w-44" aria-label="Filter by listing status">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {STATUS_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
       </Card>
 
@@ -241,6 +311,7 @@ export default function AdminCatalogLaptopsPage() {
                 <SortableTableHead label="Model" sortKey="product_name" sort={sort} onSort={query.sortBy} />
                 <TableHead>Brand</TableHead>
                 <SortableTableHead label="Price" sortKey="price_rm" sort={sort} onSort={query.sortBy} />
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -264,6 +335,29 @@ export default function AdminCatalogLaptopsPage() {
                   <TableCell>{brands.get(l.brand_id)?.name ?? "Unknown"}</TableCell>
                   <TableCell className="tabular-nums">
                     {l.price_rm > 0 ? `RM ${l.price_rm.toLocaleString()}` : "—"}
+                  </TableCell>
+                  <TableCell>
+                    {/* Changed inline, like the account status on /admin/users:
+                        retiring a listing is the routine action here (the
+                        delete guard sends admins straight to it), so it should
+                        not require opening the full spec form. */}
+                    <Select
+                      items={STATUS_VALUES.map((v) => ({ value: v, label: v }))}
+                      value={l.status}
+                      disabled={statusPending === l.id}
+                      onValueChange={(v) => changeStatus(l, v as LaptopStatus)}
+                    >
+                      <SelectTrigger size="sm" className="w-32" aria-label="Change listing status">
+                        <AdminStatusPill kind="laptopStatus" value={l.status} className="mr-1" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                          <SelectItem value="suspended">Suspended</SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
@@ -300,23 +394,53 @@ export default function AdminCatalogLaptopsPage() {
 
       <AdminPagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={query.setPage} />
 
-      <AlertDialog open={target !== null} onOpenChange={(open) => !open && setTarget(null)}>
+      <AlertDialog
+        open={target !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setTarget(null);
+            setDeleteBlocked(null);
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete laptop?</AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes {target?.product_name} from the catalog. This can&apos;t be undone.
+              This permanently removes {target?.product_name} from the catalog, along with its
+              embedding, price history and PickScores. This can&apos;t be undone — set the status
+              to Inactive instead to pull it from search and public browse while keeping the data.
             </AlertDialogDescription>
           </AlertDialogHeader>
+
+          {deleteBlocked && (
+            <p className="border-negative/30 bg-negative/10 rounded-md border px-3 py-2 text-[13px] font-medium text-negative">
+              {deleteBlocked}
+            </p>
+          )}
+
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              disabled={deleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleting ? "Deleting…" : "Delete"}
-            </AlertDialogAction>
+            {deleteBlocked && target ? (
+              <AlertDialogAction
+                onClick={async () => {
+                  const laptop = target;
+                  setTarget(null);
+                  setDeleteBlocked(null);
+                  await changeStatus(laptop, "inactive");
+                }}
+              >
+                Set to Inactive
+              </AlertDialogAction>
+            ) : (
+              <AlertDialogAction
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deleting ? "Deleting…" : "Delete"}
+              </AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

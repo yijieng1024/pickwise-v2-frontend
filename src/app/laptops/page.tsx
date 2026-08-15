@@ -55,6 +55,10 @@ export default async function LaptopsPage({
   const { items, total } = await listLaptops({
     search: query || undefined,
     brandId: selectedBrand?.id,
+    // GET /laptops/ is unfiltered by default — the admin catalog is the caller
+    // that needs to see retired rows. The storefront has to ask for active
+    // explicitly, or a laptop pulled from agent search still shows up here.
+    status: "active",
     priceMin,
     priceMax,
     sortBy: sort === "reco" ? undefined : "price_rm",

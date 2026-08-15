@@ -78,6 +78,18 @@ const USER_STATUS: Record<string, Entry> = {
   suspended: { label: "Suspended", tone: "bad" },
 };
 
+/**
+ * Catalog listing state. Same three words and tones as USER_STATUS today, but
+ * kept as its own vocabulary because it is a different domain: here the state
+ * decides whether a laptop appears in public browse, agent search, and
+ * conversation shortlists, and the two are free to diverge.
+ */
+const LAPTOP_STATUS: Record<string, Entry> = {
+  active: { label: "Active", tone: "good" },
+  inactive: { label: "Inactive", tone: "neutral" },
+  suspended: { label: "Suspended", tone: "bad" },
+};
+
 const USER_ROLE: Record<string, Entry> = {
   admin: { label: "Admin", tone: "active" },
   user: { label: "User", tone: "neutral" },
@@ -101,6 +113,7 @@ const VOCABULARIES = {
   job: JOB,
   review: REVIEW,
   userStatus: USER_STATUS,
+  laptopStatus: LAPTOP_STATUS,
   userRole: USER_ROLE,
   upload: UPLOAD,
   agent: AGENT,

@@ -1,5 +1,5 @@
 import { apiFetch, apiFetchWithTotal } from "@/lib/api/client";
-import type { BackendLaptop } from "@/lib/api/types";
+import type { BackendLaptop, LaptopStatus } from "@/lib/api/types";
 
 export interface ListLaptopsParams {
   search?: string;
@@ -7,6 +7,13 @@ export interface ListLaptopsParams {
   brandId?: string;
   ramGb?: number;
   storageType?: string;
+  /**
+   * Omit for every status — that is the backend default, and what the admin
+   * catalog wants. Public/storefront callers must pass "active" explicitly:
+   * `GET /laptops/` is deliberately unfiltered, so a retired listing would
+   * otherwise still appear in browse.
+   */
+  status?: LaptopStatus;
   priceMin?: number;
   priceMax?: number;
   sortBy?: "product_name" | "price_rm" | "created_at";
@@ -25,6 +32,7 @@ export function listLaptops(
   if (params.brandId) query.set("brand_id", params.brandId);
   if (params.ramGb !== undefined) query.set("ram_gb", String(params.ramGb));
   if (params.storageType) query.set("storage_type", params.storageType);
+  if (params.status) query.set("status", params.status);
   if (params.priceMin !== undefined) query.set("price_min", String(params.priceMin));
   if (params.priceMax !== undefined) query.set("price_max", String(params.priceMax));
   if (params.sortBy) query.set("sort_by", params.sortBy);
@@ -46,6 +54,8 @@ export interface LaptopInput {
   product_name: string;
   release_year?: number | null;
   price_rm: number;
+  /** Backend defaults to "active" when omitted on create. */
+  status?: LaptopStatus;
 
   // Part 2: Processor & AI Engine
   processor_brand?: string | null;

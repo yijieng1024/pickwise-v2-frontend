@@ -1,3 +1,11 @@
+/**
+ * Catalog listing state (backend `LaptopStatus`). Same three values as
+ * `UserStatus`, deliberately — but a different vocabulary: only `active`
+ * laptops are returned by the agent's search, restored into a conversation
+ * shortlist, or shown on the public `/laptops` browse.
+ */
+export type LaptopStatus = "active" | "inactive" | "suspended";
+
 /** Mirrors the backend's `LaptopRead` schema (GET /laptops/, GET /laptops/{id}). */
 export interface BackendLaptop {
   id: string;
@@ -6,6 +14,7 @@ export interface BackendLaptop {
   product_name: string;
   release_year: number | null;
   price_rm: number;
+  status: LaptopStatus;
   processor_brand: string | null;
   processor_model: string;
   processor_ghz: string | null;

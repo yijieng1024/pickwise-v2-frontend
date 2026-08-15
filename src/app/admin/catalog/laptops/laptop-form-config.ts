@@ -1,6 +1,12 @@
 import type { LaptopInput } from "@/lib/api/admin/laptops";
 
-export type FieldType = "text" | "number" | "boolean" | "stringlist" | "textarea";
+export type FieldType =
+  | "text"
+  | "number"
+  | "boolean"
+  | "stringlist"
+  | "textarea"
+  | "select";
 
 export interface FieldDef {
   key: Exclude<keyof LaptopInput, "brand_id">;
@@ -8,6 +14,11 @@ export interface FieldDef {
   type: FieldType;
   required?: boolean;
   placeholder?: string;
+  /** `select` only. First entry is the value a create form seeds with. */
+  options?: { value: string; label: string }[];
+  /** `select` only, and only when the seed should not be `options[0]`. */
+  defaultValue?: string;
+  hint?: string;
 }
 
 export interface FieldGroup {
@@ -24,6 +35,17 @@ export const LAPTOP_FORM_GROUPS: FieldGroup[] = [
       { key: "product_name", label: "Product name", type: "text", required: true },
       { key: "release_year", label: "Release year", type: "number" },
       { key: "price_rm", label: "Price (RM)", type: "number", required: true },
+      {
+        key: "status",
+        label: "Listing status",
+        type: "select",
+        options: [
+          { value: "active", label: "Active" },
+          { value: "inactive", label: "Inactive" },
+          { value: "suspended", label: "Suspended" },
+        ],
+        hint: "Only Active laptops appear in public browse, agent search, and conversation shortlists.",
+      },
     ],
   },
   {
