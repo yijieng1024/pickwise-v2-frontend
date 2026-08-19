@@ -5,7 +5,6 @@ import Image from "next/image";
 import { MoreHorizontal, Pencil, Plus } from "lucide-react";
 import { toast } from "sonner";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -55,12 +54,7 @@ import { useAuth } from "@/lib/auth-context";
 
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
 import { AdminPageHeader } from "../../admin-page-header";
-
-const tierLabel: Record<TrustTier, string> = { tier_1: "Tier 1", tier_2: "Tier 2" };
-const tierBadgeClass: Record<TrustTier, string> = {
-  tier_1: "bg-brand-tint text-brand",
-  tier_2: "bg-surface-2 text-muted-foreground",
-};
+import { AdminStatusPill } from "../../admin-status-pill";
 
 export default function AdminReviewChannelsPage() {
   const { token } = useAuth();
@@ -142,12 +136,10 @@ export default function AdminReviewChannelsPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={tierBadgeClass[c.trust_tier]}>{tierLabel[c.trust_tier]}</Badge>
+                    <AdminStatusPill kind="trustTier" value={c.trust_tier} />
                   </TableCell>
                   <TableCell>
-                    <Badge className={c.active ? "bg-positive/10 text-positive" : "bg-negative/10 text-negative"}>
-                      {c.active ? "Active" : "Inactive"}
-                    </Badge>
+                    <AdminStatusPill kind="enabled" value={c.active} />
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>

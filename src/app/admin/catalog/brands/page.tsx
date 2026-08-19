@@ -14,7 +14,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -55,6 +54,7 @@ import { useAuth } from "@/lib/auth-context";
 
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
 import { AdminPageHeader } from "../../admin-page-header";
+import { AdminStatusPill } from "../../admin-status-pill";
 
 export default function AdminCatalogBrandsPage() {
   const { token } = useAuth();
@@ -135,9 +135,7 @@ export default function AdminCatalogBrandsPage() {
                     {b.base_scrape_url}
                   </TableCell>
                   <TableCell>
-                    <Badge className={b.is_active ? "bg-positive/10 text-positive" : "bg-negative/10 text-negative"}>
-                      {b.is_active ? "Active" : "Inactive"}
-                    </Badge>
+                    <AdminStatusPill kind="enabled" value={b.is_active} />
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>

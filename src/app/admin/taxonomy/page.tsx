@@ -14,7 +14,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -61,6 +60,7 @@ import { useAuth } from "@/lib/auth-context";
 
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../admin-states";
 import { AdminPageHeader } from "../admin-page-header";
+import { AdminStatusPill } from "../admin-status-pill";
 
 export default function AdminTaxonomyPage() {
   return (
@@ -148,9 +148,7 @@ function ProductTypesSection() {
                 <TableRow key={pt.id}>
                   <TableCell className="font-medium">{pt.name}</TableCell>
                   <TableCell>
-                    <Badge className={pt.is_active ? "bg-positive/10 text-positive" : "bg-negative/10 text-negative"}>
-                      {pt.is_active ? "Active" : "Inactive"}
-                    </Badge>
+                    <AdminStatusPill kind="enabled" value={pt.is_active} />
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
@@ -379,9 +377,7 @@ function CategoriesSection() {
                 <TableRow key={c.id}>
                   <TableCell className="font-medium">{c.name}</TableCell>
                   <TableCell>
-                    <Badge className={c.is_active ? "bg-positive/10 text-positive" : "bg-negative/10 text-negative"}>
-                      {c.is_active ? "Active" : "Inactive"}
-                    </Badge>
+                    <AdminStatusPill kind="enabled" value={c.is_active} />
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>

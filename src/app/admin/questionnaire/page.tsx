@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../admin-states";
 import { AdminPageHeader } from "../admin-page-header";
+import { toneClass } from "../admin-status-pill";
 import { OutcomeAlert } from "../admin-outcome-alert";
 import { QuestionEditor } from "./question-editor";
 
@@ -221,9 +222,11 @@ export default function AdminQuestionnairePage() {
                   .filter((q) => !q.is_active)
                   .map((q) => (
                     <li key={q.id} className="flex items-center gap-3 p-3.5 opacity-60">
-                      <Badge className="bg-surface-2 text-muted-foreground shrink-0">
-                        Hidden
-                      </Badge>
+                      {/* Its own word, not "Inactive" — the question still
+                          exists, it just isn't shown in the survey. Tone comes
+                          from the shared neutral so it matches every other
+                          switched-off badge in the portal. */}
+                      <Badge className={cn(toneClass("neutral"), "shrink-0")}>Hidden</Badge>
                       <div className="min-w-0 flex-1 truncate text-[13.5px]">
                         {q.question_text}
                       </div>
