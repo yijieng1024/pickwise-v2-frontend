@@ -176,6 +176,7 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -234,6 +235,13 @@
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
+  /* Text on a SOLID --destructive fill (the admin delete confirms). Every
+     one of them already asked for `text-destructive-foreground`, but the
+     token was never declared, so the class resolved to nothing and the
+     label rendered near-black on red. White in both themes, as shadcn's
+     own destructive button does. Not to be confused with the `destructive`
+     BUTTON variant, which is a 10% tint with red text and needs no token. */
+  --destructive-foreground: oklch(1 0 0);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.308 0.101 256.5);
@@ -286,6 +294,7 @@
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(1 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.55 0.13 256.5);

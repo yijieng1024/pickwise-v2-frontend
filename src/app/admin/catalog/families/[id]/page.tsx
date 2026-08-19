@@ -2,11 +2,21 @@
 
 import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeftRight, CheckCircle2, Layers, Plus, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowLeftRight, CheckCircle2, Layers, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
 import {
   Dialog,
   DialogContent,
@@ -33,20 +43,23 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  type EmptiedFamily,
   type Family,
   type FamilyDetail,
+  type LaptopsMoveResult,
   type UnassignedLaptop,
-  addLaptopsToFamily,
+  deleteFamily,
   getFamily,
   listFamilies,
   listUnassigned,
-  removeLaptopFromFamily,
+  moveLaptops,
   updateFamily,
 } from "@/lib/api/admin/families";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../../admin-states";
+import { OutcomeAlert } from "../../../admin-outcome-alert";
 import { AdminPageHeader } from "../../../admin-page-header";
 import { AdminStatusPill } from "../../../admin-status-pill";
 
@@ -56,6 +69,12 @@ const currency = new Intl.NumberFormat("en-MY", {
   maximumFractionDigits: 0,
 });
 
+/** A merge moves whole groups of configurations, so every action on this page
+ * takes a list — the per-row buttons just pass a list of one. */
+function plural(n: number, one: string, many: string) {
+  return `${n} ${n === 1 ? one : many}`;
+}
+
 export default function AdminFamilyDetailPage({
   params,
 }: {
@@ -63,13 +82,20 @@ export default function AdminFamilyDetailPage({
 }) {
   const { id } = use(params);
   const { token } = useAuth();
+  const router = useRouter();
 
   const [family, setFamily] = useState<FamilyDetail | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
   const [pending, setPending] = useState<string | null>(null);
-  const [moveTarget, setMoveTarget] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  // Non-null means the move dialog is open, for exactly these laptops.
+  const [moveIds, setMoveIds] = useState<string[] | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  // Families the last move left at zero members. The backend reports them and
+  // deliberately does not delete them — deleting is the second half of a merge
+  // and stays the admin's explicit call, so it surfaces here as an offer.
+  const [emptied, setEmptied] = useState<EmptiedFamily[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,6 +104,9 @@ export default function AdminFamilyDetailPage({
         if (cancelled) return;
         setFamily(res);
         setLoadError(null);
+        // Rows that were just moved out no longer exist; carrying a stale
+        // selection into the next action is how you move the wrong laptops.
+        setSelected(new Set());
       })
       .catch((err) => {
         if (!cancelled) {
@@ -96,15 +125,34 @@ export default function AdminFamilyDetailPage({
     [family],
   );
 
-  async function release(laptopId: string) {
-    if (!token) return;
-    setPending(laptopId);
+  const members = useMemo(() => family?.laptops ?? [], [family]);
+  const allSelected = members.length > 0 && members.every((m) => selected.has(m.laptop_id));
+
+  function toggleAll() {
+    setSelected(allSelected ? new Set() : new Set(members.map((m) => m.laptop_id)));
+  }
+
+  function toggleOne(laptopId: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(laptopId)) next.delete(laptopId);
+      else next.add(laptopId);
+      return next;
+    });
+  }
+
+  /** Both the per-row "Remove" and the bulk one: a release is a move to
+   *  nowhere, so it goes through the same endpoint and reports the same way. */
+  async function release(laptopIds: string[]) {
+    if (!token || laptopIds.length === 0) return;
+    setPending(laptopIds.length === 1 ? laptopIds[0] : "bulk");
     try {
-      await removeLaptopFromFamily(token, id, laptopId);
-      toast.success("Released to unassigned.");
+      const result = await moveLaptops(token, laptopIds, null);
+      toast.success(`Released ${plural(result.moved, "laptop", "laptops")} to unassigned.`);
+      setEmptied(result.emptied_families);
       setReloadTick((t) => t + 1);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Failed to remove laptop.");
+      toast.error(err instanceof ApiError ? err.message : "Failed to remove laptops.");
     } finally {
       setPending(null);
     }
@@ -121,6 +169,31 @@ export default function AdminFamilyDetailPage({
     } finally {
       setPending(null);
     }
+  }
+
+  /** Delete a family the last move emptied. No confirm dialog: it has no
+   *  members, so nothing is released and nothing is lost — unlike the list
+   *  page's delete, which can release a family's worth of laptops. */
+  async function deleteEmptied(target: EmptiedFamily) {
+    if (!token) return;
+    setPending(target.family_id);
+    try {
+      await deleteFamily(token, target.family_id);
+      toast.success(`Deleted ${target.name}.`);
+      setEmptied((prev) => prev.filter((e) => e.family_id !== target.family_id));
+      // Deleting the family you are standing in leaves no page to return to.
+      if (target.family_id === id) router.push("/admin/catalog/families");
+      else setReloadTick((t) => t + 1);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Failed to delete family.");
+    } finally {
+      setPending(null);
+    }
+  }
+
+  function afterMove(result: LaptopsMoveResult) {
+    setEmptied(result.emptied_families);
+    setReloadTick((t) => t + 1);
   }
 
   if (loadError) {
@@ -167,6 +240,46 @@ export default function AdminFamilyDetailPage({
         }
       />
 
+      {/* The other half of a merge. The move endpoint reports which source
+          families it emptied and never deletes them itself, so the offer
+          belongs on screen rather than in a background cleanup. */}
+      {emptied.length > 0 && (
+        <OutcomeAlert
+          status="info"
+          title={
+            emptied.length === 1
+              ? `${emptied[0].name} is now empty`
+              : `${emptied.length} families are now empty`
+          }
+        >
+          <div className="flex flex-col gap-2">
+            <p>
+              The move left {emptied.length === 1 ? "it" : "them"} with no members. Deleting an
+              emptied family finishes the merge — no laptop is touched.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {emptied.map((e) => (
+                <Button
+                  key={e.family_id}
+                  size="sm"
+                  // Solid destructive with white text, the same treatment every
+                  // other admin delete confirm uses.
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  disabled={pending === e.family_id}
+                  onClick={() => deleteEmptied(e)}
+                >
+                  <Trash2 data-icon="inline-start" />
+                  Delete {e.name}
+                </Button>
+              ))}
+              <Button size="sm" variant="ghost" onClick={() => setEmptied([])}>
+                Keep {emptied.length === 1 ? "it" : "them"}
+              </Button>
+            </div>
+          </div>
+        </OutcomeAlert>
+      )}
+
       {family === null ? (
         <Card className="py-0">
           <AdminLoadingState />
@@ -178,7 +291,7 @@ export default function AdminFamilyDetailPage({
               <span className="text-lg font-semibold">{family.name}</span>
               <span className="text-muted-foreground">{family.brand_name}</span>
               <span className="text-muted-foreground tabular-nums">
-                {family.member_count} member{family.member_count === 1 ? "" : "s"}
+                {plural(family.member_count, "member", "members")}
               </span>
               <AdminStatusPill kind="verified" value={family.is_verified} />
             </div>
@@ -191,8 +304,45 @@ export default function AdminFamilyDetailPage({
             )}
           </Card>
 
+          {selected.size > 0 && (
+            <Card className="bg-brand-tint gap-0 border-transparent p-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-brand text-[13px] font-semibold">
+                  {selected.size} selected
+                </span>
+                <span className="text-brand/80 text-[12.5px]">
+                  {allSelected
+                    ? "That is every member — moving them all empties this family, and you will be offered the delete that finishes the merge."
+                    : "Moved in one request: either all of them land, or none do."}
+                </span>
+                <div className="ml-auto flex gap-3">
+                  <Button
+                    size="sm"
+                    disabled={pending !== null}
+                    onClick={() => setMoveIds([...selected])}
+                  >
+                    <ArrowLeftRight data-icon="inline-start" />
+                    Move selected
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={pending !== null}
+                    onClick={() => release([...selected])}
+                  >
+                    <X data-icon="inline-start" />
+                    Remove selected
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
+                    Clear
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          )}
+
           <Card className="py-0">
-            {family.laptops.length === 0 ? (
+            {members.length === 0 ? (
               <AdminEmptyState
                 title="No members"
                 description="An empty family can be deleted from the list, or filled by adding laptops."
@@ -202,6 +352,13 @@ export default function AdminFamilyDetailPage({
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={allSelected}
+                        onCheckedChange={toggleAll}
+                        aria-label="Select every member"
+                      />
+                    </TableHead>
                     <TableHead>Configuration</TableHead>
                     <TableHead>Model code</TableHead>
                     <TableHead className="text-right">Price</TableHead>
@@ -210,8 +367,15 @@ export default function AdminFamilyDetailPage({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {family.laptops.map((m) => (
+                  {members.map((m) => (
                     <TableRow key={m.laptop_id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selected.has(m.laptop_id)}
+                          onCheckedChange={() => toggleOne(m.laptop_id)}
+                          aria-label={`Select ${m.product_name}`}
+                        />
+                      </TableCell>
                       <TableCell>
                         <Link
                           href={`/admin/catalog/laptops/${m.laptop_id}/edit`}
@@ -235,7 +399,8 @@ export default function AdminFamilyDetailPage({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setMoveTarget(m.laptop_id)}
+                            disabled={pending !== null}
+                            onClick={() => setMoveIds([m.laptop_id])}
                           >
                             <ArrowLeftRight data-icon="inline-start" />
                             Move
@@ -243,8 +408,8 @@ export default function AdminFamilyDetailPage({
                           <Button
                             variant="ghost"
                             size="sm"
-                            disabled={pending === m.laptop_id}
-                            onClick={() => release(m.laptop_id)}
+                            disabled={pending !== null}
+                            onClick={() => release([m.laptop_id])}
                           >
                             <X data-icon="inline-start" />
                             Remove
@@ -261,45 +426,49 @@ export default function AdminFamilyDetailPage({
       )}
 
       <MoveDialog
-        laptopId={moveTarget}
+        laptopIds={moveIds}
         fromFamily={family}
-        onOpenChange={(open) => !open && setMoveTarget(null)}
-        onMoved={() => setReloadTick((t) => t + 1)}
+        onOpenChange={(open) => !open && setMoveIds(null)}
+        onMoved={afterMove}
       />
       <AddLaptopsDialog
         familyId={id}
+        familyName={family?.name}
         brandId={family?.brand_id}
         open={addOpen}
         onOpenChange={setAddOpen}
-        onAdded={() => setReloadTick((t) => t + 1)}
+        onMoved={afterMove}
       />
     </div>
   );
 }
 
 /**
- * A merge, one laptop at a time. The bulk path is the other direction — open
- * the family that should keep the members and use "Add laptops" — but moving
- * a single stray configuration out is common enough to want here.
+ * Moves a selection into another family — one row from the per-row action, or
+ * the whole checkbox selection. One request either way, so a merge cannot land
+ * half-applied, and the response says which source family it emptied.
  */
 function MoveDialog({
-  laptopId,
+  laptopIds,
   fromFamily,
   onOpenChange,
   onMoved,
 }: {
-  laptopId: string | null;
+  laptopIds: string[] | null;
   fromFamily: FamilyDetail | null;
   onOpenChange: (open: boolean) => void;
-  onMoved: () => void;
+  onMoved: (result: LaptopsMoveResult) => void;
 }) {
   const { token } = useAuth();
   const [families, setFamilies] = useState<Family[]>([]);
-  const [targetId, setTargetId] = useState("");
+  // The chosen option object, not just its id: Combobox renders the selected
+  // item's label in the input, so it needs the option itself back.
+  const [target, setTarget] = useState<FamilyOption | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const open = laptopId !== null;
+  const open = laptopIds !== null;
+  const count = laptopIds?.length ?? 0;
   const brandId = fromFamily?.brand_id;
 
   useEffect(() => {
@@ -317,33 +486,42 @@ function MoveDialog({
     };
   }, [open, brandId]);
 
-  const targetSig = `${laptopId ?? ""}`;
+  const targetSig = (laptopIds ?? []).join(",");
   const [prevSig, setPrevSig] = useState(targetSig);
   if (targetSig !== prevSig) {
     setPrevSig(targetSig);
-    setTargetId("");
+    setTarget(null);
     setError(null);
   }
 
-  // One list drives both the options and SelectValue's label lookup — without
-  // `items` the trigger would show the destination family's UUID instead of
-  // its name once one is chosen.
-  const options = families
+  // `items` on the root is what Combobox filters as you type, and the
+  // `{ value, label }` shape is what lets it show the family's name in the
+  // input instead of its UUID — both without any extra props.
+  const options: FamilyOption[] = families
     .filter((f) => f.id !== fromFamily?.id)
     .map((f) => ({ value: f.id, label: `${f.name} (${f.member_count})` }));
-  const member = fromFamily?.laptops.find((l) => l.laptop_id === laptopId);
+
+  // Named when it is one laptop, counted when it is many — a list of fourteen
+  // configuration names in a dialog is not something anyone reads.
+  const subject =
+    count === 1
+      ? fromFamily?.laptops.find((l) => l.laptop_id === laptopIds?.[0])?.product_name
+      : `${count} configurations`;
+  const emptiesSource = fromFamily !== null && count > 0 && count === fromFamily.laptops.length;
 
   async function handleMove() {
-    if (!token || !laptopId || !targetId) return;
+    if (!token || !laptopIds || !target) return;
     setSaving(true);
     setError(null);
     try {
-      await addLaptopsToFamily(token, targetId, [laptopId]);
-      toast.success("Moved.");
+      const result = await moveLaptops(token, laptopIds, target.value);
+      toast.success(
+        `Moved ${plural(result.moved, "laptop", "laptops")} to ${result.target_family_name}.`,
+      );
       onOpenChange(false);
-      onMoved();
+      onMoved(result);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to move laptop.");
+      setError(err instanceof ApiError ? err.message : "Failed to move laptops.");
     } finally {
       setSaving(false);
     }
@@ -353,42 +531,62 @@ function MoveDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Move to another family</DialogTitle>
+          <DialogTitle>
+            {count > 1 ? `Move ${count} laptops to another family` : "Move to another family"}
+          </DialogTitle>
         </DialogHeader>
         <div className="flex flex-col gap-3">
-          <p className="text-muted-foreground text-[13px]">{member?.product_name}</p>
+          <p className="text-muted-foreground text-[13px]">{subject}</p>
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="move-target">Destination family</FieldLabel>
-              <Select
+              {/* Typeable rather than a plain Select: a busy brand has dozens
+                  of families, and scrolling for one by eye is the slow half of
+                  a merge. `isItemEqualToValue` because `options` is rebuilt on
+                  every render, so the selected object is never referentially
+                  the same one the list holds. */}
+              <Combobox
                 items={options}
-                value={targetId}
-                onValueChange={(v) => setTargetId(v as string)}
+                value={target}
+                onValueChange={(v) => setTarget(v as FamilyOption | null)}
+                isItemEqualToValue={(a, b) =>
+                  (a as FamilyOption).value === (b as FamilyOption).value
+                }
+                autoHighlight
               >
-                <SelectTrigger id="move-target">
-                  <SelectValue placeholder="Choose a family" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {options.map((f) => (
-                      <SelectItem key={f.value} value={f.value}>
-                        {f.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+                <ComboboxInput
+                  id="move-target"
+                  placeholder="Type to find a family"
+                  triggerLabel="Show all families"
+                />
+                <ComboboxContent>
+                  <ComboboxEmpty>No family of this brand matches that.</ComboboxEmpty>
+                  <ComboboxList>
+                    {(item: FamilyOption) => (
+                      <ComboboxItem key={item.value} value={item}>
+                        {item.label}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
             </Field>
           </FieldGroup>
+          {emptiesSource && (
+            <p className="text-muted-foreground text-xs">
+              This is every member of {fromFamily?.name}, so the move empties it. You will be
+              offered the delete that finishes the merge.
+            </p>
+          )}
           {options.length === 0 && (
             <p className="text-muted-foreground text-xs">
               This brand has no other family. Create one from the families list first.
             </p>
           )}
-          {error && <p className="text-[13px] font-medium text-negative">{error}</p>}
+          {error && <p className="text-negative text-[13px] font-medium">{error}</p>}
         </div>
         <DialogFooter>
-          <Button onClick={handleMove} disabled={saving || !targetId}>
+          <Button onClick={handleMove} disabled={saving || !target}>
             {saving ? "Moving…" : "Move"}
           </Button>
         </DialogFooter>
@@ -397,26 +595,55 @@ function MoveDialog({
   );
 }
 
+/** An option in the destination picker — `{ value, label }` is the shape
+ *  Combobox and Select both read labels from without extra props. */
+interface FamilyOption {
+  value: string;
+  label: string;
+}
+
+/** What the picker shows, whichever source the rows came from. */
+interface CandidateRow {
+  laptop_id: string;
+  product_name: string;
+  model_code: string;
+  price_rm: number;
+  seed_key: string;
+  note?: string;
+}
+
 /**
- * Fills a family from the unassigned backlog — the laptops that are currently
- * deduplicated against nothing. Members of *other* families are moved with the
- * per-row Move action instead, so this list can stay a plain multi-select.
+ * Fills a family from either source a member can come from: the unassigned
+ * backlog, or another family of the same brand.
+ *
+ * That second source is the merge itself — the seed grouping over-splits, so
+ * "ASUS Vivobook 14" and "Vivobook 14" arrive as two families that are one
+ * product line. Ticking a sibling family's whole membership here moves it in
+ * one request and empties the sibling, which the page then offers to delete.
+ * Ticks survive switching source, so one call can drain several.
  */
 function AddLaptopsDialog({
   familyId,
+  familyName,
   brandId,
   open,
   onOpenChange,
-  onAdded,
+  onMoved,
 }: {
   familyId: string;
+  familyName: string | undefined;
   brandId: string | undefined;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdded: () => void;
+  onMoved: (result: LaptopsMoveResult) => void;
 }) {
   const { token } = useAuth();
-  const [candidates, setCandidates] = useState<UnassignedLaptop[] | null>(null);
+  const [unassigned, setUnassigned] = useState<UnassignedLaptop[] | null>(null);
+  const [families, setFamilies] = useState<Family[]>([]);
+  // Members are fetched per source family and kept, so switching back and
+  // forth between two sources does not re-request either.
+  const [membersBySource, setMembersBySource] = useState<Record<string, CandidateRow[]>>({});
+  const [sourceId, setSourceId] = useState("unassigned");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
@@ -424,12 +651,15 @@ function AddLaptopsDialog({
 
   // Reset on open via "adjust state during render", not in the effect — the
   // set-state-in-effect lint forbids the effect version, and it leaves the
-  // effect below doing only the fetch, which is what an effect is for.
+  // effects below doing only fetches, which is what an effect is for.
   const [prevOpen, setPrevOpen] = useState(open);
   if (open !== prevOpen) {
     setPrevOpen(open);
     if (open) {
-      setCandidates(null);
+      setUnassigned(null);
+      setFamilies([]);
+      setMembersBySource({});
+      setSourceId("unassigned");
       setSelected(new Set());
       setSearch("");
       setError(null);
@@ -441,7 +671,7 @@ function AddLaptopsDialog({
     let cancelled = false;
     listUnassigned(500)
       .then((res) => {
-        if (!cancelled) setCandidates(res.laptops);
+        if (!cancelled) setUnassigned(res.laptops);
       })
       .catch(() => toast.error("Failed to load unassigned laptops."));
     return () => {
@@ -449,17 +679,91 @@ function AddLaptopsDialog({
     };
   }, [open]);
 
+  useEffect(() => {
+    if (!open || !brandId) return;
+    let cancelled = false;
+    listFamilies({ brandId })
+      .then((rows) => {
+        if (!cancelled) setFamilies(rows.filter((f) => f.id !== familyId));
+      })
+      .catch(() => toast.error("Failed to load families."));
+    return () => {
+      cancelled = true;
+    };
+  }, [open, brandId, familyId]);
+
+  useEffect(() => {
+    if (!open || sourceId === "unassigned") return;
+    let cancelled = false;
+    getFamily(sourceId)
+      .then((res) => {
+        if (cancelled) return;
+        setMembersBySource((prev) => ({
+          ...prev,
+          [sourceId]: res.laptops.map((m) => ({
+            laptop_id: m.laptop_id,
+            product_name: m.product_name,
+            model_code: m.model_code,
+            price_rm: m.price_rm,
+            seed_key: m.seed_key,
+          })),
+        }));
+      })
+      .catch(() => toast.error("Failed to load that family's members."));
+    return () => {
+      cancelled = true;
+    };
+  }, [open, sourceId]);
+
+  const sourceOptions = useMemo(
+    () => [
+      { value: "unassigned", label: `Unassigned backlog (${unassigned?.length ?? 0})` },
+      ...families.map((f) => ({ value: f.id, label: `${f.name} (${f.member_count})` })),
+    ],
+    [unassigned, families],
+  );
+
+  const rows: CandidateRow[] | null = useMemo(() => {
+    if (sourceId !== "unassigned") return membersBySource[sourceId] ?? null;
+    if (unassigned === null) return null;
+    return unassigned
+      .filter((l) => !brandId || l.brand_id === brandId)
+      .map((l) => ({
+        laptop_id: l.laptop_id,
+        product_name: l.product_name,
+        model_code: l.model_code,
+        price_rm: l.price_rm,
+        seed_key: l.seed_key,
+        note:
+          l.seed_key_siblings > 0
+            ? `${l.seed_key_siblings} other unassigned share this seed`
+            : undefined,
+      }));
+  }, [sourceId, membersBySource, unassigned, brandId]);
+
   const visible = useMemo(() => {
-    const rows = (candidates ?? []).filter((l) => !brandId || l.brand_id === brandId);
     const needle = search.trim().toLowerCase();
-    return needle
-      ? rows.filter(
-          (l) =>
-            l.product_name.toLowerCase().includes(needle) ||
-            l.model_code.toLowerCase().includes(needle),
-        )
-      : rows;
-  }, [candidates, brandId, search]);
+    if (!needle) return rows;
+    return (rows ?? []).filter(
+      (l) =>
+        l.product_name.toLowerCase().includes(needle) ||
+        l.model_code.toLowerCase().includes(needle),
+    );
+  }, [rows, search]);
+
+  const allVisibleSelected =
+    (visible?.length ?? 0) > 0 && (visible ?? []).every((l) => selected.has(l.laptop_id));
+
+  function toggleAllVisible() {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      for (const l of visible ?? []) {
+        if (allVisibleSelected) next.delete(l.laptop_id);
+        else next.add(l.laptop_id);
+      }
+      return next;
+    });
+  }
 
   function toggle(laptopId: string) {
     setSelected((prev) => {
@@ -470,15 +774,26 @@ function AddLaptopsDialog({
     });
   }
 
+  // Whether the current source would be drained — the case worth naming,
+  // because it is what turns "add some laptops" into a completed merge.
+  const sourceDrained =
+    sourceId !== "unassigned" &&
+    (rows?.length ?? 0) > 0 &&
+    (rows ?? []).every((l) => selected.has(l.laptop_id));
+
   async function handleAdd() {
     if (!token || selected.size === 0) return;
     setSaving(true);
     setError(null);
     try {
-      await addLaptopsToFamily(token, familyId, [...selected]);
-      toast.success(`Added ${selected.size} laptop${selected.size > 1 ? "s" : ""}.`);
+      const result = await moveLaptops(token, [...selected], familyId);
+      toast.success(
+        `Moved ${plural(result.moved, "laptop", "laptops")} into ${
+          result.target_family_name ?? familyName ?? "this family"
+        }.`,
+      );
       onOpenChange(false);
-      onAdded();
+      onMoved(result);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to add laptops.");
     } finally {
@@ -490,52 +805,94 @@ function AddLaptopsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Add unassigned laptops</DialogTitle>
+          <DialogTitle>Add laptops to {familyName ?? "this family"}</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col gap-3">
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Filter by name or model code"
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              items={sourceOptions}
+              value={sourceId}
+              onValueChange={(v) => setSourceId(v as string)}
+            >
+              <SelectTrigger size="sm" className="w-64" aria-label="Where to take laptops from">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {sourceOptions.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Filter by name or model code"
+              className="w-56 flex-1"
+            />
+          </div>
+          <p className="text-muted-foreground text-xs">
+            Take members from the unassigned backlog, or straight out of another family of this
+            brand — that second one is the merge. Ticks are kept when you switch source, so one
+            request can pull from several.
+          </p>
           <div className="border-line max-h-80 overflow-y-auto rounded-md border">
-            {candidates === null ? (
+            {visible === null ? (
               <AdminLoadingState />
             ) : visible.length === 0 ? (
               <p className="text-muted-foreground p-6 text-center text-[13px]">
-                Nothing unassigned for this brand. Run “Regroup unassigned” on the families list, or
-                move a laptop out of another family first.
+                {sourceId === "unassigned"
+                  ? "Nothing unassigned for this brand. Run “Regroup unassigned” on the families list, or take members from another family instead."
+                  : "That family has no members left."}
               </p>
             ) : (
-              <ul className="divide-line divide-y">
-                {visible.map((l) => (
-                  <li key={l.laptop_id}>
-                    <label className="flex cursor-pointer items-start gap-3 p-3 text-[13px]">
-                      <input
-                        type="checkbox"
-                        className="mt-1"
-                        checked={selected.has(l.laptop_id)}
-                        onChange={() => toggle(l.laptop_id)}
-                      />
-                      <span className="flex-1">
-                        <span className="font-medium">{l.product_name}</span>
-                        <span className="text-muted-foreground block text-xs">
-                          {l.model_code} · {currency.format(l.price_rm)} · seed: {l.seed_key}
-                          {l.seed_key_siblings > 0 &&
-                            ` · ${l.seed_key_siblings} other unassigned share this seed`}
+              <>
+                <label className="border-line bg-surface-2 flex cursor-pointer items-center gap-3 border-b p-2.5 text-[12.5px] font-medium">
+                  <Checkbox
+                    checked={allVisibleSelected}
+                    onCheckedChange={toggleAllVisible}
+                    aria-label="Select everything shown"
+                  />
+                  Select all {visible.length} shown
+                </label>
+                <ul className="divide-line divide-y">
+                  {visible.map((l) => (
+                    <li key={l.laptop_id}>
+                      <label className="flex cursor-pointer items-start gap-3 p-3 text-[13px]">
+                        <Checkbox
+                          className="mt-0.5"
+                          checked={selected.has(l.laptop_id)}
+                          onCheckedChange={() => toggle(l.laptop_id)}
+                          aria-label={`Select ${l.product_name}`}
+                        />
+                        <span className="flex-1">
+                          <span className="font-medium">{l.product_name}</span>
+                          <span className="text-muted-foreground block text-xs">
+                            {l.model_code} · {currency.format(l.price_rm)} · seed: {l.seed_key}
+                            {l.note && ` · ${l.note}`}
+                          </span>
                         </span>
-                      </span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
           </div>
-          {error && <p className="text-[13px] font-medium text-negative">{error}</p>}
+          {sourceDrained && (
+            <p className="text-muted-foreground text-xs">
+              Every member of this source is ticked, so the move empties it — you will be offered
+              the delete that finishes the merge.
+            </p>
+          )}
+          {error && <p className="text-negative text-[13px] font-medium">{error}</p>}
         </div>
         <DialogFooter>
           <Button onClick={handleAdd} disabled={saving || selected.size === 0}>
-            {saving ? "Adding…" : `Add ${selected.size || ""}`.trim()}
+            {saving ? "Moving…" : `Add ${selected.size || ""}`.trim()}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -70,6 +70,30 @@ export interface RegroupResult {
   left_null: number;
 }
 
+/** A family a move left with zero members — the DELETE that finishes a merge. */
+export interface EmptiedFamily {
+  family_id: string;
+  name: string;
+}
+
+/** Mirrors `LaptopsMoveResult` — the response of a bulk move. */
+export interface LaptopsMoveResult {
+  target_family_id: string | null;
+  target_family_name: string | null;
+  /** Laptops whose family actually changed. */
+  moved: number;
+  /** Laptops already in the destination — a no-op, not an error. */
+  unchanged: number;
+  /**
+   * Source families the move emptied. The backend reports them and never
+   * deletes them: emptying is half a merge, deleting is the admin's call.
+   */
+  emptied_families: EmptiedFamily[];
+  /** The destination, re-read, so a merge repaints from one response. Null on
+   * a release, which has no destination. */
+  target: FamilyDetail | null;
+}
+
 export interface FamilyCreateInput {
   brand_id: string;
   name: string;
@@ -138,30 +162,35 @@ export function deleteFamily(token: string, id: string): Promise<void> {
   });
 }
 
-/** Move laptops into this family, from wherever they were. Unknown ids 404
- * before anything is written, so a bad id can't half-apply a merge. */
-export function addLaptopsToFamily(
+/**
+ * Move a selection of laptops in one request — the bulk operation behind the
+ * members table's checkbox column.
+ *
+ * The destination is in the body rather than the path, which is what lets one
+ * call move members out of several source families at once and lets
+ * `targetFamilyId: null` RELEASE the whole selection to unassigned. All or
+ * nothing: one unknown id 404s and writes nothing, so a merge can never
+ * half-apply.
+ *
+ * `emptied_families` in the response is the list of families the move left at
+ * zero members — exactly the deletes that finish the merge.
+ *
+ * The backend also has a per-family `POST /families/{id}/laptops` and a
+ * per-laptop `DELETE .../{laptop_id}`; the UI deliberately drives every
+ * membership change through this one instead, so a single-row action and a
+ * bulk one cannot behave differently.
+ */
+export function moveLaptops(
   token: string,
-  id: string,
   laptopIds: string[],
-): Promise<FamilyDetail> {
-  return apiFetch<FamilyDetail>(`/families/${id}/laptops`, {
+  targetFamilyId: string | null,
+): Promise<LaptopsMoveResult> {
+  return apiFetch<LaptopsMoveResult>("/families/laptops/move", {
     method: "POST",
     token,
-    body: JSON.stringify({ laptop_ids: laptopIds }),
-    next: { revalidate: 0 },
-  });
-}
-
-/** Release one laptop back to unassigned. The laptop stays in the catalog. */
-export function removeLaptopFromFamily(
-  token: string,
-  id: string,
-  laptopId: string,
-): Promise<void> {
-  return apiFetch<void>(`/families/${id}/laptops/${laptopId}`, {
-    method: "DELETE",
-    token,
+    // `target_family_id` is required by the backend even when null — releasing
+    // a selection has to be stated, not fallen into by omitting a field.
+    body: JSON.stringify({ laptop_ids: laptopIds, target_family_id: targetFamilyId }),
     next: { revalidate: 0 },
   });
 }
