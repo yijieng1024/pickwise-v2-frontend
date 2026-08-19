@@ -19,32 +19,34 @@ import { cn } from "@/lib/utils";
 export type Tone = "neutral" | "active" | "good" | "warn" | "bad";
 
 /**
- * A soft 30% wash of the status colour, under the normal `--foreground` label.
+ * The tone's own colour as the label, on a 15% wash of itself.
  *
- * Two things here are deliberate and easy to undo by accident:
+ * THIS IS A DELIBERATE TRADE, MADE WITH EYES OPEN — it was the other way
+ * around before (a 30% wash under a plain `--foreground` label), and the
+ * reason it changed is that the tinted-text badge is the look the portal
+ * wants. Two things follow, and neither should be "fixed" by accident:
  *
- * 1. THE FILL IS 30%, NOT 10%. The tokens are authored as *text* colours, so a
- *    10% wash of one is barely a colour at all — and `--surface-2`, the old
- *    neutral, is #f5f5f7 against a pure-white `--card`, which rendered as no
- *    pill at all. 30% is the point where each tone is unmistakably itself
- *    while still reading as a tint rather than a block of colour.
+ * 1. THE WASH DROPPED FROM 30% TO 15%. Once the label carries the colour, the
+ *    fill no longer has to; and a tone on a wash of ITSELF gets less legible
+ *    the deeper the wash goes, so the fill is now as light as it can be while
+ *    still reading as a pill.
  *
- * 2. THE LABEL IS `--foreground`, NOT THE TONE'S OWN COLOUR. Colouring the
- *    text to match its fill is the obvious move and it is the one that fails:
- *    a tone on a wash of itself tops out around 4:1 and gets worse as the wash
- *    deepens (measured: `good` 4.09 light, `active` 3.18 dark, `neutral` 3.39
- *    light — all under AA, which is what the original /10 tints scored too).
- *    Putting the colour only in the fill frees it to be as strong as the
- *    design wants: every tone now measures 8.3:1 or better on card and page,
- *    in both themes — AAA. The status still reads as colour; the word stays
- *    legible for the people the colour does not reach.
+ * 2. CONTRAST IS BELOW AA FOR MOST TONES, AND THAT IS THE COST. Measured on
+ *    `--card` at 15% (light / dark): neutral 3.93 / 5.41, active 10.03 / 3.18,
+ *    good 4.09 / 7.56, warn 4.08 / 7.78, bad 5.11 / 5.18. AA for text this
+ *    size is 4.5, so `neutral` and `active`-in-dark are the weak ones, with
+ *    `good`/`warn` light sitting just under. The previous scheme measured
+ *    8.3:1 or better everywhere, which is what was given up. Deepening the
+ *    wash makes this strictly worse — at 30% every tone lands between 2.65 and
+ *    7.27 — so if these ever need to pass AA, the fix is a darker text-only
+ *    variant of each token, not a heavier fill.
  */
 const TONE_CLASS: Record<Tone, string> = {
-  neutral: "bg-muted-foreground/30 text-foreground",
-  active: "bg-brand/30 text-foreground",
-  good: "bg-positive/30 text-foreground",
-  warn: "bg-warning/30 text-foreground",
-  bad: "bg-negative/30 text-foreground",
+  neutral: "bg-muted-foreground/15 text-muted-foreground",
+  active: "bg-brand/15 text-brand",
+  good: "bg-positive/15 text-positive",
+  warn: "bg-warning/15 text-warning",
+  bad: "bg-negative/15 text-negative",
 };
 
 interface Entry {

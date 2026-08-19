@@ -343,11 +343,11 @@ function RawRecordDialog({
                 <div className="flex flex-wrap gap-1.5">
                   {record.raw_prices.map((p, i) => (
                     /* A data chip, not a status pill — deliberately NOT
-                       toneClass, which is a solid status fill and would make a
-                       row of prices look like a row of states. Both halves are
-                       still set explicitly: Badge's default variant carries
-                       text-primary-foreground, so a background-only override
-                       leaves white text on a near-white fill. */
+                       toneClass, whose tinted fill and matching text would
+                       make a row of prices look like a row of states. Both
+                       halves are still set explicitly: Badge's default variant
+                       carries text-primary-foreground, so a background-only
+                       override leaves white text on a near-white fill. */
                     <Badge
                       key={i}
                       className="border-line bg-surface-2 text-foreground border tabular-nums"
