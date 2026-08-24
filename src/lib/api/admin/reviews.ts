@@ -58,12 +58,63 @@ export interface RematchResult {
   newly_matched: number;
 }
 
+/** One review's outcome inside a bulk run. A review can return without an
+ * `error` and still have lost chunks — see `chunks_failed`. */
+export interface ProcessBulkItem {
+  review_id: string;
+  video_title: string;
+  chunks_total?: number;
+  chunks_saved?: number;
+  chunks_failed?: number;
+  /** Per-chunk failures: timestamp window plus the exception class. */
+  failures?: {
+    chunk_index: number;
+    start_seconds: number;
+    end_seconds: number;
+    error_type: string;
+    error: string;
+  }[];
+  /** Set only when the whole review threw. */
+  error?: string;
+}
+
 export interface ProcessBulkResult {
   candidates: number;
   processed: number;
+  /** Reviews that threw outright. */
   failed: number;
+  /** Reviews that returned but lost chunks. Distinct from `failed`: before the
+   * backend reported per-chunk outcomes, a review that saved 3 of 40 chunks was
+   * indistinguishable from a clean run. */
+  partially_processed?: number;
   chunks_saved: number;
-  results: { review_id: string; video_title: string; chunks_saved?: number; error?: string }[];
+  chunks_failed?: number;
+  results: ProcessBulkItem[];
+}
+
+/** Queue depth per pipeline stage. Read-only, costs no YouTube quota, so it is
+ * safe to load with the page. Each count is computed by the same code path as
+ * the run that consumes it. */
+export interface PipelineStatus {
+  ingest: {
+    families_total: number;
+    families_covered: number;
+    families_remaining: number;
+    active_channels: number;
+    /** active_channels x 100. Multiply by the batch size for the real spend. */
+    quota_units_per_family: number;
+    daily_quota_units: number;
+  };
+  link: { pending_total: number; pending_linked: number; pending_unlinked: number };
+  process: { candidates: number };
+  aggregate: { pending_total: number; new: number; stale: number };
+}
+
+export function getPipelineStatus(token: string): Promise<PipelineStatus> {
+  return apiFetch<PipelineStatus>("/reviews/pipeline-status", {
+    token,
+    next: { revalidate: 0 },
+  });
 }
 
 export interface AggregateResult {

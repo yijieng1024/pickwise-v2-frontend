@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Laptop,
   Layers,
+  Link2,
   ListChecks,
   ListOrdered,
   SlidersHorizontal,
@@ -117,6 +118,10 @@ export const navGroups: Array<{ label: string; links: NavLink[]; exactFirst?: bo
     links: [
       { href: "/admin/reviews/channels", label: "Sources", icon: Tv },
       { href: "/admin/reviews/raw", label: "Match Queue", icon: FileText },
+      // Sits after Match Queue because it is the queue's working surface: that
+      // screen is the read-only table of every raw review, this one is where
+      // the pending rows actually get attached to a product line.
+      { href: "/admin/reviews/link", label: "Link Reviews", icon: Link2 },
       // Not "Aggregate": aggregation is only the last of the three sections on
       // that page (Ingest → Process → Aggregate), so naming the nav entry after
       // it would clash with the section heading and hide the other two runs.
