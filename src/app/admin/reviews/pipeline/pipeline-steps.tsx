@@ -44,10 +44,23 @@ function stages(status: PipelineStatus): Stage[] {
       label: "Link",
       count: status.link.pending_unlinked,
       unit: "reviews to link",
-      detail:
+      detail: [
         status.link.pending_linked > 0
           ? `${status.link.pending_linked} linked, not yet processed`
-          : undefined,
+          : null,
+        // The ratio, not the count. It measures what dropping the "review"
+        // keyword from discovery cost: ~10-15% means the recall gain was worth
+        // it, ~40% means discovery is too loose and wants `laptop`/`notebook`
+        // added as a term — not `review` put back, since the original problem
+        // was that Chinese channels do not title in English.
+        status.link.irrelevant_total > 0
+          ? `${status.link.irrelevant_total} dismissed as not a laptop (${Math.round(
+              status.link.irrelevant_ratio * 100,
+            )}% of all ingested)`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(" · ") || undefined,
       href: "/admin/reviews/link",
     },
     {

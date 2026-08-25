@@ -81,10 +81,72 @@ export interface FamilyConfigColumn {
 export interface FamilyConfig {
   laptop_id: string;
   product_name: string;
-  model_code: string;
+  /**
+   * A readable row label built from what actually differs —
+   * "Ultra 7 358H / Arc B390 / 32GB / 1TB". This replaced `model_code`, which
+   * was a database key (`asus-expertbook-ultra-b9406caa-ultra7-358h-arcb390-32gb-1tb`):
+   * unreadable at a glance, and a slug of the CPU/GPU/RAM/Storage columns
+   * rendered in human form immediately beside it.
+   */
+  label: string;
   status: string;
+  /**
+   * Identical to another row in every shown column — a duplicate catalog entry.
+   * Flagged rather than merged or hidden: merging would drop a laptop_id other
+   * tables reference, and hiding one would make the choice for the human
+   * without saying so. Say the pick is arbitrary instead.
+   */
+  indistinguishable: boolean;
   /** Keyed by the `columns` above — only the fields that differ in this family. */
   specs: Record<string, string | number | boolean | null>;
+}
+
+/**
+ * Why the screen must branch on this rather than on the reason text. The three
+ * unseparable cases are not the same case:
+ *
+ * - `ram_storage_only` — the question has NO answer. No review states whether
+ *   the unit had 32GB or 64GB, and no conclusion in the video would change if
+ *   it did. Show the reason, render no chooser.
+ * - `single_config` — nothing to choose *between*, but the one row may still be
+ *   the right link if the video names it.
+ * - `identical_specs` — members exist and differ in nothing tracked.
+ * - `no_configs` — every member is suspended, so the filter emptied the family.
+ *   Reachable and not a data error.
+ */
+export type SeparabilityCode =
+  | "separable"
+  | "ram_storage_only"
+  | "single_config"
+  | "identical_specs"
+  | "no_configs";
+
+/** One thing the source material actually says about the configuration. */
+export interface EvidenceHit {
+  column: string;
+  label: string;
+  /** The catalog value this is evidence for. */
+  value: string;
+  /** What was actually found in the text. */
+  matched_text: string;
+  source: "description" | "transcript";
+  context: string;
+  /** Transcript hits only — the second it was said at. */
+  timestamp_seconds: number | null;
+  /** Members carrying this value. One id = this hit alone narrows to one row. */
+  laptop_ids: string[];
+}
+
+export interface ConfigEvidence {
+  hits: EvidenceHit[];
+  searched: { column: string; label: string; distinct_values: number; probes: number }[];
+  sources_available: { description: boolean; transcript: boolean };
+  /**
+   * True means "we looked and the video does not say" — a real answer that
+   * tells the human to stop looking. Deliberately distinct from having no
+   * source material at all, which `sources_available` reports instead.
+   */
+  found_nothing: boolean;
 }
 
 export interface FamilyConfigs {
@@ -93,14 +155,28 @@ export interface FamilyConfigs {
   is_verified: boolean;
   member_count: number;
   /**
-   * Only the spec columns that actually differ between this family's members —
-   * CPU/GPU/RAM for a gaming family, chip and storage for an Apple one. Do not
-   * add columns back for completeness: comparing three fields instead of
-   * fifteen is the entire point.
+   * Suspended rows withheld from `configs`. Surfaced rather than dropped
+   * silently: a row that was in yesterday's list needs its absence explained on
+   * the page. `inactive` rows are NOT withheld — a delisted laptop is the normal
+   * subject of an old review.
+   */
+  excluded_suspended: number;
+  /**
+   * Only the spec columns that actually differ between this family's members,
+   * recomputed AFTER suspended rows are dropped. Do not add columns back for
+   * completeness: comparing three fields instead of fifteen is the entire point.
    */
   columns: FamilyConfigColumn[];
   /** True when members exist but differ in none of the tracked columns. */
   identical: boolean;
+  /** False = render no chooser at all. See `SeparabilityCode`. */
+  separable: boolean;
+  separability_code: SeparabilityCode;
+  separability_reason: string | null;
+  /** Present only when `getFamilyConfigs` was passed a review id. */
+  evidence: ConfigEvidence | null;
+  /** How many rows are flagged `indistinguishable`. */
+  indistinguishable_count: number;
   configs: FamilyConfig[];
 }
 
@@ -132,8 +208,20 @@ export function searchReviewFamilies(
   });
 }
 
-export function getFamilyConfigs(token: string, familyId: string): Promise<FamilyConfigs> {
-  return apiFetch<FamilyConfigs>(`/reviews/families/${familyId}/configs`, {
+/**
+ * Pass `reviewId` to get the `evidence` block: the backend scans that video's
+ * description and transcript for spec strings belonging to THIS family's
+ * members. Without it the human has nothing to decide with — a title like "The
+ * First Panther Lake Laptop I Strongly Recommend" names no CPU, GPU or RAM, so
+ * answering honestly would mean watching the video.
+ */
+export function getFamilyConfigs(
+  token: string,
+  familyId: string,
+  reviewId?: string,
+): Promise<FamilyConfigs> {
+  const query = reviewId ? `?review_id=${encodeURIComponent(reviewId)}` : "";
+  return apiFetch<FamilyConfigs>(`/reviews/families/${familyId}/configs${query}`, {
     token,
     next: { revalidate: 0 },
   });

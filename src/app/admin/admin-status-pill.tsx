@@ -93,6 +93,13 @@ const REVIEW: Record<string, Entry> = {
   pending: { label: "Needs a decision", tone: "warn" },
   matched: { label: "Matched", tone: "good" },
   rejected: { label: "Rejected", tone: "neutral" },
+  // Dismissed by a human as not about a laptop. `neutral`, not `bad`: nothing
+  // failed and nothing needs a look — a human decided, deliberately, and the
+  // row is kept only so ingest stops rediscovering the video. Distinct from
+  // `rejected` (a laptop video whose transcript could not be fetched), and the
+  // two must not share a label: they are the two different reasons a review is
+  // unusable, and the backend keeps them apart for the same reason.
+  irrelevant: { label: "Not a laptop", tone: "neutral" },
 };
 
 const USER_STATUS: Record<string, Entry> = {

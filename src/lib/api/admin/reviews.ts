@@ -1,7 +1,18 @@
 import { apiFetch } from "@/lib/api/client";
 
 export type TrustTier = "tier_1" | "tier_2";
-export type RawReviewStatus = "pending" | "matched" | "rejected";
+/**
+ * `irrelevant` is a human dismissal — "this video is not about a laptop" —
+ * and is deliberately NOT a flavour of `rejected`, which means "a laptop video
+ * whose transcript could not be fetched". A rejected row is a transcript-retry
+ * candidate; an irrelevant one never is, however many transcripts appear.
+ *
+ * The row is marked rather than deleted, and that is what makes the dismissal
+ * stick: `video_id` is UNIQUE and the backend's ingest skips any existing row
+ * that is not `rejected`, so a deleted row would be rediscovered and reinserted
+ * on the next run and land straight back in the queue.
+ */
+export type RawReviewStatus = "pending" | "matched" | "rejected" | "irrelevant";
 
 /** Mirrors the backend's `YoutubeChannel` table. */
 export interface YoutubeChannel {
@@ -105,7 +116,23 @@ export interface PipelineStatus {
     quota_units_per_family: number;
     daily_quota_units: number;
   };
-  link: { pending_total: number; pending_linked: number; pending_unlinked: number };
+  link: {
+    pending_total: number;
+    pending_linked: number;
+    pending_unlinked: number;
+    /** Reviews dismissed as not about a laptop. */
+    irrelevant_total: number;
+    reviews_total: number;
+    /**
+     * irrelevant_total / reviews_total. The RATIO is the number to watch, not
+     * the count: it measures what dropping the "review" keyword from discovery
+     * cost. ~10-15% means the recall gain was worth it; ~40% means discovery is
+     * too loose and wants `laptop`/`notebook` added as a term — not `review`
+     * put back, since the original problem was that Chinese channels do not
+     * title in English.
+     */
+    irrelevant_ratio: number;
+  };
   process: { candidates: number };
   aggregate: { pending_total: number; new: number; stale: number };
 }
@@ -183,6 +210,33 @@ export function listRawReviews(
   query.set("limit", String(params.limit ?? 25));
   return apiFetch<RawReviewPage>(`/reviews/raw?${query.toString()}`, {
     token,
+    next: { revalidate: 0 },
+  });
+}
+
+/**
+ * Dismiss a review as not about a laptop, or undo that dismissal.
+ *
+ * One endpoint with a flag rather than a mark route and a separate undo route:
+ * the undo has to be as reachable as the dismissal, and a second endpoint is
+ * the kind of thing that gets built and never wired into the screen.
+ *
+ * The transition is restricted to `pending` <-> `irrelevant` (409 otherwise)
+ * because undo has exactly one destination. Letting a `matched` or `rejected`
+ * row in would mean restoring it as `pending` and silently discarding a match
+ * or a transcript-failure verdict.
+ *
+ * Idempotent — the dismiss button will be double-clicked.
+ */
+export function setReviewIrrelevant(
+  token: string,
+  reviewId: string,
+  irrelevant: boolean,
+): Promise<RawReview> {
+  return apiFetch<RawReview>(`/reviews/raw/${reviewId}/irrelevant`, {
+    method: "PATCH",
+    token,
+    body: JSON.stringify({ irrelevant }),
     next: { revalidate: 0 },
   });
 }

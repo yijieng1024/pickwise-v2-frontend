@@ -75,12 +75,16 @@ const statusOptions = [
   { value: "pending", label: "Pending" },
   { value: "matched", label: "Matched" },
   { value: "rejected", label: "Rejected" },
+  { value: "irrelevant", label: "Not a laptop" },
 ];
 
 const statusBadgeClass: Record<RawReviewStatus, string> = {
   pending: "bg-warning/10 text-warning",
   matched: "bg-positive/10 text-positive",
   rejected: "bg-negative/10 text-negative",
+  // Muted, not red: nothing failed. A human decided this video is not about a
+  // laptop, and the row is kept only so ingest stops rediscovering it.
+  irrelevant: "bg-surface-3 text-muted-foreground",
 };
 
 export default function AdminRawReviewsPage() {

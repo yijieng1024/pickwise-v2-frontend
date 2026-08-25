@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, CircleSlash, Film } from "lucide-react";
+import { Check, CircleSlash, Film, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -54,14 +54,19 @@ export function ReviewQueue({
   reviews,
   selectedId,
   onSelect,
+  onDismiss,
   search,
   onSearchChange,
+  busy,
 }: {
   reviews: PendingReview[];
   selectedId: string | null;
   onSelect: (review: PendingReview) => void;
+  /** Mark as not about a laptop. Removes the row from this queue. */
+  onDismiss: (review: PendingReview) => void;
   search: string;
   onSearchChange: (value: string) => void;
+  busy?: boolean;
 }) {
   const groups = groupByChannel(reviews);
   const done = reviews.filter(isDone).length;
@@ -92,13 +97,16 @@ export function ReviewQueue({
                 const linked = isDone(review);
                 const noTranscript = review.segment_count === 0;
                 return (
-                  <li key={review.id}>
+                  // The dismiss control is a SIBLING of the row button, not a
+                  // child: a button inside a button is invalid HTML and the
+                  // inner one stops receiving clicks in some browsers.
+                  <li key={review.id} className="group relative">
                     <button
                       type="button"
                       onClick={() => onSelect(review)}
                       aria-current={review.id === selectedId}
                       className={cn(
-                        "hover:bg-surface-2 flex w-full flex-col gap-1 rounded-md px-2 py-2 text-left transition-colors",
+                        "hover:bg-surface-2 flex w-full flex-col gap-1 rounded-md py-2 pr-8 pl-2 text-left transition-colors",
                         review.id === selectedId && "bg-surface-2 ring-brand/40 ring-1",
                         // Dimmed, never removed: a linked review genuinely is
                         // not processed yet, and the human must be able to find
@@ -136,6 +144,32 @@ export function ReviewQueue({
                             {review.links.length} linked
                           </Badge>
                         )}
+                      </span>
+                    </button>
+                    {/* Dropping the "review" keyword from discovery bought
+                        recall on Chinese-titled videos and let non-laptop
+                        videos into the queue. This is how they leave it — one
+                        click, in place, without opening the row.
+
+                        Revealed on hover, but ALWAYS present for keyboard and
+                        touch: `focus-visible:opacity-100` plus the sr-only
+                        label, never `hidden`. An action that only exists on
+                        hover does not exist for half the ways it is reached. */}
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => onDismiss(review)}
+                      title="Not a laptop video"
+                      className={cn(
+                        "text-muted-foreground hover:bg-surface-3 hover:text-negative absolute top-1.5 right-1",
+                        "rounded p-1 opacity-0 transition-opacity",
+                        "group-hover:opacity-100 focus-visible:opacity-100",
+                        "disabled:pointer-events-none",
+                      )}
+                    >
+                      <X className="size-3.5" />
+                      <span className="sr-only">
+                        Dismiss “{review.video_title}” — not a laptop video
                       </span>
                     </button>
                   </li>

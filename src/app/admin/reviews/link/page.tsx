@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ExternalLink, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,11 +16,14 @@ import {
   deleteReviewLink,
   listPendingReviews,
 } from "@/lib/api/admin/review-links";
+import { type RawReview, listRawReviews, setReviewIrrelevant } from "@/lib/api/admin/reviews";
 import { useAuth } from "@/lib/auth-context";
+import { cn } from "@/lib/utils";
 
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
 import { AdminPageHeader } from "../../admin-page-header";
 import { ConfigPicker } from "./config-picker";
+import { DismissedList } from "./dismissed-list";
 import { FamilySearch } from "./family-search";
 import { ReviewQueue, isDone } from "./review-queue";
 
@@ -34,7 +38,9 @@ import { ReviewQueue, isDone } from "./review-queue";
  *
  *  - picking a family creates the link immediately (no confirm step);
  *  - the review is DONE at that point — step 2 is optional and skippable;
- *  - "configuration unknown" is what doing nothing already means.
+ *  - "configuration unknown" is what doing nothing already means;
+ *  - a video that is not about a laptop leaves in one click, and comes back in
+ *    one click.
  *
  * The whole queue is fetched in one page (limit 200) rather than paged: the
  * left rail is a work list the human scans top to bottom, and a pager would
@@ -59,9 +65,17 @@ export default function ReviewLinkPage() {
   // next to that selection to know which one was rejected.
   const [familyError, setFamilyError] = useState<string | null>(null);
   const [configError, setConfigError] = useState<string | null>(null);
-  // Which link's configuration step is open. Null = step 2 hidden.
+  // Which link's configuration step is open. Null = step 2 hidden, which is
+  // the DEFAULT and stays the default after picking a family. The step is
+  // collapsed to a single "Configuration: not specified" line until asked for,
+  // because "not stated" is the correct and most common answer and rendering a
+  // table of four rows implies the answer is one of them.
   const [openLinkId, setOpenLinkId] = useState<string | null>(null);
   const [addingAnother, setAddingAnother] = useState(false);
+  // Left rail mode. The dismissed list is one click away, never buried: it is
+  // the safety net that makes the dismiss control safe to click quickly.
+  const [rail, setRail] = useState<"queue" | "dismissed">("queue");
+  const [dismissed, setDismissed] = useState<RawReview[] | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -85,6 +99,25 @@ export default function ReviewLinkPage() {
   }, [token, reloadTick]);
 
   const reload = useCallback(() => setReloadTick((n) => n + 1), []);
+
+  // Loaded once with the page, not on opening the rail: the count belongs on
+  // the toggle, and a count that only appears after you look at it cannot tell
+  // you whether it is worth looking.
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    listRawReviews(token, { status: "irrelevant", limit: 200 })
+      .then((page) => {
+        if (!cancelled) setDismissed(page.items);
+      })
+      .catch(() => {
+        // Non-fatal: the queue is the job, the dismissed list is the undo.
+        if (!cancelled) setDismissed([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token, reloadTick]);
 
   const filtered = useMemo(() => {
     const rows = reviews ?? [];
@@ -111,9 +144,9 @@ export default function ReviewLinkPage() {
     setFamilyError(null);
     setConfigError(null);
     setAddingAnother(false);
-    // Reopen the config step for a review that already has exactly one link,
-    // so returning to it lands where the human left off.
-    setOpenLinkId(review.links.length === 1 ? review.links[0].id : null);
+    // Collapsed on arrival, always. Returning to a review should not reopen a
+    // step whose answer is usually "not stated".
+    setOpenLinkId(null);
   }, []);
 
   async function pickFamily(family: FamilySearchResult) {
@@ -128,10 +161,10 @@ export default function ReviewLinkPage() {
       });
       applyLinks(selected.id, links);
       setAddingAnother(false);
-      const created = links.find(
-        (l) => l.family_id === family.family_id && l.laptop_id === null,
-      );
-      setOpenLinkId(created?.id ?? null);
+      // Deliberately NOT opening the config step. The review is done at this
+      // point, and "not stated" is the correct answer most of the time — a
+      // table appearing here would imply the answer is one of its rows.
+      setOpenLinkId(null);
     } catch (e) {
       setFamilyError(
         e instanceof ApiError ? e.message : "Could not link that family.",
@@ -176,6 +209,60 @@ export default function ReviewLinkPage() {
     }
   }
 
+  /**
+   * Dismiss a review as not about a laptop.
+   *
+   * Optimistic, and it has to be: this runs on the hottest path on the screen,
+   * and a round trip before the row disappears would make the queue feel like
+   * it is arguing. The row is put back on failure.
+   *
+   * The row is MARKED, never deleted. `video_id` is UNIQUE and ingest skips any
+   * existing row that is not `rejected`, so a deleted row would be rediscovered
+   * and reinserted on the next run and land straight back here.
+   */
+  async function dismissReview(review: PendingReview) {
+    if (!token) return;
+    setReviews((prev) => (prev ?? []).filter((r) => r.id !== review.id));
+    if (selectedId === review.id) setSelectedId(null);
+    try {
+      const updated = await setReviewIrrelevant(token, review.id, true);
+      setDismissed((prev) => [updated, ...(prev ?? [])]);
+      // The toast action is the immediate net; the Dismissed rail is the
+      // durable one. Both, because a toast is gone in seconds and a mis-click
+      // is often noticed after them.
+      toast.success("Dismissed — not a laptop video.", {
+        action: {
+          label: "Undo",
+          onClick: () => void restoreReview({ ...updated }),
+        },
+      });
+    } catch (e) {
+      setReviews((prev) => [review, ...(prev ?? [])]);
+      toast.error(
+        e instanceof ApiError ? e.message : "Could not dismiss that review.",
+      );
+    }
+  }
+
+  /** Puts a dismissed review back in the queue. Exactly reverses dismiss. */
+  async function restoreReview(review: RawReview) {
+    if (!token) return;
+    setDismissed((prev) => (prev ?? []).filter((r) => r.id !== review.id));
+    try {
+      await setReviewIrrelevant(token, review.id, false);
+      // Refetch rather than reconstructing a PendingReview from a RawReview:
+      // the queue row carries segment_count and links, which this shape does
+      // not have, and inventing them would put wrong counts on the row.
+      reload();
+      toast.success("Back in the queue.");
+    } catch (e) {
+      setDismissed((prev) => [review, ...(prev ?? [])]);
+      toast.error(
+        e instanceof ApiError ? e.message : "Could not restore that review.",
+      );
+    }
+  }
+
   async function removeLink(linkId: string) {
     if (!token || !selected) return;
     setBusy(true);
@@ -203,7 +290,7 @@ export default function ReviewLinkPage() {
     <div className="flex flex-col gap-4">
       <AdminPageHeader
         title="Link Reviews"
-        description="Attach each pending review to the product line it covers. The configuration is optional — leave it unset when the video doesn't say."
+        description="Attach each pending review to the product line it covers. The configuration is optional — leave it unset when the video doesn't say. Dismiss anything that isn't a laptop video."
         action={
           <Button variant="soft" onClick={reload} disabled={busy}>
             <RefreshCw className="size-4" />
@@ -214,13 +301,49 @@ export default function ReviewLinkPage() {
 
       <div className="grid gap-4 lg:grid-cols-[minmax(280px,340px)_1fr]">
         <Card className="h-[calc(100vh-15rem)] gap-0 p-3">
-          <ReviewQueue
-            reviews={filtered}
-            selectedId={selectedId}
-            onSelect={selectReview}
-            search={search}
-            onSearchChange={setSearch}
-          />
+          {/* Two tabs, not a hidden panel: the dismissed count is visible from
+              the queue, so a wrong dismissal is discoverable without knowing
+              to go looking for it. */}
+          <div className="mb-3 flex gap-1">
+            {(["queue", "dismissed"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setRail(mode)}
+                aria-pressed={rail === mode}
+                className={cn(
+                  "rounded-md px-2 py-1 text-xs font-medium transition-colors",
+                  rail === mode
+                    ? "bg-surface-2 text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {mode === "queue"
+                  ? `Queue ${reviews.length}`
+                  : `Dismissed ${dismissed?.length ?? 0}`}
+              </button>
+            ))}
+          </div>
+
+          {rail === "queue" ? (
+            <ReviewQueue
+              reviews={filtered}
+              selectedId={selectedId}
+              onSelect={selectReview}
+              onDismiss={(review) => void dismissReview(review)}
+              search={search}
+              onSearchChange={setSearch}
+              busy={busy}
+            />
+          ) : (
+            <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+              <DismissedList
+                reviews={dismissed}
+                onRestore={(review) => void restoreReview(review)}
+                busy={busy}
+              />
+            </div>
+          )}
         </Card>
 
         <Card className="gap-0 p-4">
@@ -284,8 +407,16 @@ export default function ReviewLinkPage() {
                         <span className="truncate text-sm font-medium">
                           {link.family_name ?? link.family_id}
                         </span>
+                        {/* The collapsed configuration step, in one line. The
+                            table is not rendered until asked for: "not
+                            specified" is the correct and most common answer,
+                            and leaving it alone has to be the path of least
+                            resistance. */}
                         <span className="text-muted-foreground truncate text-xs">
-                          {link.laptop_name ?? "configuration not stated"}
+                          Configuration:{" "}
+                          {link.laptop_name ?? (
+                            <span className="italic">not specified</span>
+                          )}
                         </span>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
@@ -302,7 +433,11 @@ export default function ReviewLinkPage() {
                           disabled={busy}
                           onClick={() => setOpenLinkId(openLinkId === link.id ? null : link.id)}
                         >
-                          {openLinkId === link.id ? "Hide config" : "Set config"}
+                          {openLinkId === link.id
+                            ? "Hide"
+                            : link.laptop_id
+                              ? "Change"
+                              : "Specify"}
                         </Button>
                         <Button
                           variant="ghost"
@@ -319,22 +454,21 @@ export default function ReviewLinkPage() {
                 </ul>
               )}
 
-              {/* Step 2 — optional, and only after a family exists. */}
+              {/* Step 2 — optional, expanded only on request, and only after a
+                  family exists. The heading lives inside ConfigPicker because
+                  it has to change when the question turns out to have no
+                  answer for this family. */}
               {openLink && (
-                <div className="flex flex-col gap-2">
-                  <h3 className="text-sm font-medium">
-                    Which configuration was tested?{" "}
-                    <span className="text-muted-foreground font-normal">optional</span>
-                  </h3>
-                  <ConfigPicker
-                    token={token!}
-                    familyId={openLink.family_id}
-                    selectedLaptopId={openLink.laptop_id}
-                    onPick={(laptopId) => void pickConfig(openLink.id, laptopId)}
-                    error={configError}
-                    busy={busy}
-                  />
-                </div>
+                <ConfigPicker
+                  token={token!}
+                  familyId={openLink.family_id}
+                  reviewId={selected.id}
+                  videoUrl={selected.video_url}
+                  selectedLaptopId={openLink.laptop_id}
+                  onPick={(laptopId) => void pickConfig(openLink.id, laptopId)}
+                  error={configError}
+                  busy={busy}
+                />
               )}
 
               {/* Step 1 search, or step 3's secondary entry back into it. */}
