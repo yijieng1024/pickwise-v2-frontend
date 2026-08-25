@@ -263,6 +263,15 @@ export function ConfigPicker({
                     <td className="px-3 py-2">
                       <label htmlFor={id} className="flex cursor-pointer flex-col">
                         <span className="font-medium">{config.label}</span>
+                        {/* The catalog name, under the label rather than
+                            instead of it. The label is what tells the rows
+                            apart at a glance; the name is what the link row
+                            shows once this is picked, so having both here means
+                            the human recognises their own choice afterwards
+                            instead of matching a short label to a long name. */}
+                        <span className="text-muted-foreground text-xs">
+                          {config.product_name}
+                        </span>
                         <span className="flex items-center gap-1.5">
                           {decisive && (
                             <Badge
