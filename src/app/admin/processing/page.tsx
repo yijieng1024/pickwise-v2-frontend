@@ -7,8 +7,20 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { categorizeUntagged, processPending, retryFailed } from "@/lib/api/admin/processor";
+import {
+  type ProcessorModel,
+  getProcessorModel,
+  setProcessorModel,
+} from "@/lib/api/admin/settings";
 import { listRawScrapLaptops } from "@/lib/api/admin/scraper";
 import { ApiError } from "@/lib/api/client";
 import { useJob } from "@/lib/admin/use-job";
@@ -45,6 +57,8 @@ export default function AdminProcessingPage() {
   const [failedCount, setFailedCount] = useState<number | null>(null);
   const [startingProcess, setStartingProcess] = useState(false);
   const [startingRetry, setStartingRetry] = useState(false);
+  const [model, setModel] = useState<ProcessorModel | null>(null);
+  const [savingModel, setSavingModel] = useState(false);
   const [startingTags, setStartingTags] = useState(false);
 
   const [reloadTick, setReloadTick] = useState(0);
@@ -71,6 +85,15 @@ export default function AdminProcessingPage() {
       .catch(() => {
         if (!cancelled) setFailedCount(null);
       });
+    getProcessorModel(token)
+      .then((res) => {
+        if (!cancelled) setModel(res);
+      })
+      .catch(() => {
+        // The picker just stays hidden: an unreachable settings endpoint must
+        // not stop an admin from starting a run on whatever the default is.
+        if (!cancelled) setModel(null);
+      });
     return () => {
       cancelled = true;
     };
@@ -79,6 +102,8 @@ export default function AdminProcessingPage() {
   // The run only ever covers what is actually pending, however large the
   // slider goes — so the estimate is based on the smaller of the two.
   const effective = pendingCount === null ? limit : Math.min(limit, pendingCount);
+  const dailyCap =
+    model?.options.find((o) => o.model === model.model)?.rpd ?? null;
   const estimate = effective * SECONDS_PER_RECORD;
 
   async function runProcess() {
@@ -106,6 +131,21 @@ export default function AdminProcessingPage() {
       toast.error(err instanceof ApiError ? err.message : "Couldn't start the retry.");
     } finally {
       setStartingRetry(false);
+    }
+  }
+
+  async function changeModel(next: string | null) {
+    // The Select clears to null on some interactions; nothing to save then.
+    if (!token || !next) return;
+    setSavingModel(true);
+    try {
+      const updated = await setProcessorModel(token, next);
+      setModel(updated);
+      toast.success(`Extraction now runs on ${updated.model}.`);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Couldn't change the model.");
+    } finally {
+      setSavingModel(false);
     }
   }
 
@@ -163,6 +203,44 @@ export default function AdminProcessingPage() {
             <span>1</span>
             <span>{MAX_BATCH.toLocaleString()} per run</span>
           </div>
+
+          {model && (
+            <label className="mt-4 block">
+              <span className="text-[12.5px] font-medium">Extraction model</span>
+              <Select
+                value={model.model}
+                onValueChange={(v) => void changeModel(v)}
+                disabled={busy || savingModel}
+              >
+                <SelectTrigger className="mt-1.5 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {model.options.map((o) => (
+                    <SelectItem key={o.model} value={o.model}>
+                      {o.model}
+                      {o.model === model.default_model ? " (default)" : ""}
+                      <span className="text-muted-foreground ml-1.5 text-[11.5px] tabular-nums">
+                        {o.rpd.toLocaleString()}/day
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="text-muted-foreground mt-1.5 block text-[12px] leading-relaxed">
+                Applies to the next record, so a run in progress finishes on the model it
+                started with. On &ldquo;high demand&rdquo; the processor retries on{" "}
+                {model.fallback_chain.slice(1).join(", ") || "no other model"} by itself.
+              </span>
+              {dailyCap !== null && effective > dailyCap && (
+                <span className="text-warning mt-1.5 block text-[12px] leading-relaxed">
+                  This model allows {dailyCap.toLocaleString()} requests a day — a run of{" "}
+                  {effective.toLocaleString()} would stop short. Pick a larger batch model or
+                  split the run.
+                </span>
+              )}
+            </label>
+          )}
 
           <div className="border-line bg-surface-2/50 mt-4 flex flex-col gap-1 rounded-xl border p-3.5 text-[13px]">
             {pendingCount === null ? (
