@@ -66,7 +66,7 @@ export function PickScoreRing({
         </span>
       </span>
       {caption === "below" && (
-        <span className="text-[9px] font-semibold tracking-wide text-muted-foreground uppercase">
+        <span className="text-[9px] font-semibold tracking-wide whitespace-nowrap text-muted-foreground uppercase">
           Pick Score
         </span>
       )}

@@ -78,7 +78,14 @@ const groups: { title: string; faqs: Faq[] }[] = [
             built from eight weighted factors, and every score comes with a
             breakdown showing how each factor contributed. It&apos;s an
             opinion expressed as a number — a well-reasoned one, but not a
-            guarantee of real-world performance.
+            guarantee of real-world performance.{" "}
+            <Link
+              href="/pickscore"
+              className="text-brand underline underline-offset-2"
+            >
+              See exactly how it&apos;s calculated
+            </Link>
+            .
           </p>
         ),
       },

@@ -12,6 +12,7 @@ const productLinks = [
 
 const aboutLinks = [
   { href: "/about", label: "About" },
+  { href: "/pickscore", label: "How PickScore works" },
   { href: "/faq", label: "FAQ" },
 ];
 

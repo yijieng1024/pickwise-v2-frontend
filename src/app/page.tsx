@@ -127,7 +127,7 @@ export default async function Home() {
                   className="motion-safe:animate-fade-in-up"
                   style={{ animationDelay: `${i * 80}ms` }}
                 >
-                  <LaptopCard laptop={laptop} showScore={false} />
+                  <LaptopCard laptop={laptop} showScore="ring" />
                 </div>
               ))}
             </div>

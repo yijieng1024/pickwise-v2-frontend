@@ -16,14 +16,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -50,7 +42,7 @@ import { AdminPagination } from "../admin-pagination";
 const PAGE_SIZE = 25;
 
 const statusOptions = [
-  { value: "all", label: "All statuses" },
+  { value: "all", label: "All" },
   { value: "pending", label: "Pending" },
   { value: "processing", label: "Processing" },
   { value: "completed", label: "Completed" },
@@ -175,33 +167,41 @@ export default function AdminRawRecordsPage() {
             </span>
           )}
         </h2>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search product or URL…"
-              aria-label="Search raw records by product or URL"
-              autoComplete="off"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8"
-            />
-          </div>
-          <Select items={statusOptions} value={status} onValueChange={(v) => query.set({ status: v as string })}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {statusOptions.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search product or URL…"
+            aria-label="Search raw records by product or URL"
+            autoComplete="off"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8"
+          />
         </div>
+      </div>
+
+      {/* Status tabs, same pill row as the scrape queue. No counts: unlike
+          scrape targets, raw records have no status-counts endpoint. */}
+      <div className="flex flex-wrap gap-1.5">
+        {statusOptions.map((o) => {
+          const active = status === o.value;
+          return (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => query.set({ status: o.value })}
+              aria-pressed={active}
+              className={cn(
+                "focus-visible:ring-ring/50 flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] font-medium transition-colors outline-none focus-visible:ring-3",
+                active
+                  ? "border-transparent bg-brand text-white"
+                  : "border-line bg-surface hover:bg-surface-2",
+              )}
+            >
+              {o.label}
+            </button>
+          );
+        })}
       </div>
 
       <Card className="py-0">

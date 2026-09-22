@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Cpu, Monitor, RectangleEllipsis, Zap } from "lucide-react";
 
 import { DataIcon } from "@/components/icon-map";
+import { PickScoreRing } from "@/components/pick-score-ring";
 import { XaiPopover } from "@/components/xai-popover";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -22,8 +23,14 @@ const specIcons: Record<string, typeof Cpu> = {
 
 interface LaptopCardProps {
   laptop: Laptop;
-  /** Rich mode: PickScore ring + XAI popover + plain-English highlights. Off for generic/trending listings. */
-  showScore?: boolean;
+  /**
+   * true  — rich mode: PickScore ring + XAI popover + plain-English highlights.
+   * "ring" — the score ring alone, for rows that carry a real score but no
+   *          factor breakdown (the home page's ranked Top 5, whose endpoint
+   *          returns score without xaiFactors/plainEnglish).
+   * false — no score at all, for generic listings.
+   */
+  showScore?: boolean | "ring";
   /** "grid" (default): vertical card. "list": horizontal row — image left, content right. */
   layout?: "grid" | "list";
   /** Providing this shows the compare checkbox, in either score mode. */
@@ -117,7 +124,11 @@ export function LaptopCard({
               {laptop.tags[0]}
             </Badge>
           )}
-          {showScore && (
+          {showScore === "ring" ? (
+            <div className="-mt-1">
+              <PickScoreRing score={laptop.score} size={44} />
+            </div>
+          ) : showScore ? (
             <div className="relative z-20 -mt-1">
               <XaiPopover
                 score={laptop.score}
@@ -126,14 +137,14 @@ export function LaptopCard({
                 ringSize={44}
               />
             </div>
-          )}
+          ) : null}
         </div>
 
         <h3 className="text-[17px] font-semibold tracking-tight">
           {laptop.name}
         </h3>
 
-        {showScore && (
+        {showScore === true && (
           <div className="bg-surface-2 flex flex-col gap-2 rounded-2xl p-3">
             {laptop.plainEnglish.slice(0, 3).map((pe) => (
               <div
