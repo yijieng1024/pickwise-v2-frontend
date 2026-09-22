@@ -5,11 +5,19 @@ export const API_BASE_URL = BASE_URL;
 
 export class ApiError extends Error {
   status: number;
+  /**
+   * Machine-readable discriminator, set when the backend sends a structured
+   * `detail` ({code, message}) rather than a bare string. Branch on this, not
+   * on the message text — see `email_unverified` on POST /auth/login, where a
+   * copy edit to the prose must not break the resend affordance.
+   */
+  code?: string;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code?: string) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -40,6 +48,7 @@ async function rawFetch(path: string, { token, headers, ...init }: ApiFetchOptio
   if (!res.ok) {
     const body = await res.json().catch(() => null);
     let message = `Request to ${path} failed with ${res.status}`;
+    let code: string | undefined;
     if (body && typeof body.detail === "string") {
       message = body.detail;
     } else if (body && Array.isArray(body.detail)) {
@@ -48,8 +57,14 @@ async function rawFetch(path: string, { token, headers, ...init }: ApiFetchOptio
         .map((d) => d.msg)
         .filter(Boolean);
       if (msgs.length > 0) message = msgs.join(" ");
+    } else if (body && body.detail && typeof body.detail === "object") {
+      // Structured detail: {code, message}. Used where the UI has to react to
+      // a specific failure rather than just display it.
+      const detail = body.detail as { code?: string; message?: string };
+      if (detail.message) message = detail.message;
+      code = detail.code;
     }
-    throw new ApiError(res.status, message);
+    throw new ApiError(res.status, message, code);
   }
 
   return res;

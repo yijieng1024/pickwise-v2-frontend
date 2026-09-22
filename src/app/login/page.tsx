@@ -8,10 +8,12 @@ import { useTheme } from "next-themes";
 import { Check, Eye, EyeOff } from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
+import { ResendVerification } from "@/components/resend-verification";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { register } from "@/lib/api/auth";
+import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
@@ -46,6 +48,11 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // The address the resend button targets, set in the two places a user finds
+  // out they are locked out of their own account: a login refused with
+  // `email_unverified`, and the moment just after registering. Null hides the
+  // button — it must not read as a generic "something went wrong" action.
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
 
   const [gsiReady, setGsiReady] = useState(false);
   const googleButtonRef = useRef<HTMLDivElement>(null);
@@ -94,6 +101,7 @@ export default function LoginPage() {
     setTab(next);
     setError(null);
     setNotice(null);
+    setUnverifiedEmail(null);
     setShowPassword(false);
   }
 
@@ -101,6 +109,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
     setNotice(null);
+    setUnverifiedEmail(null);
     setSubmitting(true);
     try {
       if (isLogin) {
@@ -116,9 +125,18 @@ export default function LoginPage() {
         setNotice(
           "Account created — check your inbox and verify your email, then sign in.",
         );
+        setUnverifiedEmail(email);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
+      // Branch on the backend's `code`, never on the message text — the prose
+      // is copy that can change; the code is a contract.
+      if (err instanceof ApiError && err.code === "email_unverified") {
+        // The login form takes a username OR an email, so only offer the
+        // resend when what was typed is actually an address — the endpoint has
+        // nothing else to look up.
+        setUnverifiedEmail(identifier.includes("@") ? identifier : "");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -191,6 +209,14 @@ export default function LoginPage() {
             <p className="rounded-xl bg-negative/10 px-4 py-3 text-[12.5px] font-medium text-negative">
               {error}
             </p>
+          )}
+          {/* Sits directly under whichever of the two messages triggered it,
+              so the way out is attached to the problem rather than parked at
+              the bottom of the form. An empty string means "we know the
+              account is unverified but not which address" — the component
+              then asks for it. */}
+          {unverifiedEmail !== null && (
+            <ResendVerification email={unverifiedEmail || undefined} />
           )}
 
           {/* Google leads: it is one tap against a form of three fields plus an

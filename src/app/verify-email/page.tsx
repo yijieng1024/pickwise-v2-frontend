@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { CircleCheck, CircleX } from "lucide-react";
 
 import { AuthError, AuthPanel } from "@/components/auth-panel";
+import { ResendVerification } from "@/components/resend-verification";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { verifyEmail } from "@/lib/api/auth";
@@ -92,11 +93,15 @@ function VerifyEmail() {
         <CircleX className="size-5.5" />
       </span>
       {message && <AuthError>{message}</AuthError>}
-      <Button render={<Link href="/login" />} nativeButton={false} className="h-11.5 rounded-xl">
-        Back to sign in
-      </Button>
+      {/* Registering again is NOT the way out — the address is already taken,
+          so that path 400s. Ask for a fresh link instead. The token is opaque
+          to this page, so the address has to be typed. */}
+      <ResendVerification />
       <p className="text-[12.5px] text-muted-foreground">
-        Already verified? Just sign in. Otherwise create the account again to get a fresh link.
+        Already verified?{" "}
+        <Link href="/login" className="text-brand font-medium hover:underline">
+          Sign in
+        </Link>
       </p>
     </AuthPanel>
   );

@@ -66,6 +66,20 @@ export function verifyEmail(token: string): Promise<{ message: string }> {
 }
 
 /**
+ * Re-sends the verification link. Like forgotPassword, this always resolves
+ * for a well-formed address: the backend answers identically whether the
+ * account is unknown, already verified, a Google account or genuinely
+ * re-sent, so the UI must not claim to know which happened.
+ */
+export function resendVerification(email: string): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>("/auth/resend-verification", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+    next: { revalidate: 0 },
+  });
+}
+
+/**
  * Starts a password reset. Always resolves for a well-formed address, whether
  * or not an account exists — the backend deliberately doesn't reveal which,
  * so the UI must not either.
