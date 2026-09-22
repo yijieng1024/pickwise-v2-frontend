@@ -11,7 +11,18 @@ export type JobType =
   | "scraper.scrape_targets"
   | "embeddings.generate_all";
 
-export type JobStatus = "queued" | "processing" | "completed" | "failed";
+/**
+ * `cancelling` is a REQUEST, not an outcome — the worker has been asked to
+ * stop and is finishing its current item. It is still a running job, so the
+ * UI must keep polling; `cancelled` is the terminal state that follows.
+ */
+export type JobStatus =
+  | "queued"
+  | "processing"
+  | "cancelling"
+  | "completed"
+  | "failed"
+  | "cancelled";
 
 /** One item that failed mid-run. Fills in live, not only at the end. */
 export interface JobError {
@@ -69,7 +80,10 @@ export interface JobListResponse {
 export interface ListJobsParams {
   jobType?: string;
   status?: JobStatus;
-  /** Only jobs still queued or processing — what the topbar indicator polls. */
+  /**
+   * Only jobs still running — queued, processing or cancelling. What the
+   * topbar indicator polls; a cancelling job still counts as running.
+   */
   activeOnly?: boolean;
   skip?: number;
   limit?: number;
@@ -104,7 +118,32 @@ export function getJob(token: string, jobId: string): Promise<Job> {
  * items: a job that finished with every item failing is still `completed`.
  */
 export function isJobFinished(job: Pick<Job, "status">): boolean {
-  return job.status === "completed" || job.status === "failed";
+  return (
+    job.status === "completed" ||
+    job.status === "failed" ||
+    job.status === "cancelled"
+  );
+}
+
+/** Whether cancelling is still possible — i.e. something is still running. */
+export function isJobCancellable(job: Pick<Job, "status">): boolean {
+  return job.status === "queued" || job.status === "processing";
+}
+
+/**
+ * Ask a running job to stop.
+ *
+ * Cooperative and not instant: the server sets `cancelling`, and the worker
+ * stops after the item it is on. Keep polling until the status reaches
+ * `cancelled`. Work already committed is kept, so re-running resumes from
+ * where this stopped. 409 if the job already finished.
+ */
+export function cancelJob(token: string, jobId: string): Promise<Job> {
+  return apiFetch<Job>(`/jobs/${jobId}/cancel`, {
+    method: "POST",
+    token,
+    next: { revalidate: 0 },
+  });
 }
 
 /** Human-readable job names — `job_type` is a dotted machine string. */

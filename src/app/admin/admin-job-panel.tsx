@@ -38,7 +38,10 @@ export function AdminJobPanel({
 }) {
   const label = jobTypeLabel(accepted.job_type);
   const status = job?.status ?? accepted.status;
-  const finished = status === "completed" || status === "failed";
+  // `cancelling` is deliberately NOT finished — the worker is still going
+  // until it clears the item it is on, and the spinner should say so.
+  const finished =
+    status === "completed" || status === "failed" || status === "cancelled";
   const pct = job?.progress_percentage ?? 0;
 
   // `total_count` is the real queue size, which is usually smaller than the
@@ -113,6 +116,23 @@ export function AdminJobPanel({
         <div className="mt-3">
           <OutcomeAlert status="error" title="The run stopped early">
             {job.error_message} Completed items are not repeated, so re-running is safe.
+          </OutcomeAlert>
+        </div>
+      )}
+
+      {job?.status === "cancelling" && (
+        <p className="text-muted-foreground mt-2 text-[12px]">
+          Stopping — finishing the item it is on, then it will stop.
+        </p>
+      )}
+
+      {job?.status === "cancelled" && (
+        <div className="mt-3">
+          <OutcomeAlert
+            status="info"
+            title={`Stopped after ${job.processed_count} of ${job.total_count}`}
+          >
+            Work already done is kept — re-running picks up from here.
           </OutcomeAlert>
         </div>
       )}

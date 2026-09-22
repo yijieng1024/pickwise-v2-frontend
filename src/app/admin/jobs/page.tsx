@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { History, RefreshCw } from "lucide-react";
+import { History, RefreshCw, Square } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -21,7 +22,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { type Job, type JobStatus, jobTypeLabel, listJobs } from "@/lib/api/admin/jobs";
+import {
+  type Job,
+  type JobStatus,
+  cancelJob,
+  isJobCancellable,
+  jobTypeLabel,
+  listJobs,
+} from "@/lib/api/admin/jobs";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 
@@ -52,8 +60,10 @@ const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "all", label: "All statuses" },
   { value: "queued", label: "Queued" },
   { value: "processing", label: "Running" },
+  { value: "cancelling", label: "Stopping" },
   { value: "completed", label: "Completed" },
   { value: "failed", label: "Crashed" },
+  { value: "cancelled", label: "Stopped" },
 ];
 
 function formatStarted(job: Job): string {
@@ -72,6 +82,27 @@ export default function AdminJobsPage() {
   const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
+  const [cancelling, setCancelling] = useState<string | null>(null);
+
+  async function handleCancel(job: Job) {
+    if (!token) return;
+    setCancelling(job.id);
+    try {
+      await cancelJob(token, job.id);
+      // Not "Stopped": the worker finishes its current item first, so the row
+      // goes to `cancelling` and only then to `cancelled`. Saying it stopped
+      // here would be a lie for as long as that item takes — which for a
+      // scrape is a whole page load.
+      toast.success("Stopping — it will finish the item it is on first.");
+      setReloadTick((t) => t + 1);
+    } catch (err) {
+      toast.error(
+        err instanceof ApiError ? err.message : "Could not cancel this job.",
+      );
+    } finally {
+      setCancelling(null);
+    }
+  }
 
   const query = useAdminQuery({ filters: { type: "all", status: "all" } });
   const { type: jobType, status } = query.values;
@@ -198,6 +229,7 @@ export default function AdminJobsPage() {
                 <TableHead>Status</TableHead>
                 <TableHead>Outcome</TableHead>
                 <TableHead>Started</TableHead>
+                <TableHead className="w-24 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -227,6 +259,26 @@ export default function AdminJobsPage() {
                   </TableCell>
                   <TableCell className="text-muted-foreground text-[12.5px] tabular-nums">
                     {formatStarted(job)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {isJobCancellable(job) ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={cancelling === job.id}
+                        onClick={() => void handleCancel(job)}
+                      >
+                        <Square data-icon="inline-start" />
+                        Stop
+                      </Button>
+                    ) : job.status === "cancelling" ? (
+                      // Already asked. No second button: the worker stops when
+                      // it finishes the item it is on, and clicking again
+                      // cannot make that happen sooner.
+                      <span className="text-muted-foreground text-[12px]">
+                        Stopping…
+                      </span>
+                    ) : null}
                   </TableCell>
                 </TableRow>
               ))}

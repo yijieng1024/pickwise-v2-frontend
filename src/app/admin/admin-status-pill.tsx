@@ -85,8 +85,14 @@ const RAW: Record<string, Entry> = {
 const JOB: Record<string, Entry> = {
   queued: { label: "Queued", tone: "neutral" },
   processing: { label: "Running", tone: "active" },
+  // Still running — the worker finishes the item it is on before stopping.
+  // `active`, not `neutral`, because the server is still working.
+  cancelling: { label: "Stopping…", tone: "active" },
   completed: { label: "Completed", tone: "good" },
   failed: { label: "Crashed", tone: "bad" },
+  // `neutral`, not `bad`: nothing went wrong and nothing needs a look — an
+  // operator stopped it on purpose. Same reasoning as REVIEW's `irrelevant`.
+  cancelled: { label: "Stopped", tone: "neutral" },
 };
 
 const REVIEW: Record<string, Entry> = {
