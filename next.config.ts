@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
       // Acer's Magento CDN — every photo the Acer scraper keeps lives under
       // /media/catalog/product/ on this host.
       { protocol: "https", hostname: "static-ecapac.acer.com" },
+      // HP Malaysia's Magento CDN — /catalog/product/ photos.
+      { protocol: "https", hostname: "my-media.apjonlinecdn.com" },
       // YouTube channel avatars (review channels) — resolve_channel_from_url
       // returns yt3.ggpht.com; googleusercontent is the occasional alt host.
       { protocol: "https", hostname: "yt3.ggpht.com" },
