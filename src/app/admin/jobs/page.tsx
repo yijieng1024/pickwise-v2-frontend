@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { History, RefreshCw, Square } from "lucide-react";
+import { Fragment, useEffect, useState } from "react";
+import { ChevronRight, History, RefreshCw, Square } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -82,6 +82,10 @@ export default function AdminJobsPage() {
   const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
+  // One row open at a time: the errors list is long, and two expanded rows
+  // push the second one off screen anyway. `errors` already rides along on
+  // GET /jobs, so opening a row costs no request.
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<string | null>(null);
 
   async function handleCancel(job: Job) {
@@ -234,12 +238,38 @@ export default function AdminJobsPage() {
             </TableHeader>
             <TableBody>
               {jobs.map((job) => (
-                <TableRow key={job.id}>
+                <Fragment key={job.id}>
+                <TableRow>
                   <TableCell>
-                    <div className="font-medium">{jobTypeLabel(job.job_type)}</div>
-                    <div className="text-muted-foreground font-mono text-[11.5px]">
-                      {job.id.slice(0, 8)}
-                    </div>
+                    {job.errors.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => setExpanded((id) => (id === job.id ? null : job.id))}
+                        aria-expanded={expanded === job.id}
+                        className="flex items-start gap-1.5 text-left"
+                      >
+                        <ChevronRight
+                          className={`text-muted-foreground mt-0.5 size-3.5 shrink-0 transition-transform ${
+                            expanded === job.id ? "rotate-90" : ""
+                          }`}
+                        />
+                        <span>
+                          <span className="block font-medium hover:underline">
+                            {jobTypeLabel(job.job_type)}
+                          </span>
+                          <span className="text-muted-foreground block font-mono text-[11.5px]">
+                            {job.id.slice(0, 8)}
+                          </span>
+                        </span>
+                      </button>
+                    ) : (
+                      <>
+                        <div className="font-medium">{jobTypeLabel(job.job_type)}</div>
+                        <div className="text-muted-foreground font-mono text-[11.5px]">
+                          {job.id.slice(0, 8)}
+                        </div>
+                      </>
+                    )}
                   </TableCell>
                   <TableCell>
                     <AdminStatusPill kind="job" value={job.status} />
@@ -281,6 +311,31 @@ export default function AdminJobsPage() {
                     ) : null}
                   </TableCell>
                 </TableRow>
+
+                {expanded === job.id && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="bg-surface-2/50 p-0">
+                      <ul className="divide-line divide-y">
+                        {job.errors.map((e, i) => (
+                          <li key={`${e.item}-${i}`} className="px-4 py-2">
+                            <div className="text-[12.5px] font-medium">{e.item}</div>
+                            <div className="text-muted-foreground mt-0.5 text-[12px]">
+                              {e.error}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                      {job.failed_count > job.errors.length && (
+                        <p className="text-muted-foreground border-line border-t px-4 py-2 text-[12px]">
+                          {job.failed_count - job.errors.length} further failure
+                          {job.failed_count - job.errors.length === 1 ? "" : "s"} were not
+                          recorded — the per-job detail list stops at {job.errors.length}.
+                        </p>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                )}
+                </Fragment>
               ))}
             </TableBody>
           </Table>

@@ -62,6 +62,21 @@ export function processPending(token: string, limit = 100): Promise<JobAccepted>
 }
 
 /**
+ * Retries the records the extractor already choked on, and nothing else.
+ *
+ * `processPending` picks failed rows up too, but works the whole queue — with
+ * a large backlog the retries land at the end of a run the daily quota may cut
+ * short. Same job envelope and same `result` shape as `processPending`.
+ */
+export function retryFailed(token: string, limit = 100): Promise<JobAccepted> {
+  return apiFetch<JobAccepted>(`/processor/retry-failed?limit=${limit}`, {
+    method: "POST",
+    token,
+    next: { revalidate: 0 },
+  });
+}
+
+/**
  * Starts a background run that fills in missing use-case tags. Additive: it
  * never removes a tag an admin set by hand, which is what makes it safe to
  * re-run.

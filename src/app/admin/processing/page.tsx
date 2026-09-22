@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { PlayCircle, Sparkles, Tags } from "lucide-react";
+import { PlayCircle, RotateCcw, Sparkles, Tags } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
-import { categorizeUntagged, processPending } from "@/lib/api/admin/processor";
+import { categorizeUntagged, processPending, retryFailed } from "@/lib/api/admin/processor";
 import { listRawScrapLaptops } from "@/lib/api/admin/scraper";
 import { ApiError } from "@/lib/api/client";
 import { useJob } from "@/lib/admin/use-job";
@@ -42,7 +42,9 @@ export default function AdminProcessingPage() {
   const { token } = useAuth();
   const [limit, setLimit] = useState(100);
   const [pendingCount, setPendingCount] = useState<number | null>(null);
+  const [failedCount, setFailedCount] = useState<number | null>(null);
   const [startingProcess, setStartingProcess] = useState(false);
+  const [startingRetry, setStartingRetry] = useState(false);
   const [startingTags, setStartingTags] = useState(false);
 
   const [reloadTick, setReloadTick] = useState(0);
@@ -61,6 +63,13 @@ export default function AdminProcessingPage() {
       })
       .catch(() => {
         if (!cancelled) setPendingCount(null);
+      });
+    listRawScrapLaptops(token, { limit: 1, processingStatus: "failed" })
+      .then((res) => {
+        if (!cancelled) setFailedCount(res.total);
+      })
+      .catch(() => {
+        if (!cancelled) setFailedCount(null);
       });
     return () => {
       cancelled = true;
@@ -86,6 +95,20 @@ export default function AdminProcessingPage() {
     }
   }
 
+  async function runRetry() {
+    if (!token) return;
+    setStartingRetry(true);
+    try {
+      const accepted = await retryFailed(token, limit);
+      processJob.start(accepted);
+      toast.success(accepted.message);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Couldn't start the retry.");
+    } finally {
+      setStartingRetry(false);
+    }
+  }
+
   async function runTagging() {
     if (!token) return;
     setStartingTags(true);
@@ -100,7 +123,12 @@ export default function AdminProcessingPage() {
     }
   }
 
-  const busy = startingProcess || startingTags || processJob.isRunning || tagJob.isRunning;
+  const busy =
+    startingProcess ||
+    startingRetry ||
+    startingTags ||
+    processJob.isRunning ||
+    tagJob.isRunning;
 
   return (
     <div className="flex flex-col gap-4">
@@ -156,6 +184,14 @@ export default function AdminProcessingPage() {
                 </span>
               </>
             )}
+            {failedCount !== null && failedCount > 0 && (
+              <span className="text-muted-foreground">
+                <strong className="text-foreground font-semibold tabular-nums">
+                  {failedCount}
+                </strong>{" "}
+                earlier record{failedCount === 1 ? "" : "s"} failed and can be retried.
+              </span>
+            )}
           </div>
 
           <div className="mt-4 flex flex-wrap gap-3">
@@ -166,6 +202,14 @@ export default function AdminProcessingPage() {
                 <PlayCircle data-icon="inline-start" />
               )}
               Start processing
+            </Button>
+            <Button
+              variant="outline"
+              onClick={runRetry}
+              disabled={busy || failedCount === 0 || failedCount === null}
+            >
+              {startingRetry ? <Spinner data-icon="inline-start" /> : <RotateCcw data-icon="inline-start" />}
+              Retry failed
             </Button>
             <Button variant="outline" onClick={runTagging} disabled={busy}>
               {startingTags || tagJob.isRunning ? (
