@@ -129,15 +129,19 @@ export default function AdminCatalogLaptopsPage() {
   const [statusPending, setStatusPending] = useState<string | null>(null);
 
   // Built from the brands already fetched for the table's Brand column, so the
-  // filter costs no extra request.
+  // filter costs no extra request. Only active brands are offered; the fetch
+  // itself stays unfiltered because the Brand column must still name a laptop
+  // whose brand was deactivated. The selected brand is kept even if inactive,
+  // or a URL already pointing at one would render its raw id in the trigger.
   const brandOptions = useMemo(
     () => [
       { value: "all", label: "All brands" },
       ...[...brands.values()]
+        .filter((b) => b.is_active || b.id === brandId)
         .sort((a, b) => a.name.localeCompare(b.name))
         .map((b) => ({ value: b.id, label: b.name })),
     ],
-    [brands],
+    [brands, brandId],
   );
 
   useEffect(() => {
