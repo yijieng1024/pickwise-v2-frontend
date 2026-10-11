@@ -75,9 +75,14 @@ import { useAuth } from "@/lib/auth-context";
 
 import { useAdminQuery } from "../../admin-query-state";
 import { OutcomeAlert } from "../../admin-outcome-alert";
+import { AdminPagination } from "../../admin-pagination";
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
 import { AdminPageHeader } from "../../admin-page-header";
 import { AdminStatusPill, toneClass } from "../../admin-status-pill";
+
+// ponytail: client-side paging over the full GET /families list (~100 rows);
+// add offset/limit + X-Total-Count to the endpoint if families reach the thousands.
+const PAGE_SIZE = 25;
 
 const VERIFIED_OPTIONS = [
   { value: "all", label: "All families" },
@@ -123,7 +128,9 @@ export default function AdminCatalogFamiliesPage() {
   // Drop stale rows the moment the filters change, so the table shows a
   // spinner rather than the previous filter's results — "adjust state during
   // render", since the set-state-in-effect lint forbids the effect version.
-  const paramsSig = `${query.signature}:${reloadTick}`;
+  // filterSignature, not signature: paging is client-side over rows already
+  // loaded, so a page change must not blank the table and refetch.
+  const paramsSig = `${query.filterSignature}:${reloadTick}`;
   const [prevParamsSig, setPrevParamsSig] = useState(paramsSig);
   if (paramsSig !== prevParamsSig) {
     setPrevParamsSig(paramsSig);
@@ -211,6 +218,12 @@ export default function AdminCatalogFamiliesPage() {
   }
 
   const unverifiedCount = families?.filter((f) => !f.is_verified).length ?? 0;
+
+  // Clamped so deleting the last row of the last page lands on the new last
+  // page instead of an empty table.
+  const lastPage = Math.max(1, Math.ceil((families?.length ?? 0) / PAGE_SIZE));
+  const page = Math.min(query.page, lastPage);
+  const pageRows = families?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE) ?? [];
 
   return (
     <div className="flex flex-col gap-4">
@@ -333,7 +346,7 @@ export default function AdminCatalogFamiliesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {families.map((f) => (
+              {pageRows.map((f) => (
                 <TableRow key={f.id}>
                   <TableCell>
                     <Link
@@ -394,6 +407,15 @@ export default function AdminCatalogFamiliesPage() {
           </Table>
         )}
       </Card>
+
+      {families && (
+        <AdminPagination
+          page={page}
+          pageSize={PAGE_SIZE}
+          total={families.length}
+          onPageChange={query.setPage}
+        />
+      )}
 
       <FamilyFormDialog
         mode="create"
