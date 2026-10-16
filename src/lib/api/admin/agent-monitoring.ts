@@ -63,13 +63,18 @@ export interface AgentMonitoringStats {
   error_count: number;
   error_rate_pct: number;
   avg_latency_ms: number;
+  total_input_tokens: number;
+  total_output_tokens: number;
+  tokens_today: number;
+  /** Over runs that reported usage — errored turns usually carry none. */
+  avg_tokens_per_run: number;
   tool_usage: ToolUsage[];
 }
 
 export interface ListAgentRunsParams {
   search?: string;
   status?: AgentRunStatus;
-  sortBy?: "created_at" | "latency_ms";
+  sortBy?: "created_at" | "latency_ms" | "input_tokens" | "output_tokens";
   sortDir?: "asc" | "desc";
   skip?: number;
   limit?: number;

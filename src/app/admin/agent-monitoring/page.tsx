@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   Check,
   Clock,
+  Coins,
   Copy,
   MessageSquare,
   Search,
@@ -78,7 +79,7 @@ const PAGE_SIZE = 25;
  */
 const TREND_WINDOW = 1000;
 
-const SORT_KEYS = ["created_at", "latency_ms"] as const;
+const SORT_KEYS = ["created_at", "latency_ms", "input_tokens", "output_tokens"] as const;
 
 /** Newest first — the run you most likely came here to read. */
 const DEFAULT_SORT = { key: "created_at", direction: "desc" } as const;
@@ -302,7 +303,7 @@ export default function AdminAgentMonitoringPage() {
 
       <div className="flex flex-col gap-3">
         <h2 className="text-sm font-bold tracking-tight">Stats</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           <StatTile icon={Activity} label="Runs today" value={stats?.runs_today} error={!!statsError} />
           <StatTile
             icon={XCircle}
@@ -317,6 +318,13 @@ export default function AdminAgentMonitoringPage() {
             label="Avg latency"
             value={stats?.avg_latency_ms}
             suffix=" ms"
+            error={!!statsError}
+          />
+          <StatTile icon={Coins} label="Tokens today" value={stats?.tokens_today} error={!!statsError} />
+          <StatTile
+            icon={Coins}
+            label="Avg tokens / run"
+            value={stats ? Math.round(stats.avg_tokens_per_run) : undefined}
             error={!!statsError}
           />
         </div>
@@ -475,6 +483,18 @@ export default function AdminAgentMonitoringPage() {
                   onSort={query.sortBy}
                 />
                 <SortableTableHead
+                  label="Tokens in"
+                  sortKey="input_tokens"
+                  sort={sort}
+                  onSort={query.sortBy}
+                />
+                <SortableTableHead
+                  label="Tokens out"
+                  sortKey="output_tokens"
+                  sort={sort}
+                  onSort={query.sortBy}
+                />
+                <SortableTableHead
                   label="Created"
                   sortKey="created_at"
                   sort={sort}
@@ -495,6 +515,8 @@ export default function AdminAgentMonitoringPage() {
                     {r.tool_call_count > 0 ? r.tool_names.join(", ") : "—"}
                   </TableCell>
                   <TableCell className="tabular-nums">{r.latency_ms.toLocaleString()} ms</TableCell>
+                  <TableCell className="tabular-nums">{r.input_tokens?.toLocaleString() ?? "—"}</TableCell>
+                  <TableCell className="tabular-nums">{r.output_tokens?.toLocaleString() ?? "—"}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {new Date(r.created_at).toLocaleString("en-MY", {
                       month: "short",

@@ -1,5 +1,6 @@
 import {
   Activity,
+  Coins,
   Cpu,
   FileStack,
   FileText,
@@ -148,6 +149,9 @@ export const navGroups: Array<{ label: string; links: NavLink[]; exactFirst?: bo
     links: [
       { href: "/admin/jobs", label: "Jobs", icon: History },
       { href: "/admin/agent-monitoring", label: "Chatbot Monitoring", icon: Activity },
+      // Every LLM call, not just the chatbot's — processor, recommendations
+      // and review chunking too — so it is its own screen, not a chatbot tab.
+      { href: "/admin/llm-usage", label: "Token Usage", icon: Coins },
     ],
   },
 ];
