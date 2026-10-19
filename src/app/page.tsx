@@ -12,18 +12,10 @@ import { Omnibar } from "@/components/omnibar";
 import { Button } from "@/components/ui/button";
 import { mapRankedLaptop } from "@/lib/api/adapters";
 import { getPickScoreRanking, USE_CASES } from "@/lib/api/pickscore";
-import { laptops as mockLaptops, type Laptop } from "@/lib/laptops";
+import type { Laptop } from "@/lib/laptops";
 import { cn } from "@/lib/utils";
 
 const TOP_N = 5;
-
-/** Cycles the six mock laptops out to `TOP_N` slots for a use-case fallback. */
-function mockTopPicks(label: string): Laptop[] {
-  return Array.from({ length: TOP_N }, (_, i) => ({
-    ...mockLaptops[i % mockLaptops.length],
-    tags: [label],
-  }));
-}
 
 const features = [
   {
@@ -34,7 +26,7 @@ const features = [
   {
     icon: CircleGauge,
     title: "Pick Score, not just specs",
-    body: "Every laptop gets a score built from benchmarks, reviews, and specs, broken into the factors that matter most for your use case — never a raw spec dump.",
+    body: "Every laptop gets a score built from benchmarks and specs, broken into the factors that matter most for your use case — never a raw spec dump.",
   },
   {
     icon: Heart,
@@ -46,31 +38,29 @@ const features = [
 export default async function Home() {
   // Top 5 per use case = rank 1-5 stored PickScores for each of the five
   // weight profiles (general use, office & study, programming, gaming,
-  // creative work), one section per use case; mocks only as a fallback.
-  let topPicksByUseCase: { slug: string; label: string; laptops: Laptop[] }[] =
-    USE_CASES.map((uc) => ({
-      slug: uc.slug,
-      label: uc.label,
-      laptops: mockTopPicks(uc.label),
-    }));
-  try {
-    const rankings = await Promise.all(
-      USE_CASES.map((uc) => getPickScoreRanking(uc.slug, TOP_N)),
-    );
-    topPicksByUseCase = USE_CASES.map((uc, i) => ({
+  // creative work), one section per use case. Settled per row so one failed
+  // ranking call only blanks its own row; `null` = the call failed.
+  const rankings = await Promise.allSettled(
+    USE_CASES.map((uc) => getPickScoreRanking(uc.slug, TOP_N)),
+  );
+  const topPicksByUseCase: {
+    slug: string;
+    label: string;
+    laptops: Laptop[] | null;
+  }[] = USE_CASES.map((uc, i) => {
+    const result = rankings[i];
+    return {
       slug: uc.slug,
       label: uc.label,
       laptops:
-        rankings[i].results.length > 0
-          ? rankings[i].results.map((row) => ({
+        result.status === "fulfilled"
+          ? result.value.results.map((row) => ({
               ...mapRankedLaptop(row),
               tags: [uc.label],
             }))
-          : mockTopPicks(uc.label),
-    }));
-  } catch {
-    // Keep the mock fallback.
-  }
+          : null,
+    };
+  });
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 sm:px-6 lg:px-8">
@@ -120,17 +110,25 @@ export default async function Home() {
                 View All <ChevronRight className="size-4" />
               </Link>
             </div>
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-              {laptops.map((laptop, i) => (
-                <div
-                  key={`${slug}-${laptop.id}-${i}`}
-                  className="motion-safe:animate-fade-in-up"
-                  style={{ animationDelay: `${i * 80}ms` }}
-                >
-                  <LaptopCard laptop={laptop} showScore="ring" />
-                </div>
-              ))}
-            </div>
+            {laptops && laptops.length > 0 ? (
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+                {laptops.map((laptop, i) => (
+                  <div
+                    key={`${slug}-${laptop.id}-${i}`}
+                    className="motion-safe:animate-fade-in-up"
+                    style={{ animationDelay: `${i * 80}ms` }}
+                  >
+                    <LaptopCard laptop={laptop} showScore="ring" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="border-line rounded-2xl border border-dashed px-6 py-10 text-center text-sm text-muted-foreground">
+                {laptops === null
+                  ? "Couldn't load laptops right now."
+                  : `No ranked laptops for ${label.toLowerCase()} yet.`}
+              </p>
+            )}
           </div>
         ))}
 

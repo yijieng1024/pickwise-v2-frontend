@@ -315,49 +315,7 @@ export default async function LaptopDetailsPage({
               No price history recorded yet.
             </p>
           )}
-          {/* Price-drop alerts aren't built yet — nothing subscribes, and the
-              button did nothing when pressed. Restore this once there's an
-              endpoint behind it. */}
-          {/* <Button type="button" variant="soft" size="sm" shape="pill" className="mt-4">
-            <Bell data-icon="inline-start" />
-            Set price drop alert
-          </Button> */}
         </section>
-
-        {/* Accessories fallback */}
-        {/* {!laptop.accessories && (
-          <section className="border-line bg-surface rounded-3xl border p-7 md:col-span-6">
-            <h2 className="mb-2 flex items-center gap-2 text-base font-semibold tracking-tight">
-              <Layers className="text-brand size-4" /> Recommended Accessories
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              No specific accessories recommended at this time.
-            </p>
-          </section>
-        )}
-        {laptop.accessories && (
-          <section className="border-line bg-surface rounded-3xl border p-7 md:col-span-6">
-            <h2 className="mb-3 flex items-center gap-2 text-base font-semibold tracking-tight">
-              <Layers className="text-brand size-4" /> Pairs Well With
-            </h2>
-            <div className="flex flex-col gap-2.5">
-              {laptop.accessories.map((acc) => (
-                <div key={acc.name} className="flex items-center gap-3">
-                  <div className="bg-surface-2 flex size-9.5 flex-none items-center justify-center rounded-[10px] text-muted-foreground">
-                    <DataIcon name={acc.icon} className="size-4.5" />
-                  </div>
-                  <div className="text-[13px]">
-                    <div className="font-medium">{acc.name}</div>
-                    <div className="text-[11.5px] text-muted-foreground tabular-nums">
-                      {acc.price}
-                    </div>
-                  </div>
-                  <PlusCircle className="ml-auto size-4 text-muted-foreground/40" />
-                </div>
-              ))}
-            </div>
-          </section>
-        )} */}
       </div>
     </main>
   );

@@ -27,7 +27,6 @@ import { useAuth } from "@/lib/auth-context";
 
 import { useAdminNavigation, useUnsavedChanges } from "../../unsaved-changes";
 import { type FieldDef, LAPTOP_FORM_GROUPS } from "./laptop-form-config";
-import { laptops } from "@/lib/laptops";
 
 type Values = Record<string, string | boolean>;
 
