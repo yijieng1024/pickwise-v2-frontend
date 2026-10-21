@@ -8,6 +8,7 @@ import {
   Clock,
   Coins,
   Copy,
+  LifeBuoy,
   MessageSquare,
   Search,
   Sparkles,
@@ -303,7 +304,7 @@ export default function AdminAgentMonitoringPage() {
 
       <div className="flex flex-col gap-3">
         <h2 className="text-sm font-bold tracking-tight">Stats</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <StatTile icon={Activity} label="Runs today" value={stats?.runs_today} error={!!statsError} />
           <StatTile
             icon={XCircle}
@@ -326,6 +327,16 @@ export default function AdminAgentMonitoringPage() {
             label="Avg tokens / run"
             value={stats ? Math.round(stats.avg_tokens_per_run) : undefined}
             error={!!statsError}
+          />
+          {/* Same window as the other tiles: the latest 1,000 runs. A backup
+              answering is not an error, but a rising count says the primary is
+              being rate-limited or failing. */}
+          <StatTile
+            icon={LifeBuoy}
+            label="Fallback runs"
+            value={stats?.fallback_count}
+            error={!!statsError}
+            tone={stats && stats.fallback_count > 0 ? "warning" : undefined}
           />
         </div>
 
@@ -476,6 +487,7 @@ export default function AdminAgentMonitoringPage() {
                 <TableHead>User</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Tools</TableHead>
+                <TableHead>Model</TableHead>
                 <SortableTableHead
                   label="Latency"
                   sortKey="latency_ms"
@@ -513,6 +525,9 @@ export default function AdminAgentMonitoringPage() {
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {r.tool_call_count > 0 ? r.tool_names.join(", ") : "—"}
+                  </TableCell>
+                  <TableCell>
+                    <ModelCell model={r.model} position={r.model_position} fallback={r.fallback_triggered} />
                   </TableCell>
                   <TableCell className="tabular-nums">{r.latency_ms.toLocaleString()} ms</TableCell>
                   <TableCell className="tabular-nums">{r.input_tokens?.toLocaleString() ?? "—"}</TableCell>
@@ -661,6 +676,9 @@ function RunDetail({ run }: { run: AgentRunDetail }) {
         <Meta label="Input tokens" value={run.input_tokens?.toLocaleString() ?? "—"} />
         <Meta label="Output tokens" value={run.output_tokens?.toLocaleString() ?? "—"} />
         <Meta label="Tool calls" value={String(run.tool_calls.length)} />
+        <Meta label="Answered by" value={run.model ?? "—"} />
+        <Meta label="Chain position" value={positionLabel(run.model_position)} />
+        <Meta label="Fallback" value={run.fallback_triggered ? "Yes — a backup answered a step" : "No"} />
       </div>
 
       {/* Conversation */}
@@ -771,20 +789,30 @@ function StatTile({
   value: number | undefined;
   suffix?: string;
   error: boolean;
-  tone?: "negative";
+  tone?: "negative" | "warning";
 }) {
   return (
     <div className="border-line bg-surface flex items-center gap-3 rounded-lg border p-3">
       <span
         className={cn(
           "flex size-8 shrink-0 items-center justify-center rounded-full",
-          tone === "negative" ? "bg-negative/10 text-negative" : "bg-brand-tint text-brand",
+          tone === "negative"
+            ? "bg-negative/10 text-negative"
+            : tone === "warning"
+              ? "bg-warning/10 text-warning"
+              : "bg-brand-tint text-brand",
         )}
       >
         <Icon className="size-4" />
       </span>
       <div>
-        <div className={cn("text-xl font-bold tabular-nums", tone === "negative" && "text-negative")}>
+        <div
+          className={cn(
+            "text-xl font-bold tabular-nums",
+            tone === "negative" && "text-negative",
+            tone === "warning" && "text-warning",
+          )}
+        >
           {error ? (
             "—"
           ) : value === undefined ? (
@@ -795,6 +823,39 @@ function StatTile({
         </div>
         <div className="text-[12.5px] text-muted-foreground">{label}</div>
       </div>
+    </div>
+  );
+}
+
+/** 0 = the use's primary model; n = backup n. */
+function positionLabel(position: number | null): string {
+  if (position === null) return "—";
+  return position === 0 ? "Primary" : `Backup ${position}`;
+}
+
+/**
+ * The model that wrote the reply. A fallback badge marks turns where a backup
+ * answered any step, which can be true even when the final reply came from the
+ * primary (an earlier step fell back, a later one did not).
+ */
+function ModelCell({
+  model,
+  position,
+  fallback,
+}: {
+  model: string | null;
+  position: number | null;
+  fallback: boolean;
+}) {
+  if (!model) return <span className="text-muted-foreground">—</span>;
+  return (
+    <div className="flex flex-col items-start gap-0.5">
+      <span className="text-[12.5px]">{model}</span>
+      {fallback && (
+        <Badge className="bg-warning/10 text-warning">
+          Fallback{position ? ` · backup ${position}` : " · earlier step"}
+        </Badge>
+      )}
     </div>
   );
 }

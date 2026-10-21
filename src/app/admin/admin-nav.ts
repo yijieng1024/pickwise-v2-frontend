@@ -1,5 +1,6 @@
 import {
   Activity,
+  Bot,
   Coins,
   Cpu,
   FileStack,
@@ -153,6 +154,13 @@ export const navGroups: Array<{ label: string; links: NavLink[]; exactFirst?: bo
       // and review chunking too — so it is its own screen, not a chatbot tab.
       { href: "/admin/llm-usage", label: "Token Usage", icon: Coins },
     ],
+  },
+  {
+    // Settings that change how the app runs, not data in it. Model choice spans
+    // the chatbot, recommendations, review processing and AI Clean-up, so it
+    // gets one screen rather than a control buried in each stage's page.
+    label: "Settings",
+    links: [{ href: "/admin/llm-settings", label: "LLM Settings", icon: Bot }],
   },
 ];
 

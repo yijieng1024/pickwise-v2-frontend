@@ -15,6 +15,15 @@ export interface AgentRunSummary {
   output_tokens: number | null;
   tool_names: string[];
   tool_call_count: number;
+  /**
+   * The model that wrote the reply, and its place in the use's chain: 0 = the
+   * primary, n = backup n. Null when no LLM call completed (the turn errored
+   * first) or the run predates the columns.
+   */
+  model: string | null;
+  model_position: number | null;
+  /** True when any step of the turn ran on a backup model. */
+  fallback_triggered: boolean;
   created_at: string;
 }
 
@@ -40,6 +49,15 @@ export interface AgentRunDetail {
   input_tokens: number | null;
   output_tokens: number | null;
   tool_calls: AgentToolCall[];
+  /**
+   * The model that wrote the reply, and its place in the use's chain: 0 = the
+   * primary, n = backup n. Null when no LLM call completed (the turn errored
+   * first) or the run predates the columns.
+   */
+  model: string | null;
+  model_position: number | null;
+  /** True when any step of the turn ran on a backup model. */
+  fallback_triggered: boolean;
   created_at: string;
 }
 
@@ -68,6 +86,8 @@ export interface AgentMonitoringStats {
   tokens_today: number;
   /** Over runs that reported usage — errored turns usually carry none. */
   avg_tokens_per_run: number;
+  /** Runs in the same window where a backup model answered at least one step. */
+  fallback_count: number;
   tool_usage: ToolUsage[];
 }
 

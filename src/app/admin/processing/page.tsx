@@ -229,8 +229,13 @@ export default function AdminProcessingPage() {
               </Select>
               <span className="text-muted-foreground mt-1.5 block text-[12px] leading-relaxed">
                 Applies to the next record, so a run in progress finishes on the model it
-                started with. On &ldquo;high demand&rdquo; the processor retries on{" "}
-                {model.fallback_chain.slice(1).join(", ") || "no other model"} by itself.
+                started with. When it is rate-limited, times out or errors, the processor
+                falls back to {model.fallback_chain.slice(1).join(" → ") || "no other model"}, in
+                that order. Change the backups (and every other feature&apos;s models) in{" "}
+                <Link href="/admin/llm-settings" className="text-brand font-medium hover:underline">
+                  LLM Settings
+                </Link>
+                .
               </span>
               {dailyCap !== null && effective > dailyCap && (
                 <span className="text-warning mt-1.5 block text-[12px] leading-relaxed">
