@@ -26,7 +26,6 @@ const FEATURE_LABELS: Record<string, string> = {
   agent: "Chatbot (Pico)",
   processor_extract: "AI Clean-up — extraction",
   processor_categorize: "AI Clean-up — tagging",
-  recommendation: "Recommendations",
   review_chunk: "Review processing",
 };
 
@@ -94,7 +93,7 @@ export default function AdminLLMUsagePage() {
     <div className="flex flex-col gap-4">
       <AdminPageHeader
         title="Token Usage"
-        description="Tokens spent by every LLM call — chatbot, AI clean-up, recommendations and review processing."
+        description="Tokens spent by every LLM call — chatbot, AI clean-up and review processing."
         action={<AdminTrendRange value={days} onChange={setDays} label="Usage window" />}
       />
 

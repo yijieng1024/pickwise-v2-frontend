@@ -58,7 +58,7 @@ export function setProcessorModel(
 // order when the model before them is rate-limited (429), times out or 5xxs.
 // ---------------------------------------------------------------------------
 
-export type LLMUseName = "agent" | "recommendation" | "review_processor" | "processor";
+export type LLMUseName = "agent" | "review_processor" | "processor";
 
 /** "app_settings" = an admin saved this; "env" = the deploy's default is in effect. */
 export type LLMSettingSource = "app_settings" | "env";

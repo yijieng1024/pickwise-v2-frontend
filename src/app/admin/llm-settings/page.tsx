@@ -61,10 +61,6 @@ const USE_INFO: Record<LLMUseName, { label: string; description: string }> = {
     label: "Chatbot (Pico)",
     description: "Every chat turn. A user is waiting on the reply.",
   },
-  recommendation: {
-    label: "Recommendations",
-    description: "The questionnaire's “For you” results. A user is waiting on these too.",
-  },
   review_processor: {
     label: "Review processing",
     description: "Summarises YouTube review chunks. Background admin job.",
