@@ -19,6 +19,7 @@ import { FullSpecs } from "@/components/full-specs";
 import { LaptopGallery } from "@/components/laptop-gallery";
 import { PersonalPickScoreRing } from "@/components/personal-pick-score-ring";
 import { PickScoreCard } from "@/components/pick-score-card";
+import { ReviewSentiment } from "@/components/review-sentiment";
 import { SaveButton } from "@/components/save-button";
 import { ShareButton } from "@/components/share-button";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import { compareHref } from "@/lib/compare";
 import { apiFetch, ApiError } from "@/lib/api/client";
 import { mapBackendLaptop } from "@/lib/api/adapters";
 import { getLaptopPickScores, labelForUseCase } from "@/lib/api/pickscore";
+import { getLaptopReviews } from "@/lib/api/reviews";
 import type {
   BackendBrand,
   BackendLaptop,
@@ -60,13 +62,16 @@ export default async function LaptopDetailsPage({
     throw err;
   }
 
-  const [brand, rawHistory, pickScores] = await Promise.all([
+  const [brand, rawHistory, pickScores, reviews] = await Promise.all([
     apiFetch<BackendBrand>(`/brands/${raw.brand_id}`),
     apiFetch<BackendPriceHistoryEntry[]>(`/laptops/${id}/price-history`, {
       next: { revalidate: 0 },
     }),
     // Best-effort: scores may not be generated yet — the tile just hides.
     getLaptopPickScores(id).catch(() => null),
+    // A failure must not take the page down; null renders an honest error
+    // state in the reviews section (never placeholder points).
+    getLaptopReviews(id).catch(() => null),
   ]);
 
   const laptop = mapBackendLaptop(raw, brand);
@@ -259,6 +264,9 @@ export default async function LaptopDetailsPage({
 
         {/* Full specs */}
         <FullSpecs raw={raw} />
+
+        {/* YouTube reviewer strengths / weaknesses (always shown: "No reviews yet" when empty) */}
+        <ReviewSentiment reviews={reviews} />
 
         {/* Price history */}
         <section className="border-line bg-surface rounded-3xl border p-7 md:col-span-6">

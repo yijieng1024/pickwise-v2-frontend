@@ -4,15 +4,6 @@ export interface XaiFactor {
   value: number;
 }
 
-export interface ReviewPoint {
-  /** Paraphrased reviewer point — never a verbatim quote. */
-  point: string;
-  channel: string;
-  timestampLabel: string;
-  /** true = strength ("what reviewers love"), false = weakness ("watch out for"). */
-  strength: boolean;
-}
-
 export interface Benchmark {
   label: string;
   sub: string;
@@ -43,7 +34,6 @@ export interface Laptop {
   /** 8-factor PickScore breakdown shown in the XAI popover */
   xaiFactors: XaiFactor[];
   match: string;
-  sentiment: { summary: string; reviews: ReviewPoint[] };
   community?: { battery: string; cinebench: string; users: number };
   accessories?: { name: string; price: string; icon: string }[];
   benchmarks?: Benchmark[];

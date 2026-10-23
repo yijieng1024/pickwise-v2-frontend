@@ -1,107 +1,106 @@
-"use client";
+import { Check, Info, X } from "lucide-react";
 
-import { useState } from "react";
-import { Check, X } from "lucide-react";
+import type { LaptopReviews, ReviewPoint } from "@/lib/api/reviews";
+import { cn } from "@/lib/utils";
 
-import { GlassSurface } from "@/components/glass-surface";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import type { ReviewPoint } from "@/lib/laptops";
+const timestampLabel = (s: number) =>
+  `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
-export function ReviewSentiment({ reviews }: { reviews: ReviewPoint[] }) {
-  const [open, setOpen] = useState<ReviewPoint | null>(null);
-  const strengths = reviews.filter((r) => r.strength);
-  const weaknesses = reviews.filter((r) => !r.strength);
-
+/**
+ * "What reviewers say" on the details page. `reviews` is null when the
+ * request failed — that is said plainly, never filled with placeholder points.
+ */
+export function ReviewSentiment({ reviews }: { reviews: LaptopReviews | null }) {
   return (
-    <>
+    <section className="border-line bg-surface rounded-3xl border p-7 md:col-span-6">
       <h2 className="mb-1 text-base font-semibold tracking-tight">
-        What Reviewers Love
+        What Reviewers Say
       </h2>
-      <p className="mb-4 text-xs text-muted-foreground">
-        From {reviews.length} video reviews · click to see the source
-      </p>
-      <div className="flex flex-col gap-2.5">
-        {strengths.map((r) => (
-          <button
-            key={r.point}
-            type="button"
-            onClick={() => setOpen(r)}
-            className="flex items-center gap-2.5 rounded-2xl border border-positive/20 bg-positive/[0.07] px-4 py-3 text-left text-[13.5px] leading-snug transition-transform motion-safe:hover:scale-[1.015]"
-          >
-            <Check className="size-4 shrink-0 text-positive" strokeWidth={2.4} />
-            {r.point}
-            <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">
-              {r.channel}
-            </span>
-          </button>
-        ))}
-      </div>
 
-      {weaknesses.length > 0 && (
+      {reviews === null ? (
+        <p className="text-sm text-muted-foreground">
+          Couldn&apos;t load reviews right now. Please try again later.
+        </p>
+      ) : reviews.source === "none" ? (
+        <p className="text-sm text-muted-foreground">No reviews yet.</p>
+      ) : (
         <>
-          <h2 className="mt-6 mb-4 text-base font-semibold tracking-tight">
-            Watch Out For
-          </h2>
-          <div className="flex flex-col gap-2.5">
-            {weaknesses.map((r) => (
-              <button
-                key={r.point}
-                type="button"
-                onClick={() => setOpen(r)}
-                className="flex items-center gap-2.5 rounded-2xl border border-negative/20 bg-negative/[0.06] px-4 py-3 text-left text-[13.5px] leading-snug transition-transform motion-safe:hover:scale-[1.015]"
-              >
-                <X className="size-4 shrink-0 text-negative" strokeWidth={2.4} />
-                {r.point}
-                <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">
-                  {r.channel}
-                </span>
-              </button>
-            ))}
-          </div>
+          <p className="mb-4 text-xs text-muted-foreground">
+            From {reviews.review_count} video review
+            {reviews.review_count === 1 ? "" : "s"} · each point links to the
+            moment in the video
+          </p>
+
+          {reviews.source === "other_configurations" && (
+            <p className="bg-surface-2 mb-4 flex items-start gap-2 rounded-2xl px-4 py-3 text-[13px] leading-snug">
+              <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+              No reviews of this exact configuration yet. These come from other
+              configurations of the same laptop, and each point names the
+              configuration it was tested on.
+            </p>
+          )}
+
+          <PointList title="Strengths" points={reviews.strengths} />
+          <PointList title="Watch Out For" points={reviews.weaknesses} />
         </>
       )}
+    </section>
+  );
+}
 
-      <Dialog
-        open={open !== null}
-        onOpenChange={(isOpen) => {
-          if (!isOpen) setOpen(null);
-        }}
-      >
-        <DialogContent
-          showCloseButton={false}
-          overlayClassName="bg-black/30 supports-backdrop-filter:backdrop-blur-none"
-          className="w-full bg-transparent p-0 shadow-none ring-0 sm:max-w-md"
-        >
-          {open && (
-            <GlassSurface cornerRadius={24} className="flex flex-col gap-3.5 p-7">
-              <div className="flex items-start justify-between gap-4">
-                <DialogTitle className="font-sans text-[17px] font-semibold tracking-tight">
-                  {open.point}
-                </DialogTitle>
-                <DialogClose
-                  aria-label="Close"
-                  className="bg-surface-2 flex size-7 flex-none items-center justify-center rounded-full text-muted-foreground"
-                >
-                  <X className="size-3" />
-                </DialogClose>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-semibold text-muted-foreground">
-                  {open.channel}
-                </span>
-                <span className="text-brand font-semibold">
-                  Watch at {open.timestampLabel} →
-                </span>
-              </div>
-            </GlassSurface>
-          )}
-        </DialogContent>
-      </Dialog>
+function PointList({ title, points }: { title: string; points: ReviewPoint[] }) {
+  if (points.length === 0) return null;
+  return (
+    <>
+      <h3 className="mt-5 mb-3 text-sm font-semibold first:mt-0">{title}</h3>
+      <ul className="flex flex-col gap-2.5">
+        {points.map((p) => (
+          <li key={`${p.video_id}-${p.timestamp_start_seconds}`}>
+            <Point p={p} />
+          </li>
+        ))}
+      </ul>
     </>
+  );
+}
+
+function Point({ p }: { p: ReviewPoint }) {
+  const strength = p.sentiment === "strength";
+  const Icon = strength ? Check : X;
+  return (
+    <a
+      href={p.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(
+        "flex items-start gap-2.5 rounded-2xl border px-4 py-3 text-left transition-transform motion-safe:hover:scale-[1.01]",
+        strength
+          ? "border-positive/20 bg-positive/[0.07]"
+          : "border-negative/20 bg-negative/[0.06]",
+      )}
+    >
+      <Icon
+        className={cn("mt-0.5 size-4 shrink-0", strength ? "text-positive" : "text-negative")}
+        strokeWidth={2.4}
+      />
+      <span className="min-w-0">
+        <span className="block text-[13.5px] leading-snug">{p.text}</span>
+        {p.applies_to === "configuration_not_stated" && (
+          <span className="bg-surface-2 mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10.5px] text-muted-foreground">
+            Reviewer didn&apos;t say which configuration they tested
+          </span>
+        )}
+        {p.applies_to === "other_configuration" && p.tested_on_name && (
+          <span className="bg-surface-2 mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10.5px] text-muted-foreground">
+            Tested on {p.tested_on_name}
+          </span>
+        )}
+        <span className="mt-1.5 block text-[11px] text-muted-foreground">
+          {p.channel_name}
+          {p.video_title && <> · {p.video_title}</>} · Watch at{" "}
+          {timestampLabel(p.timestamp_start_seconds)} →
+        </span>
+      </span>
+    </a>
   );
 }

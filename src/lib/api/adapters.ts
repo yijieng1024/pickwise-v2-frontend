@@ -10,7 +10,7 @@ const FALLBACK_IMAGE =
 /**
  * Maps the backend's raw spec-sheet `LaptopRead` onto the frontend's `Laptop` shape.
  *
- * Several `Laptop` fields (score, radar, xaiFactors, match, sentiment, benchmarks, badge, tags,
+ * Several `Laptop` fields (score, radar, xaiFactors, match, benchmarks, badge, tags,
  * plainEnglish) have no backend source yet — see the "Backend integration decisions" memory.
  * They're filled with empty/neutral placeholders here, which is only safe for call sites that
  * don't render them (e.g. the /laptops browse page uses showScore={false}). Do not reuse this
@@ -43,7 +43,6 @@ export function mapBackendLaptop(
     radar: [0, 0, 0, 0, 0, 0],
     xaiFactors: [],
     match: "",
-    sentiment: { summary: "", reviews: [] },
   };
 }
 
@@ -73,6 +72,5 @@ export function mapRankedLaptop(row: RankedLaptopPickScore): Laptop {
     radar: [0, 0, 0, 0, 0, 0],
     xaiFactors: [],
     match: "",
-    sentiment: { summary: "", reviews: [] },
   };
 }
