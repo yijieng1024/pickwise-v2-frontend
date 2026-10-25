@@ -50,8 +50,10 @@ import {
 import { Card } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import {
+  PROCESSING_PAUSED_MESSAGE,
   type RawReview,
   type RawReviewStatus,
+  getPipelineStatus,
   listRawReviews,
   manualMatch,
   processReview,
@@ -97,6 +99,15 @@ export default function AdminRawReviewsPage() {
   const [summarizeTarget, setSummarizeTarget] = useState<RawReview | null>(null);
   const [summarizing, setSummarizing] = useState(false);
   const [reloadTick, setReloadTick] = useState(0);
+  // REVIEW_PROCESSING_PAUSED, read once: Summarize would only 409 while it is on.
+  const [processingPaused, setProcessingPaused] = useState(false);
+
+  useEffect(() => {
+    if (!token) return;
+    getPipelineStatus(token)
+      .then((s) => setProcessingPaused(s.process.paused === true))
+      .catch(() => {});  // unknown -> leave enabled; the backend still refuses with a 409 toast
+  }, [token]);
 
   const query = useAdminQuery({ filters: { status: "all", q: "" } });
   const { status, q: debouncedSearch } = query.values;
@@ -189,6 +200,12 @@ export default function AdminRawReviewsPage() {
         }
       />
 
+      {processingPaused && (
+        <p className="text-warning text-xs">
+          {PROCESSING_PAUSED_MESSAGE} Summarize transcript is unavailable until it is lifted.
+        </p>
+      )}
+
       <div className="border-line bg-surface flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center">
         <div className="relative flex-1 sm:max-w-xs">
           <Search className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -276,7 +293,7 @@ export default function AdminRawReviewsPage() {
                               backend 400s on the rest, so the control is
                               disabled ahead of the error rather than after. */}
                           <DropdownMenuItem
-                            disabled={r.status !== "matched"}
+                            disabled={r.status !== "matched" || processingPaused}
                             onClick={() => setSummarizeTarget(r)}
                           >
                             <Wand2 />

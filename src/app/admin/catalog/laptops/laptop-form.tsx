@@ -163,15 +163,24 @@ export function LaptopForm({
 
     setSaving(true);
     try {
-      if (mode === "create") {
-        const created = await createLaptop(token, payload);
-        toast.success(`Created ${created.product_name}.`);
-      } else if (laptop) {
-        const updated = await updateLaptop(token, laptop.id, {
-          ...payload,
-          ...(priceConfirmed && { price_confirmed: true }),
-        });
-        toast.success(`Updated ${updated.product_name}.`);
+      const saved =
+        mode === "create"
+          ? await createLaptop(token, payload)
+          : laptop
+            ? await updateLaptop(token, laptop.id, {
+                ...payload,
+                ...(priceConfirmed && { price_confirmed: true }),
+              })
+            : null;
+      if (saved) {
+        const verb = mode === "create" ? "Created" : "Updated";
+        // Same rule as the list's inline status: an unpriced laptop is kept
+        // out of `active` by the backend, so say so instead of implying it.
+        if (payload.status === "active" && saved.status !== "active" && saved.price_rm <= 0) {
+          toast.warning(`${verb} ${saved.product_name}, but it has no price, so it stays ${saved.status}.`);
+        } else {
+          toast.success(`${verb} ${saved.product_name}.`);
+        }
       }
       setSaved(true);
       router.push(LIST_HREF);

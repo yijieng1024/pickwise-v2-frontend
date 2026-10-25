@@ -16,7 +16,10 @@ export default async function AdminEditLaptopPage({
 
   let laptop: BackendLaptop;
   try {
-    laptop = await apiFetch<BackendLaptop>(`/laptops/${id}`);
+    // Never cached: apiFetch's default (revalidate 60) applies on the server,
+    // so a reopened edit page showed the values from before the last save,
+    // and saving again wrote them back.
+    laptop = await apiFetch<BackendLaptop>(`/laptops/${id}`, { next: { revalidate: 0 } });
   } catch (err) {
     // 404 = well-formed id, no such laptop. 422 = backend's UUID path-param
     // validation rejecting a malformed id. Both mean "no laptop here".

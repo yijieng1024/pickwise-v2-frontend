@@ -120,7 +120,7 @@ export default function AdminCatalogFamiliesPage() {
   );
 
   useEffect(() => {
-    apiFetch<BackendBrand[]>("/brands")
+    apiFetch<BackendBrand[]>("/brands", { next: { revalidate: 0 } })
       .then(setBrands)
       .catch(() => toast.error("Failed to load brands."));
   }, []);

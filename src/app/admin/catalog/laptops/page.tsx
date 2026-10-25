@@ -145,7 +145,7 @@ export default function AdminCatalogLaptopsPage() {
   );
 
   useEffect(() => {
-    apiFetch<BackendBrand[]>("/brands")
+    apiFetch<BackendBrand[]>("/brands", { next: { revalidate: 0 } })
       .then((rawBrands) => setBrands(new Map(rawBrands.map((b) => [b.id, b]))))
       .catch(() => toast.error("Failed to load brands."));
   }, []);
@@ -221,8 +221,20 @@ export default function AdminCatalogLaptopsPage() {
       prev?.map((l) => (l.id === laptop.id ? { ...l, status: next } : l)) ?? prev,
     );
     try {
-      await updateLaptop(token, laptop.id, { status: next });
-      toast.success(`${laptop.product_name} is now ${next}.`);
+      // The server's status, not the one asked for: the backend keeps an
+      // unpriced laptop out of `active` (a mapper event demotes it to
+      // inactive, ADR-0009), so the request can succeed with another status.
+      const updated = await updateLaptop(token, laptop.id, { status: next });
+      setLaptops((prev) => prev?.map((l) => (l.id === laptop.id ? updated : l)) ?? prev);
+      if (updated.status === next) {
+        toast.success(`${laptop.product_name} is now ${next}.`);
+      } else if (next === "active" && updated.price_rm <= 0) {
+        toast.warning(
+          `${laptop.product_name} has no price, so it stays ${updated.status}. Add a price before making it active.`,
+        );
+      } else {
+        toast.warning(`${laptop.product_name} stayed ${updated.status}.`);
+      }
       // A row that no longer matches the active status filter has to leave the
       // page, and `total` has to follow it — only a refetch gets both right.
       if (status !== "all") setReloadTick((t) => t + 1);
@@ -412,8 +424,9 @@ export default function AdminCatalogLaptopsPage() {
             <AlertDialogTitle>Delete laptop?</AlertDialogTitle>
             <AlertDialogDescription>
               This permanently removes {target?.product_name} from the catalog, along with its
-              embedding, price history and PickScores. This can&apos;t be undone — set the status
-              to Inactive instead to pull it from search and public browse while keeping the data.
+              embedding, price history and PickScores. This can&apos;t be undone. To retire a laptop
+              that is no longer sold, set it to Suspended instead: it leaves search and public
+              browse, and its data and reviews are kept.
             </AlertDialogDescription>
           </AlertDialogHeader>
 
@@ -431,10 +444,12 @@ export default function AdminCatalogLaptopsPage() {
                   const laptop = target;
                   setTarget(null);
                   setDeleteBlocked(null);
-                  await changeStatus(laptop, "inactive");
+                  // Suspended, not inactive: inactive is the awaiting-a-price
+                  // queue, suspended the retired archive (ADR-0009).
+                  await changeStatus(laptop, "suspended");
                 }}
               >
-                Set to Inactive
+                Set to Suspended
               </AlertDialogAction>
             ) : (
               <AlertDialogAction

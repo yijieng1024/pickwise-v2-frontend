@@ -133,9 +133,13 @@ export interface PipelineStatus {
      */
     irrelevant_ratio: number;
   };
-  process: { candidates: number };
+  /** `paused` = REVIEW_PROCESSING_PAUSED: both processing calls 409 while it is set. */
+  process: { candidates: number; paused: boolean };
   aggregate: { pending_total: number; new: number; stale: number };
 }
+
+/** The line shown beside a processing button that is disabled by the pause. */
+export const PROCESSING_PAUSED_MESSAGE = "Processing is paused (Review C accuracy check).";
 
 export function getPipelineStatus(token: string): Promise<PipelineStatus> {
   return apiFetch<PipelineStatus>("/reviews/pipeline-status", {

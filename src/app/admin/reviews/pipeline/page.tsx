@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import {
+  PROCESSING_PAUSED_MESSAGE,
   type IngestBulkResult,
   type PendingSummary,
   type PipelineStatus,
@@ -264,6 +265,7 @@ function ProcessSection({
 
   const batch = Math.min(Math.max(Number(limit) || 1, 1), PROCESS_MAX);
   const candidates = status?.process.candidates;
+  const paused = status?.process.paused === true;
 
   return (
     <SectionCard
@@ -284,13 +286,15 @@ function ProcessSection({
         </label>
         <Button
           onClick={run}
-          disabled={running || candidates === 0}
+          disabled={running || paused || candidates === 0}
           className="mb-0.5"
         >
           {running ? <Spinner data-icon="inline-start" /> : <PlayCircle data-icon="inline-start" />}
           {running ? "Processing…" : "Run processing"}
         </Button>
       </div>
+
+      {paused && <p className="text-warning text-xs">{PROCESSING_PAUSED_MESSAGE}</p>}
 
       {candidates !== undefined && (
         <p className="text-muted-foreground text-xs">
