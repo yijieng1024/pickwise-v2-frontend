@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 
 import { GlassSurface } from "@/components/glass-surface";
-import { PickScoreRing } from "@/components/pick-score-ring";
+import { PickScorePopover } from "@/components/pick-score-popover";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -58,7 +58,7 @@ import {
   renameConversation,
   streamAgentChat,
 } from "@/lib/api/agent";
-import { calculatePersonalScoreBatch } from "@/lib/api/pickscore";
+import { type PersonalPickScore, calculatePersonalScoreBatch } from "@/lib/api/pickscore";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
@@ -376,21 +376,24 @@ function formatPrice(price: number | null) {
 }
 
 /** Compact shortlist tile fed by real agent data (name, price, PickScore).
- * When `personalScore` is set, the ring shows it instead of the stored
- * general-mode score, marked with a small person badge. */
+ * The ring opens the breakdown: the user's personalized one when `personal`
+ * is set (marked with a person badge), else the General Use one -- the
+ * profile the agent scores with in general mode. */
 function ResultCard({
   laptop,
-  personalScore,
+  personal,
 }: {
   laptop: AgentLaptopCard;
-  personalScore?: number;
+  personal?: PersonalPickScore;
 }) {
-  const ringScore = personalScore ?? laptop.pick_score;
   return (
-    <Link
-      href={`/laptops/${laptop.laptop_id}`}
-      className="group border-line bg-surface-2 flex items-center gap-3.5 rounded-2xl border px-4 py-3 transition-all duration-300 hover:shadow-lg motion-safe:hover:scale-[1.02]"
-    >
+    <div className="group border-line bg-surface-2 relative flex items-center gap-3.5 rounded-2xl border px-4 py-3 transition-all duration-300 hover:shadow-lg motion-safe:hover:scale-[1.02]">
+      {/* Stretched link, so the score popover can sit above it */}
+      <Link
+        href={`/laptops/${laptop.laptop_id}`}
+        aria-label={`View details for ${laptop.product_name}`}
+        className="absolute inset-0 z-10 rounded-2xl"
+      />
       {laptop.image_url && (
         <div className="flex h-11 w-14 flex-none items-center justify-center overflow-hidden rounded-lg bg-white">
           <Image
@@ -402,23 +405,15 @@ function ResultCard({
           />
         </div>
       )}
-      {ringScore != null && (
-        <span
-          className="relative flex-none"
-          title={
-            personalScore != null
-              ? "Personalized PickScore — weighted from your Needs Wizard answers"
-              : undefined
-          }
-        >
-          <PickScoreRing score={ringScore} size={42} caption="none" />
-          {personalScore != null && (
-            <span className="bg-brand absolute -right-1 -bottom-1 flex size-4 items-center justify-center rounded-full text-white">
-              <UserRound className="size-2.5" />
-            </span>
-          )}
-        </span>
-      )}
+      <span className="relative z-20 flex-none">
+        <PickScorePopover
+          laptopId={laptop.laptop_id}
+          score={personal ? personal.score : laptop.pick_score}
+          useCase="general_use"
+          personal={personal}
+          ringSize={42}
+        />
+      </span>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="truncate text-[13px] font-semibold">
           {laptop.product_name}
@@ -441,7 +436,7 @@ function ResultCard({
       <span className="text-brand text-[11px] font-semibold opacity-0 transition-opacity group-hover:opacity-100">
         →
       </span>
-    </Link>
+    </div>
   );
 }
 
@@ -453,9 +448,10 @@ export default function ChatPage() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [laptops, setLaptops] = useState<AgentLaptopCard[]>([]);
-  // laptop_id -> personalized PickScore, overlaying the stored general-mode
-  // scores. null = personalization off (guest / no wizard prefs / failed).
-  const [personalScores, setPersonalScores] = useState<Record<string, number> | null>(null);
+  // laptop_id -> personalized PickScore (with its breakdown), overlaying the
+  // general-mode scores. null = personalization off (guest / no wizard
+  // prefs / failed).
+  const [personalScores, setPersonalScores] = useState<Record<string, PersonalPickScore> | null>(null);
   const [threadLoading, setThreadLoading] = useState(false);
 
   const [input, setInput] = useState("");
@@ -484,9 +480,9 @@ export default function ChatPage() {
     )
       .then((res) => {
         if (seq !== personalizeSeq.current) return;
-        const map: Record<string, number> = {};
+        const map: Record<string, PersonalPickScore> = {};
         for (const r of res.results) {
-          if (r.mode === "personalized") map[r.product_id] = r.score;
+          if (r.mode === "personalized") map[r.product_id] = r;
         }
         setPersonalScores(Object.keys(map).length > 0 ? map : null);
       })
@@ -753,7 +749,7 @@ export default function ChatPage() {
         <ResultCard
           key={l.laptop_id}
           laptop={l}
-          personalScore={personalScores?.[l.laptop_id]}
+          personal={personalScores?.[l.laptop_id]}
         />
       ))}
     </>

@@ -1,9 +1,3 @@
-export interface XaiFactor {
-  name: string;
-  /** Point contribution toward the PickScore; positive or negative. */
-  value: number;
-}
-
 export interface Benchmark {
   label: string;
   sub: string;
@@ -28,12 +22,8 @@ export interface Laptop {
   specs: { cpu: string; ram: string; display?: string; gpu?: string };
   /** Short feature/category chips shown on cards and the details page */
   tags: string[];
-  plainEnglish: { icon: string; text: string }[];
   /** Performance, Portability, Battery, Display, Build Quality, Thermals (0–100) */
   radar: [number, number, number, number, number, number];
-  /** 8-factor PickScore breakdown shown in the XAI popover */
-  xaiFactors: XaiFactor[];
-  match: string;
   community?: { battery: string; cinebench: string; users: number };
   accessories?: { name: string; price: string; icon: string }[];
   benchmarks?: Benchmark[];

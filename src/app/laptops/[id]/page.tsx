@@ -26,7 +26,7 @@ import { ShareButton } from "@/components/share-button";
 import { compareHref } from "@/lib/compare";
 import { apiFetch, ApiError } from "@/lib/api/client";
 import { mapBackendLaptop } from "@/lib/api/adapters";
-import { getLaptopPickScores, labelForUseCase } from "@/lib/api/pickscore";
+import { bestFit, getLaptopPickScores, labelForUseCase } from "@/lib/api/pickscore";
 import { getLaptopReviews } from "@/lib/api/reviews";
 import type {
   BackendBrand,
@@ -100,12 +100,10 @@ export default async function LaptopDetailsPage({
     { label: "Search on Lazada", href: raw.lazada_search_url, className: "bg-[#0f146d] text-white" },
   ].filter((l): l is { label: string; href: string; className: string } => Boolean(l.href));
 
-  // Hero summary data: best-fit use case (highest general-mode score — also
-  // the hero ring's fallback until the personal score resolves) and the
-  // quick-facts grid built from the raw spec sheet.
-  const bestFit = pickScores?.scores.length
-    ? [...pickScores.scores].sort((a, b) => b.score - a.score)[0]
-    : undefined;
+  // Hero summary data: best-fit use case (highest general-mode score, never
+  // Gaming on macOS — also the hero ring's fallback until the personal score
+  // resolves) and the quick-facts grid built from the raw spec sheet.
+  const best = bestFit(pickScores?.scores, raw.os);
 
   const storageLabel =
     raw.ssd_gb >= 1024
@@ -188,10 +186,10 @@ export default async function LaptopDetailsPage({
                     {laptop.tags[0]}
                   </span>
                 )}
-                {bestFit && (
+                {best && (
                   <span className="bg-brand-tint text-brand flex items-center gap-1 rounded-full px-2.5 py-1 text-[10.5px] font-semibold">
                     <Sparkles className="size-3" />
-                    Best fit: {labelForUseCase(bestFit.use_case)}
+                    Best fit: {labelForUseCase(best.use_case)}
                   </span>
                 )}
               </div>
@@ -199,10 +197,10 @@ export default async function LaptopDetailsPage({
                 {laptop.name}
               </h1>
             </div>
-            {bestFit && (
+            {best && (
               <PersonalPickScoreRing
                 laptopId={laptop.id}
-                fallbackScore={bestFit.score}
+                fallbackScore={best.score}
                 size={64}
                 caption="below"
                 className="flex-none"
@@ -306,7 +304,7 @@ export default async function LaptopDetailsPage({
       <div className="grid grid-cols-1 gap-6 md:grid-cols-6">
         {/* PickScore per use case (hidden until scores are generated) */}
         {pickScores && pickScores.scores.length > 0 && (
-          <PickScoreCard laptopId={laptop.id} scores={pickScores.scores} />
+          <PickScoreCard laptopId={laptop.id} scores={pickScores.scores} os={raw.os} />
         )}
 
         {/* Full specs */}

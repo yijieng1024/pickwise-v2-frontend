@@ -1,40 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  BadgeCheck,
-  Battery,
-  Cpu,
-  Feather,
-  HardDrive,
-  Monitor,
-  Sparkles,
-  UserRound,
-  Wallet,
-  Zap,
-} from "lucide-react";
+import { Info, Sparkles, UserRound } from "lucide-react";
 
+import { FACTOR_META, PickScoreBreakdown } from "@/components/pick-score-breakdown";
 import { PickScoreRing } from "@/components/pick-score-ring";
 import { Progress } from "@/components/ui/progress";
 import {
   type UseCasePickScore,
   USE_CASES,
+  bestFit,
   calculatePersonalScore,
+  isMacOS,
   labelForUseCase,
 } from "@/lib/api/pickscore";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
-
-const factorMeta: Record<string, { label: string; icon: typeof Cpu }> = {
-  price: { label: "Price", icon: Wallet },
-  cpu: { label: "CPU", icon: Cpu },
-  gpu: { label: "GPU", icon: Zap },
-  ram_storage: { label: "RAM & Storage", icon: HardDrive },
-  portability: { label: "Portability", icon: Feather },
-  battery: { label: "Battery", icon: Battery },
-  screen_size: { label: "Screen size", icon: Monitor },
-  brand: { label: "Brand", icon: BadgeCheck },
-};
 
 /** Sentinel slug for the personalized tab — never collides with backend use cases. */
 const PERSONAL = "personal";
@@ -48,13 +29,17 @@ const PERSONAL = "personal";
  * "For you" tab: a live POST /laptops/calculate-score with their own
  * factor weights, budget ceiling, and brand/screen preferences. It's
  * auto-selected once loaded so the wizard visibly changes the product.
+ * Otherwise it opens on the best-fit tab, the same one the hero ring shows.
  */
 export function PickScoreCard({
   laptopId,
   scores,
+  os,
 }: {
   laptopId: string;
   scores: UseCasePickScore[];
+  /** The laptop's OS: a macOS laptop is never a Gaming best fit. */
+  os: string | null;
 }) {
   const { user, token, hasPreferences } = useAuth();
   // Keep the backend's known display order; unknown slugs go last.
@@ -64,7 +49,9 @@ export function PickScoreCard({
     const ib = order.indexOf(b.use_case);
     return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
   });
-  const [selected, setSelected] = useState(ordered[0]?.use_case ?? "");
+  const generalBest = bestFit(ordered, os);
+  const initialTab = generalBest?.use_case ?? ordered[0]?.use_case ?? "";
+  const [selected, setSelected] = useState(initialTab);
   const [personal, setPersonal] = useState<UseCasePickScore | null>(null);
   const [personalFailed, setPersonalFailed] = useState(false);
 
@@ -75,7 +62,7 @@ export function PickScoreCard({
     setPrevUser(user);
     if (!user) {
       setPersonal(null);
-      if (selected === PERSONAL) setSelected(ordered[0]?.use_case ?? "");
+      if (selected === PERSONAL) setSelected(initialTab);
     }
   }
 
@@ -119,16 +106,17 @@ export function PickScoreCard({
     slug === PERSONAL ? "For you" : labelForUseCase(slug);
   const isPersonal = current.use_case === PERSONAL;
 
-  const factors = [...current.breakdown].sort(
-    (a, b) => b.contribution - a.contribution,
-  );
-  const gpuProxied = Boolean(current.flags?.gpu_score_is_proxy);
-  // Includes the personal score when present — "Best fit: For you" means the
-  // user's own weighting beats every generic use-case profile.
-  const best = [...tabs].sort((a, b) => b.score - a.score)[0];
-  const topFactors = factors.slice(0, 3).map(
-    (f) => factorMeta[f.factor]?.label ?? f.factor,
-  );
+  const topFactors = [...current.breakdown]
+    .sort((a, b) => b.contribution - a.contribution)
+    .slice(0, 3)
+    .map((f) => FACTOR_META[f.factor]?.label ?? f.factor);
+  // "Best fit: For you" when the user's own weighting beats every generic
+  // use-case profile; otherwise the macOS-aware general best fit.
+  const best =
+    personal?.score != null && personal.score > (generalBest?.score ?? -1)
+      ? { use_case: PERSONAL, score: personal.score }
+      : generalBest;
+  const macGaming = current.use_case === "gaming" && isMacOS(os);
 
   return (
     <section className="border-line bg-surface rounded-3xl border p-7 md:col-span-6">
@@ -147,7 +135,9 @@ export function PickScoreCard({
 
       {/* Screen-reader summary of the selected breakdown */}
       <p className="sr-only" aria-live="polite">
-        PickScore {current.score} out of 100 for {tabLabel(current.use_case)}.
+        {current.score === null
+          ? `No PickScore for ${tabLabel(current.use_case)}.`
+          : `PickScore ${current.score} out of 100 for ${tabLabel(current.use_case)}.`}
         Top contributing factors: {topFactors.join(", ")}.
       </p>
 
@@ -180,7 +170,7 @@ export function PickScoreCard({
                     : "bg-surface text-muted-foreground",
                 )}
               >
-                {s.score}
+                {s.score ?? "–"}
               </span>
             </button>
           );
@@ -202,7 +192,13 @@ export function PickScoreCard({
       <div className="flex flex-col gap-8 sm:flex-row sm:items-start">
         {/* Hero: ring + best-fit insight */}
         <div className="flex flex-none flex-col items-center gap-3 sm:w-40 sm:pt-1">
-          <PickScoreRing score={current.score} size={124} caption="inside" />
+          {current.score === null ? (
+            <span className="border-line flex size-[124px] items-center justify-center rounded-full border-2 border-dashed text-center text-[11.5px] font-semibold text-muted-foreground">
+              No score
+            </span>
+          ) : (
+            <PickScoreRing score={current.score} size={124} caption="inside" />
+          )}
           <span className="text-[11.5px] font-medium text-muted-foreground">
             {tabLabel(current.use_case)}
           </span>
@@ -216,56 +212,22 @@ export function PickScoreCard({
 
         {/* 8-factor breakdown — bars restagger on each tab switch */}
         <div key={current.use_case} className="flex min-w-0 flex-1 flex-col gap-3">
-          {factors.map((f, i) => {
-            const meta = factorMeta[f.factor];
-            const Icon = meta?.icon ?? Cpu;
-            return (
-              <div
-                key={f.factor}
-                className="flex items-center gap-3 motion-safe:animate-fade-in-up"
-                style={{ animationDelay: `${i * 40}ms` }}
-              >
-                <span className="flex w-36 flex-none items-center gap-2 text-[12px] font-medium">
-                  <Icon className="text-brand size-3.5 flex-none" />
-                  <span className="truncate">
-                    {meta?.label ?? f.factor}
-                    {f.factor === "gpu" && gpuProxied && (
-                      <span className="text-muted-foreground"> *</span>
-                    )}
-                  </span>
-                  {i === 0 && (
-                    <span className="bg-brand-tint text-brand hidden rounded-md px-1.5 py-0.5 text-[9.5px] font-semibold tracking-wide uppercase lg:inline">
-                      Top driver
-                    </span>
-                  )}
-                </span>
-                <div className="bg-surface-2 h-2.5 min-w-0 flex-1 overflow-hidden rounded-full">
-                  <div
-                    className={cn(
-                      "h-full rounded-full",
-                      i === 0 ? "bg-brand" : "bg-brand/70",
-                    )}
-                    style={{ width: `${Math.max(2, Math.min(100, f.raw_score))}%` }}
-                  />
-                </div>
-                <span className="flex w-24 flex-none flex-col items-end leading-tight">
-                  <span className="text-[12.5px] font-semibold tabular-nums">
-                    {Math.round(f.raw_score)}
-                    <span className="text-muted-foreground font-normal">/100</span>
-                  </span>
-                  <span className="text-[10.5px] text-muted-foreground tabular-nums">
-                    {Math.round(f.weight * 100)}% weight
-                  </span>
-                </span>
-              </div>
-            );
-          })}
+          {macGaming && (
+            <p className="bg-surface-2 flex items-start gap-2 rounded-xl px-3 py-2 text-[12px] leading-snug">
+              <Info className="mt-0.5 size-3.5 flex-none text-muted-foreground" />
+              This score reflects the hardware only. Many games don&apos;t run
+              on macOS, so check that yours do before buying for gaming.
+            </p>
+          )}
+          <PickScoreBreakdown
+            breakdown={current.breakdown}
+            flags={current.flags}
+            mode={isPersonal ? "personalized" : "general"}
+          />
           <p className="mt-1.5 text-[10.5px] leading-relaxed text-muted-foreground">
             {isPersonal
-              ? "Bars show each factor's 0-100 score; the weights come from your Needs Wizard answers, and price scores against your own budget. Sorted by contribution."
-              : "Bars show each factor's 0-100 score; the weight is how much it counts toward this use case. Sorted by contribution."}
-            {gpuProxied &&
-              " * Apple silicon has no separate GPU benchmark, so GPU is scored via the CPU as a proxy."}
+              ? "Each factor is scored 0-100 against the PickWise catalogue; the weights come from your Needs Wizard answers, and price scores against your own budget. Sorted by contribution."
+              : "Each factor is scored 0-100 against the PickWise catalogue; the weight is how much it counts toward this use case. Sorted by contribution."}
           </p>
         </div>
       </div>

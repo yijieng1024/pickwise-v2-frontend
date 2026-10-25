@@ -112,7 +112,6 @@ export default function SavedPage() {
     >
       <LaptopCard
         laptop={laptop}
-        showScore={false}
         layout={view === "list" ? "list" : "grid"}
       />
       {/* Above the card's stretched link (z-10) so it doesn't navigate */}

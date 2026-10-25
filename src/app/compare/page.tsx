@@ -82,7 +82,7 @@ export default async function ComparePage({
         // Best-fit use case, the same baseline the details page's hero ring
         // uses. Signed-in users with wizard preferences get this replaced by
         // their personalized score client-side, exactly as that ring does.
-        score: bestFitSnapshot(scores?.scores),
+        score: bestFitSnapshot(scores?.scores, raw.os),
       },
     ];
   });

@@ -11,7 +11,7 @@ import { LaptopCard } from "@/components/laptop-card";
 import { Omnibar } from "@/components/omnibar";
 import { Button } from "@/components/ui/button";
 import { mapRankedLaptop } from "@/lib/api/adapters";
-import { getPickScoreRanking, USE_CASES } from "@/lib/api/pickscore";
+import { type UseCaseSlug, getPickScoreRanking, USE_CASES } from "@/lib/api/pickscore";
 import type { Laptop } from "@/lib/laptops";
 import { cn } from "@/lib/utils";
 
@@ -44,7 +44,7 @@ export default async function Home() {
     USE_CASES.map((uc) => getPickScoreRanking(uc.slug, TOP_N)),
   );
   const topPicksByUseCase: {
-    slug: string;
+    slug: UseCaseSlug;
     label: string;
     laptops: Laptop[] | null;
   }[] = USE_CASES.map((uc, i) => {
@@ -118,7 +118,7 @@ export default async function Home() {
                     className="motion-safe:animate-fade-in-up"
                     style={{ animationDelay: `${i * 80}ms` }}
                   >
-                    <LaptopCard laptop={laptop} showScore="ring" />
+                    <LaptopCard laptop={laptop} scoreUseCase={slug} />
                   </div>
                 ))}
               </div>

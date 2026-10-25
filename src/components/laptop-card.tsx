@@ -5,11 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Cpu, Monitor, RectangleEllipsis, Zap } from "lucide-react";
 
-import { DataIcon } from "@/components/icon-map";
-import { PickScoreRing } from "@/components/pick-score-ring";
-import { XaiPopover } from "@/components/xai-popover";
+import { PickScorePopover } from "@/components/pick-score-popover";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import type { UseCaseSlug } from "@/lib/api/pickscore";
 import type { Laptop } from "@/lib/laptops";
 import { cn } from "@/lib/utils";
 import { Carousel, CarouselContent, CarouselDots, CarouselItem } from "./ui/carousel";
@@ -24,13 +23,11 @@ const specIcons: Record<string, typeof Cpu> = {
 interface LaptopCardProps {
   laptop: Laptop;
   /**
-   * true  — rich mode: PickScore ring + XAI popover + plain-English highlights.
-   * "ring" — the score ring alone, for rows that carry a real score but no
-   *          factor breakdown (the home page's ranked Top 5, whose endpoint
-   *          returns score without xaiFactors/plainEnglish).
-   * false — no score at all, for generic listings.
+   * Set when `laptop.score` is a real stored score for this use case: shows
+   * the ring, which opens that use case's breakdown. Omit for generic
+   * listings, whose `score` is a placeholder.
    */
-  showScore?: boolean | "ring";
+  scoreUseCase?: UseCaseSlug;
   /** "grid" (default): vertical card. "list": horizontal row — image left, content right. */
   layout?: "grid" | "list";
   /** Providing this shows the compare checkbox, in either score mode. */
@@ -57,7 +54,7 @@ const IMAGE_SIZES = {
 
 export function LaptopCard({
   laptop,
-  showScore = true,
+  scoreUseCase,
   layout = "grid",
   compareChecked,
   onCompareChange,
@@ -124,42 +121,20 @@ export function LaptopCard({
               {laptop.tags[0]}
             </Badge>
           )}
-          {showScore === "ring" ? (
-            <div className="-mt-1">
-              <PickScoreRing score={laptop.score} size={44} />
-            </div>
-          ) : showScore ? (
+          {scoreUseCase && (
             <div className="relative z-20 -mt-1">
-              <XaiPopover
+              <PickScorePopover
+                laptopId={laptop.id}
                 score={laptop.score}
-                match={laptop.match}
-                factors={laptop.xaiFactors}
-                ringSize={44}
+                useCase={scoreUseCase}
               />
             </div>
-          ) : null}
+          )}
         </div>
 
         <h3 className="text-[17px] font-semibold tracking-tight">
           {laptop.name}
         </h3>
-
-        {showScore === true && (
-          <div className="bg-surface-2 flex flex-col gap-2 rounded-2xl p-3">
-            {laptop.plainEnglish.slice(0, 3).map((pe) => (
-              <div
-                key={pe.text}
-                className="flex items-start gap-2.5 text-[13px] leading-snug"
-              >
-                <DataIcon
-                  name={pe.icon}
-                  className="text-brand mt-0.5 size-3.5 shrink-0"
-                />
-                {pe.text}
-              </div>
-            ))}
-          </div>
-        )}
 
         <div className="flex flex-wrap gap-1.5">
           {specEntries.map(([key, value]) => {

@@ -14,6 +14,31 @@ export type UseCaseSlug = (typeof USE_CASES)[number]["slug"];
 export const labelForUseCase = (slug: string) =>
   USE_CASES.find((u) => u.slug === slug)?.label ?? slug;
 
+/** From the laptop's `os` field ("macOS" on every Apple row). */
+export const isMacOS = (os: string | null | undefined) =>
+  Boolean(os?.toLowerCase().startsWith("macos"));
+
+/**
+ * The use case a laptop scores highest on. Withheld (null) scores never win,
+ * ties go to display order, and a macOS laptop is never a "Gaming" best fit:
+ * its gaming score measures the hardware, but many games don't run on macOS.
+ */
+export function bestFit<T extends { use_case: string; score: number | null }>(
+  scores: T[] | undefined,
+  os: string | null | undefined,
+): (T & { score: number }) | undefined {
+  const order = USE_CASES.map((u) => u.slug as string);
+  const rank = (s: T) => {
+    const i = order.indexOf(s.use_case);
+    return i === -1 ? order.length : i;
+  };
+  return (scores ?? [])
+    .filter((s): s is T & { score: number } =>
+      s.score !== null && !(isMacOS(os) && s.use_case === "gaming"),
+    )
+    .sort((a, b) => b.score - a.score || rank(a) - rank(b))[0];
+}
+
 /** One factor of the deterministic 8-factor breakdown. */
 export interface PickScoreFactor {
   factor: string;
@@ -28,7 +53,8 @@ export interface PickScoreFactor {
 
 export interface UseCasePickScore {
   use_case: string;
-  score: number;
+  /** null = withheld: neither the CPU nor the GPU could be identified. */
+  score: number | null;
   breakdown: PickScoreFactor[];
   flags: Record<string, unknown>;
   updated_at: string;
@@ -57,7 +83,8 @@ export interface UseCaseRankingResponse {
 
 export interface PersonalPickScore {
   product_id: string;
-  score: number;
+  /** null = withheld (flags.score_withheld). */
+  score: number | null;
   /** "personalized" when a wizard preference row was found, else "general". */
   mode: string;
   breakdown: PickScoreFactor[];
@@ -65,8 +92,9 @@ export interface PersonalPickScore {
 }
 
 /** Precomputed general-mode PickScores of one laptop (all five use cases). */
-export function getLaptopPickScores(laptopId: string) {
-  return apiFetch<LaptopPickScoresResponse>(`/laptops/${laptopId}/pick-scores`);
+export function getLaptopPickScores(laptopId: string, useCase?: UseCaseSlug) {
+  const query = useCase ? `?use_case=${useCase}` : "";
+  return apiFetch<LaptopPickScoresResponse>(`/laptops/${laptopId}/pick-scores${query}`);
 }
 
 /**

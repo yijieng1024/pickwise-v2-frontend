@@ -93,7 +93,8 @@ function usePersonalScores(ids: string[]): Record<string, ScoreSnapshot> | null 
         for (const result of res.results) {
           // Only when the backend confirms it actually personalized — a
           // "general" result here means no preference row was found.
-          if (result.mode === "personalized") {
+          // A withheld personal score keeps the best-fit snapshot (also withheld).
+          if (result.mode === "personalized" && result.score !== null) {
             map[result.product_id] = {
               score: result.score,
               breakdown: result.breakdown,
@@ -281,7 +282,7 @@ export function CompareView({
                 {effective.map((laptop) => (
                   <div key={laptop.id} className="flex items-center gap-2.5 px-2">
                     {laptop.score === null ? (
-                      <span className="text-[13px] text-muted-foreground">Not scored yet</span>
+                      <span className="text-[13px] text-muted-foreground">No PickScore</span>
                     ) : (
                       <>
                         <PickScoreRing score={laptop.score.score} size={40} caption="none" />

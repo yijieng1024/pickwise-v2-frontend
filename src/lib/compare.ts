@@ -7,7 +7,7 @@
  * or a client module (see the note on client-module imports in CLAUDE.md).
  */
 
-import type { PickScoreFactor, UseCasePickScore } from "@/lib/api/pickscore";
+import { type PickScoreFactor, type UseCasePickScore, bestFit } from "@/lib/api/pickscore";
 import type { BackendLaptop } from "@/lib/api/types";
 
 /**
@@ -64,12 +64,16 @@ export interface CompareLaptop extends ScoredLaptop {
  * page's hero ring: the highest-scoring of the five use cases, not
  * `general_use`. A laptop that scores 78 for gaming and 53 generally is a
  * gaming laptop, and showing 53 in both places would make the two pages
- * disagree about the same machine.
+ * disagree about the same machine. Same rule as the details page (bestFit):
+ * withheld scores never win and macOS is never a Gaming best fit. null when
+ * nothing is scored (no rows, or every score withheld).
  */
-export function bestFitSnapshot(scores: UseCasePickScore[] | undefined): ScoreSnapshot | null {
-  if (!scores?.length) return null;
-  const best = [...scores].sort((a, b) => b.score - a.score)[0];
-  return { score: best.score, breakdown: best.breakdown, label: best.use_case };
+export function bestFitSnapshot(
+  scores: UseCasePickScore[] | undefined,
+  os: string | null,
+): ScoreSnapshot | null {
+  const best = bestFit(scores, os);
+  return best ? { score: best.score, breakdown: best.breakdown, label: best.use_case } : null;
 }
 
 export interface CompareCell {

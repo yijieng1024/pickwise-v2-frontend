@@ -256,7 +256,6 @@ export function LaptopsBrowse({
             >
               <LaptopCard
                 laptop={laptop}
-                showScore={false}
                 layout={view}
                 compareChecked={selectedIds.has(laptop.id)}
                 compareDisabled={compareFull && !selectedIds.has(laptop.id)}

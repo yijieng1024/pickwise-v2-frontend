@@ -10,10 +10,9 @@ const FALLBACK_IMAGE =
 /**
  * Maps the backend's raw spec-sheet `LaptopRead` onto the frontend's `Laptop` shape.
  *
- * Several `Laptop` fields (score, radar, xaiFactors, match, benchmarks, badge, tags,
- * plainEnglish) have no backend source yet — see the "Backend integration decisions" memory.
+ * Several `Laptop` fields (score, radar, benchmarks, badge, tags) have no backend source yet — see the "Backend integration decisions" memory.
  * They're filled with empty/neutral placeholders here, which is only safe for call sites that
- * don't render them (e.g. the /laptops browse page uses showScore={false}). Do not reuse this
+ * don't render them (e.g. the /laptops browse page passes no scoreUseCase). Do not reuse this
  * adapter for a view that renders those fields without revisiting the placeholders first.
  */
 export function mapBackendLaptop(
@@ -39,18 +38,15 @@ export function mapBackendLaptop(
       gpu: raw.gpu_model,
     },
     tags: [],
-    plainEnglish: [],
     radar: [0, 0, 0, 0, 0, 0],
-    xaiFactors: [],
-    match: "",
   };
 }
 
 /**
  * Maps a pick-scores ranking row onto `Laptop` for card rendering. The
  * ranking payload is a slim projection (no spec fields), so `specs` is empty
- * and the same placeholder caveats as `mapBackendLaptop` apply — card use
- * with showScore={false} only. `score` IS real here (the stored general-mode
+ * and the same placeholder caveats as `mapBackendLaptop` apply, except that
+ * `score` may be rendered (with scoreUseCase). `score` IS real here (the stored general-mode
  * PickScore for the ranked use case).
  */
 export function mapRankedLaptop(row: RankedLaptopPickScore): Laptop {
@@ -68,9 +64,6 @@ export function mapRankedLaptop(row: RankedLaptopPickScore): Laptop {
     badgeClass: "",
     specs: {} as Laptop["specs"],
     tags: [],
-    plainEnglish: [],
     radar: [0, 0, 0, 0, 0, 0],
-    xaiFactors: [],
-    match: "",
   };
 }
