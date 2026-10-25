@@ -152,8 +152,8 @@ export default function AdminCpuBenchmarksPage() {
     if (!token) return;
     setRescoring(true);
     try {
-      await generateAllPickScores(token);
-      toast.success("PickScores recalculated.");
+      const accepted = await generateAllPickScores(token);
+      toast.success(`${accepted.message} Follow it in Jobs.`);
       setScrapeStarted(false);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "Couldn't recalculate scores.");

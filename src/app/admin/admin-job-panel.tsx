@@ -3,7 +3,7 @@
 import { Loader2 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
-import { type Job, type JobAccepted, jobTypeLabel } from "@/lib/api/admin/jobs";
+import { type Job, type JobAccepted, jobResultSummary, jobTypeLabel } from "@/lib/api/admin/jobs";
 import { cn } from "@/lib/utils";
 
 import { OutcomeAlert, outcomeOf } from "./admin-outcome-alert";
@@ -149,7 +149,7 @@ export function AdminJobPanel({
           >
             {job.failed_count > 0
               ? "Failed items are retried automatically on the next run."
-              : null}
+              : jobResultSummary(job)}
           </OutcomeAlert>
         </div>
       )}

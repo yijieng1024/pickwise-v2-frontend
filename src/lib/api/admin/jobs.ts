@@ -153,8 +153,21 @@ const JOB_TYPE_LABELS: Record<string, string> = {
   "scraper.bulk_scrape": "Bulk scrape brand",
   "scraper.scrape_targets": "Scrape selected targets",
   "embeddings.generate_all": "Generate embeddings",
+  "pickscore.generate_all": "Recalculate PickScores",
 };
 
 export function jobTypeLabel(jobType: string): string {
   return JOB_TYPE_LABELS[jobType] ?? jobType;
+}
+
+/**
+ * One line from a finished job's `result`, for job types whose result says
+ * more than the succeeded/failed counts. Null for everything else.
+ */
+export function jobResultSummary(job: Pick<Job, "job_type" | "result">): string | null {
+  const r = job.result;
+  if (!r || job.job_type !== "pickscore.generate_all") return null;
+  if (r.written === false) return "Stopped before writing — the previous scores are unchanged.";
+  const rows = Number(r.rows_created ?? 0) + Number(r.rows_updated ?? 0);
+  return `${r.laptops_scored} scored, ${r.laptops_withheld} withheld, ${rows} rows written.`;
 }

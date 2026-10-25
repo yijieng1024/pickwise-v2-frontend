@@ -71,12 +71,13 @@ export function getCoverageHistory(token: string, days = 90): Promise<CoverageHi
 }
 
 /**
- * Recomputes every stored PickScore. Pure arithmetic (no AI, no external
- * service), so it is comparatively quick and safe to re-run — worth doing
- * after importing laptops or refreshing benchmarks.
+ * Recomputes every stored PickScore. Returns 202 with a job to poll (track it
+ * with `useJob`), and 409 with code `job_running` while one is already going.
+ * The write is all-or-nothing, so a failed or stopped run leaves the old
+ * scores in place.
  */
-export function generateAllPickScores(token: string): Promise<Record<string, unknown>> {
-  return apiFetch<Record<string, unknown>>("/laptops/pick-scores/generate-all", {
+export function generateAllPickScores(token: string): Promise<JobAccepted> {
+  return apiFetch<JobAccepted>("/laptops/pick-scores/generate-all", {
     method: "POST",
     token,
     next: { revalidate: 0 },

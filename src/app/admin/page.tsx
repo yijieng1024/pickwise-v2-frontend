@@ -18,9 +18,20 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
+import { useJob } from "@/lib/admin/use-job";
 import { getAgentRunStats } from "@/lib/api/admin/agent-monitoring";
 import { listCpuBenchmarks, listGpuBenchmarks } from "@/lib/api/admin/benchmarks";
 import { listBrands } from "@/lib/api/admin/brands";
@@ -39,6 +50,7 @@ import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
+import { AdminJobPanel } from "./admin-job-panel";
 import { AdminPageHeader } from "./admin-page-header";
 import { DashboardSkeleton } from "./dashboard-skeleton";
 
@@ -80,6 +92,9 @@ export default function AdminDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
   const [running, setRunning] = useState<"embed" | "score" | null>(null);
+  const [confirmScore, setConfirmScore] = useState(false);
+  // Reload on finish so the "PickScores calculated" meter shows the new run.
+  const scoreJob = useJob(token, () => setReloadTick((t) => t + 1));
 
   // Clear a prior error as soon as a retry is requested — "adjust state
   // during render", not an effect (see laptops-browse.tsx).
@@ -184,11 +199,16 @@ export default function AdminDashboardPage() {
     if (!token) return;
     setRunning("score");
     try {
-      await generateAllPickScores(token);
-      toast.success("PickScores recalculated.");
-      setReloadTick((t) => t + 1);
+      const accepted = await generateAllPickScores(token);
+      scoreJob.start(accepted);
+      toast.success(accepted.message);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Couldn't recalculate scores.");
+      // 409 `job_running`: one is already going — it is on the Jobs screen.
+      toast.error(err instanceof ApiError ? err.message : "Couldn't recalculate scores.",
+        err instanceof ApiError && err.code === "job_running"
+          ? { action: { label: "Open Jobs", onClick: () => window.location.assign("/admin/jobs") } }
+          : undefined,
+      );
     } finally {
       setRunning(null);
     }
@@ -435,18 +455,52 @@ export default function AdminDashboardPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={runPickScores}
-                      disabled={running !== null}
+                      onClick={() => setConfirmScore(true)}
+                      disabled={running !== null || scoreJob.isRunning}
                     >
-                      {running === "score" && <Spinner data-icon="inline-start" />}
+                      {(running === "score" || scoreJob.isRunning) && (
+                        <Spinner data-icon="inline-start" />
+                      )}
                       Recalculate PickScores
                     </Button>
                   </div>
                   <p className="text-muted-foreground mt-2.5 text-[12px] leading-snug">
-                    Embedding runs in the background as a job — follow it on the Embeddings
-                    screen or in Jobs. Scoring is arithmetic and finishes quickly.
+                    Both run in the background as jobs — follow them here or in Jobs. The
+                    current scores stay live until a recalculation finishes.
                   </p>
+                  {scoreJob.accepted && (
+                    <AdminJobPanel
+                      className="mt-3"
+                      accepted={scoreJob.accepted}
+                      job={scoreJob.job}
+                      pollError={scoreJob.pollError}
+                    />
+                  )}
                 </Card>
+                <AlertDialog open={confirmScore} onOpenChange={setConfirmScore}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Recalculate every PickScore?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Rewrites every PickScore on the live site, for every active laptop and
+                        use case. Scores are percentiles of the whole catalog, so laptops you
+                        haven&apos;t changed can move by a point. The old scores stay until the
+                        run finishes; a failed or stopped run changes nothing.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          setConfirmScore(false);
+                          void runPickScores();
+                        }}
+                      >
+                        Recalculate
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
 
               <div className="flex flex-col gap-3">

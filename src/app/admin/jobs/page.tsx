@@ -27,6 +27,7 @@ import {
   type JobStatus,
   cancelJob,
   isJobCancellable,
+  jobResultSummary,
   jobTypeLabel,
   listJobs,
 } from "@/lib/api/admin/jobs";
@@ -54,6 +55,7 @@ const TYPE_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "scraper.bulk_scrape", label: jobTypeLabel("scraper.bulk_scrape") },
   { value: "scraper.scrape_targets", label: jobTypeLabel("scraper.scrape_targets") },
   { value: "embeddings.generate_all", label: jobTypeLabel("embeddings.generate_all") },
+  { value: "pickscore.generate_all", label: jobTypeLabel("pickscore.generate_all") },
 ];
 
 const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
@@ -285,6 +287,11 @@ export default function AdminJobsPage() {
                           {job.failed_count} failed
                         </span>
                       </span>
+                    )}
+                    {jobResultSummary(job) && (
+                      <div className="text-muted-foreground mt-0.5 tabular-nums">
+                        {jobResultSummary(job)}
+                      </div>
                     )}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-[12.5px] tabular-nums">
