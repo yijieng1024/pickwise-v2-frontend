@@ -64,6 +64,8 @@ export interface BackendLaptop {
   warranty_details: string | null;
   image_urls: string[];
   created_at: string;
+  /** Last time the official price was confirmed; null = no trustworthy date. */
+  price_checked_at: string | null;
 }
 
 /** Mirrors the backend's `BrandRead` schema (GET /brands). */

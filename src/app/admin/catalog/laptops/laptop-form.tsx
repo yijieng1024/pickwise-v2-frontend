@@ -113,6 +113,10 @@ export function LaptopForm({
   const { token } = useAuth();
   const [brandId, setBrandId] = useState(laptop?.brand_id ?? "");
   const [values, setValues] = useState<Values>(() => seedValues(laptop));
+  // Edit only: the admin checked the official price and it is unchanged.
+  // Not a form field -- the backend bumps price_checked_at on a price change
+  // by itself, and this is the one way to record a check that changed nothing.
+  const [priceConfirmed, setPriceConfirmed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -131,7 +135,9 @@ export function LaptopForm({
   // count as unsaved while the redirect is in flight.
   const [saved, setSaved] = useState(false);
   const isDirty =
-    !saved && JSON.stringify({ brandId, values }) !== initialSnapshot;
+    !saved &&
+    (priceConfirmed ||
+      JSON.stringify({ brandId, values }) !== initialSnapshot);
 
   // Registers the dirty state with the portal-wide guard: this covers reloads
   // and tab closes here, and lets the sidebar and breadcrumbs confirm before
@@ -161,7 +167,10 @@ export function LaptopForm({
         const created = await createLaptop(token, payload);
         toast.success(`Created ${created.product_name}.`);
       } else if (laptop) {
-        const updated = await updateLaptop(token, laptop.id, payload);
+        const updated = await updateLaptop(token, laptop.id, {
+          ...payload,
+          ...(priceConfirmed && { price_confirmed: true }),
+        });
         toast.success(`Updated ${updated.product_name}.`);
       }
       setSaved(true);
@@ -230,6 +239,30 @@ export function LaptopForm({
           </div>
         </section>
       ))}
+
+      {mode === "edit" && laptop && (
+        <section className="border-line bg-surface rounded-lg border p-4">
+          <h2 className="mb-3 text-sm font-bold tracking-tight">Price check</h2>
+          <label className="flex items-center gap-2 text-xs font-semibold">
+            <Checkbox
+              checked={priceConfirmed}
+              onCheckedChange={(c) => setPriceConfirmed(c === true)}
+            />
+            Price confirmed: I checked the official price and it is still right
+          </label>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Last checked:{" "}
+            {laptop.price_checked_at
+              ? new Date(laptop.price_checked_at).toLocaleDateString("en-MY", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })
+              : "never"}
+            . Changing the price updates this by itself.
+          </p>
+        </section>
+      )}
 
       {error && (
         <p className="text-[13px] font-medium text-negative">{error}</p>

@@ -135,7 +135,8 @@ export function createLaptop(token: string, input: LaptopInput): Promise<Backend
 export function updateLaptop(
   token: string,
   id: string,
-  input: Partial<LaptopInput>,
+  // price_confirmed: not a column -- bumps "Last Checked" without a price change.
+  input: Partial<LaptopInput> & { price_confirmed?: boolean },
 ): Promise<BackendLaptop> {
   return apiFetch<BackendLaptop>(`/laptops/${id}`, {
     method: "PUT",
