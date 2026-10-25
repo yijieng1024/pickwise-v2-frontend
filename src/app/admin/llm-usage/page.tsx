@@ -24,8 +24,8 @@ import { AdminTrendRange, DEFAULT_TREND_RANGE, type TrendRange } from "../admin-
 /** Readable names for `llm_usage_logs.feature`; unknown values show raw. */
 const FEATURE_LABELS: Record<string, string> = {
   agent: "Chatbot (Pico)",
-  processor_extract: "AI Clean-up — extraction",
-  processor_categorize: "AI Clean-up — tagging",
+  processor_extract: "AI Clean-Up — extraction",
+  processor_categorize: "AI Clean-Up — tagging",
   review_chunk: "Review processing",
 };
 

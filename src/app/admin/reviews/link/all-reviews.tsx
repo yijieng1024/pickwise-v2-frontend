@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Link2, MoreHorizontal, RefreshCw, Search, Wand2 } from "lucide-react";
+import { Link2, MoreHorizontal, Search, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -57,7 +57,6 @@ import {
   listRawReviews,
   manualMatch,
   processReview,
-  rematchPending,
 } from "@/lib/api/admin/reviews";
 import { ApiError } from "@/lib/api/client";
 import type { BackendLaptop } from "@/lib/api/types";
@@ -66,7 +65,6 @@ import { cn } from "@/lib/utils";
 
 import { useAdminQuery, useSearchDraft } from "../../admin-query-state";
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
-import { AdminPageHeader } from "../../admin-page-header";
 import { AdminPagination } from "../../admin-pagination";
 import { LaptopPicker } from "../../laptop-picker";
 
@@ -89,12 +87,18 @@ const statusBadgeClass: Record<RawReviewStatus, string> = {
   irrelevant: "bg-surface-3 text-muted-foreground",
 };
 
-export default function AdminRawReviewsPage() {
+/**
+ * Every raw review, whatever its status — the former Match queue page, moved
+ * in whole as the "All reviews" tab of Link reviews. The Link tab only shows
+ * reviews that still need a link; this is where matched, rejected and
+ * dismissed rows are browsed, re-pointed laptop-first, and summarized.
+ * "Rematch pending" moved to Review pipeline (it is a batch run).
+ */
+export function AllReviews() {
   const { token } = useAuth();
   const [reviews, setReviews] = useState<RawReview[] | null>(null);
   const [total, setTotal] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [rematching, setRematching] = useState(false);
   const [matchTarget, setMatchTarget] = useState<RawReview | null>(null);
   const [summarizeTarget, setSummarizeTarget] = useState<RawReview | null>(null);
   const [summarizing, setSummarizing] = useState(false);
@@ -149,20 +153,6 @@ export default function AdminRawReviewsPage() {
     };
   }, [token, status, debouncedSearch, page, reloadTick]);
 
-  async function runRematch() {
-    if (!token) return;
-    setRematching(true);
-    try {
-      const res = await rematchPending(token);
-      toast.success(`Rematch: ${res.newly_matched} of ${res.pending_total} pending matched.`);
-      setReloadTick((t) => t + 1);
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Rematch failed.");
-    } finally {
-      setRematching(false);
-    }
-  }
-
   async function runSummarize() {
     if (!token || !summarizeTarget) return;
     setSummarizing(true);
@@ -185,21 +175,6 @@ export default function AdminRawReviewsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <AdminPageHeader
-        title="Match Queue"
-        description="Ingested YouTube reviews and how they matched to catalog laptops."
-        action={
-          <Button variant="outline" size="sm" onClick={runRematch} disabled={rematching}>
-            {rematching ? (
-              <Spinner data-icon="inline-start" />
-            ) : (
-              <RefreshCw data-icon="inline-start" />
-            )}
-            {rematching ? "Rematching…" : "Rematch pending"}
-          </Button>
-        }
-      />
-
       {processingPaused && (
         <p className="text-warning text-xs">
           {PROCESSING_PAUSED_MESSAGE} Summarize transcript is unavailable until it is lifted.

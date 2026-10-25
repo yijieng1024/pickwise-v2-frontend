@@ -338,3 +338,67 @@
     @apply font-sans;
   }
 }
+
+/* The admin sidebar as a floating island — the storefront nav island's glass
+   (GlassSurface: translucent fill, 20px blur, inner-edge highlight, layered
+   shadow), stood on its side, and pushed further so it reads as a separate
+   object: the nav floats over scrolling content, this floats over a plain
+   page, where the nav's white edge and soft shadow all but vanish. So: a
+   --line hairline outside the highlight, a deeper shadow and a more solid
+   fill. The topbar's two pills (`.admin-glass`) share the surface. Styled
+   here rather than through GlassSurface because shadcn's Sidebar owns the
+   element.
+   `variant="floating"` supplies the inset; the 12px gap below replaces its
+   8px, and the collapsed rail's reserved width is widened to match (its
+   Tailwind utilities are layered, so these unlayered rules win). Desktop
+   only: on mobile the sidebar is a Sheet with its own surface. */
+.admin-island {
+  padding: 12px;
+}
+[data-collapsible="icon"] > .admin-island {
+  width: calc(var(--sidebar-width-icon) + 24px + 2px);
+}
+[data-collapsible="icon"] > [data-slot="sidebar-gap"]:has(+ .admin-island) {
+  width: calc(var(--sidebar-width-icon) + 24px + 2px);
+}
+.admin-island [data-slot="sidebar-inner"],
+.admin-glass {
+  border: 1px solid color-mix(in oklab, var(--line) 30%, transparent);
+  background: color-mix(in oklab, var(--surface) 82%, transparent);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    0 1px 3px var(--shadow),
+    0 12px 28px -8px var(--shadow),
+    0 36px 72px -20px var(--shadow),
+    0 0 0 1px color-mix(in oklab, var(--brand) 2.5%, transparent),
+    inset 0 1px 0 var(--glass-edge);
+}
+/* The island hugs its content instead of running the full height: the
+   container is a full-height flex box, so the panel opts out of stretching,
+   sits vertically centred, and is capped at the viewport (SidebarContent scrolls past that). The
+   height animates when a group with more or fewer pages is chosen —
+   `interpolate-size` lets `height: auto` transition where supported, and
+   elsewhere the size just changes. */
+.admin-island {
+  align-items: center;
+}
+.admin-island [data-slot="sidebar-inner"] {
+  border-radius: 24px;
+  overflow: hidden;
+  height: auto;
+  /* Never shorter than 70% of the viewport, so a two-page group still reads
+     as a column rather than a card; extra room goes above "Back to site". */
+  min-height: 70%;
+  max-height: 100%;
+  interpolate-size: allow-keywords;
+  transition: height 200ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-island [data-slot="sidebar-inner"] {
+    transition: none;
+  }
+}
+.admin-glass {
+  border-radius: 999px;
+}

@@ -100,7 +100,7 @@ export default function AdminCatalogBrandsPage() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        title="Brands"
+        title="Brands & Sources"
         description="Full CRUD — scrape source, icon, active state."
         action={
           <Button size="sm" onClick={() => setCreateOpen(true)}>

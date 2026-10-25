@@ -275,11 +275,11 @@ export default function AdminDashboardPage() {
           body: "Retried automatically on the next bulk run. Acer pages need a manual upload.",
         },
         {
-          href: "/admin/reviews/raw",
+          href: "/admin/reviews/link",
           count: health.reviewsPending,
           icon: Video,
           title: "Review videos need a human decision",
-          body: "Confirm the guessed laptop, point it at the right one, or reject it.",
+          body: "Link each one to the product line it covers, or dismiss it if it isn't a laptop video.",
         },
         {
           href: "/admin/reviews/pipeline",

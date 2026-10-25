@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { PlayCircle } from "lucide-react";
+import { PlayCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import {
   ingestBulk,
   listPendingSummaries,
   processBulk,
+  rematchPending,
 } from "@/lib/api/admin/reviews";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
@@ -138,6 +139,25 @@ function IngestSection({
   const [skipCovered, setSkipCovered] = useState(true);
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<IngestBulkResult | null>(null);
+  const [rematching, setRematching] = useState(false);
+
+  // Re-runs the auto-matcher over every pending review with the current
+  // matcher config; reviews with any human link are left alone. Moved here
+  // from the old Match queue page: it is a batch run, like ingest. Free — no
+  // YouTube quota, no Gemini.
+  async function runRematch() {
+    if (!token) return;
+    setRematching(true);
+    try {
+      const res = await rematchPending(token);
+      toast.success(`Rematch: ${res.newly_matched} of ${res.pending_total} pending matched.`);
+      onRan();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Rematch failed.");
+    } finally {
+      setRematching(false);
+    }
+  }
 
   async function run() {
     if (!token) return;
@@ -190,6 +210,10 @@ function IngestSection({
         <Button onClick={run} disabled={running} className="mb-0.5">
           {running ? <Spinner data-icon="inline-start" /> : <PlayCircle data-icon="inline-start" />}
           {running ? "Ingesting…" : "Run ingest"}
+        </Button>
+        <Button variant="outline" onClick={runRematch} disabled={rematching || running} className="mb-0.5">
+          {rematching ? <Spinner data-icon="inline-start" /> : <RefreshCw data-icon="inline-start" />}
+          {rematching ? "Rematching…" : "Rematch pending"}
         </Button>
       </div>
 

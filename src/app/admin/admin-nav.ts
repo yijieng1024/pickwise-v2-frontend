@@ -3,9 +3,10 @@ import {
   Bot,
   Coins,
   Cpu,
+  Database,
   FileStack,
-  FileText,
   FolderTree,
+  Gauge,
   History,
   LayoutDashboard,
   Laptop,
@@ -13,12 +14,14 @@ import {
   Link2,
   ListChecks,
   ListOrdered,
+  Settings2,
   SlidersHorizontal,
   Sparkles,
   Tag,
   Tv,
   Upload,
   Users,
+  Video,
   Wand2,
   Workflow,
   Zap,
@@ -30,139 +33,111 @@ export interface NavLink {
   icon: React.ComponentType;
 }
 
+export interface NavGroup {
+  /** Stable key — stored in the `admin_nav_group` cookie. */
+  id: string;
+  label: string;
+  /** Shown on the group switcher, and alone on the collapsed icon rail. */
+  icon: React.ComponentType;
+  links: NavLink[];
+}
+
 /**
- * Ordered as the data flows, not by domain, and deliberately flat.
- *
- * Read top to bottom, the sidebar is the pipeline: source pages are queued and
- * scraped, raw records are cleaned into the catalog, the catalog is made
- * searchable and scorable, reviews are folded in beside it, the chatbot serves
- * that to customers, and monitoring is where you watch what happened. A laptop
- * that stops at Collect is invisible to customers; one that stops at Catalog is
- * invisible to the chatbot. That dependency is the mental model the portal has
- * to teach, so it is what the nav order says.
- *
- * ONE RULE DECIDES POSITION WITHIN A GROUP: reference data leads the stage that
- * consumes it. Brands leads Collect because the feed crawler reads each brand's
- * `base_scrape_url` and `is_active` decides whether it is crawled at all. Tags &
- * Taxonomy leads Catalog because the AI processor picks each laptop's tags from
- * the active `categories` rows, injected into its extraction prompt — a tag that
- * does not exist when the processor runs is a tag no laptop gets. Benchmarks
- * lead Rank & Search because PickScore reads the PassMark tables, and
- * `pick-scores/generate-all` is triggered from those two screens. Applying the
- * rule everywhere is what lets the order be read rather than memorised; before
- * it, taxonomy sat two groups below the processor that consumes it.
- *
- * Groups the pipeline ends at, rather than passes through, come last: Customers
- * (the questionnaire defines the survey whose answers personalize PickScore and
- * the agent, and Users is who answered it) and Monitoring (Jobs is the record of
- * every background run, Chatbot Monitoring of every agent turn). Neither
- * transforms catalog data, so neither sits among the stages that do.
- *
- * This is also what page breadcrumbs are built from (`adminCrumbsFor`), so a
- * group or label renamed here renames every trail with it — and a link label is
- * also the page's own `<h1>` (see "A screen's page title is its nav label"), so
- * renaming one here means renaming the `AdminPageHeader title` with it. It lives
- * in its own module rather than in `admin-shell.tsx` because that file is
- * `"use client"`, and a plain value imported from a client module into a Server
- * Component arrives as a client-reference stub — the laptop create/edit pages
- * are server components.
+ * Always visible, above the group switcher: the screen you land on, and the
+ * record of every background run — both are needed from any group.
  */
-export const navGroups: Array<{ label: string; links: NavLink[]; exactFirst?: boolean }> = [
+export const pinnedLinks: NavLink[] = [
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/jobs", label: "Jobs", icon: History },
+];
+
+/**
+ * The sidebar shows ONE group at a time, picked from a switcher; opening a page
+ * from anywhere switches to its group (see admin-nav-group.tsx). Groups are
+ * areas of work, ordered roughly as data moves: scraped and cleaned, curated
+ * into the catalog, scored and made searchable, reviews folded in beside it,
+ * then the people and the chatbot that use it.
+ *
+ * Page labels are Title Case (Capitalize Each Word), and a label is also the page's own `<h1>`
+ * (see "A screen's page title is its nav label") — renaming one here means
+ * renaming the `AdminPageHeader title` with it. Breadcrumbs are built from
+ * this file too (`adminCrumbsFor`). It lives in its own module rather than in
+ * `admin-shell.tsx` because that file is `"use client"`, and a plain value
+ * imported from a client module into a Server Component arrives as a
+ * client-reference stub — the laptop create/edit pages are server components.
+ */
+export const navGroups: NavGroup[] = [
   {
-    label: "Overview",
-    exactFirst: true,
-    links: [{ href: "/admin", label: "Dashboard", icon: LayoutDashboard }],
-  },
-  {
-    // Stage 1 (find pages) and stage 2 (collect specs) read as one job to an
-    // admin, so they share a group.
-    label: "Collect",
+    id: "collect",
+    label: "Data Collect",
+    icon: Database,
     links: [
-      { href: "/admin/catalog/brands", label: "Brands", icon: Tag },
+      { href: "/admin/catalog/brands", label: "Brands & Sources", icon: Tag },
       { href: "/admin/queue", label: "Scrape Queue", icon: ListOrdered },
       { href: "/admin/upload", label: "Acer Upload", icon: Upload },
-      // The handoff artifact: what scraping produced and what the processor
-      // reads next, so it closes this group rather than opening the next.
       { href: "/admin/pipeline", label: "Raw Records", icon: FileStack },
-    ],
-  },
-  {
-    // Stage 3 — raw records become real products. The run that produces the
-    // rows sits directly above the rows themselves, and the two screens that
-    // refine a row (its family, its upgrade options) sit directly below.
-    label: "Catalog",
-    links: [
-      { href: "/admin/taxonomy", label: "Tags & Taxonomy", icon: FolderTree },
-      { href: "/admin/processing", label: "AI Clean-up", icon: Wand2 },
-      { href: "/admin/catalog/laptops", label: "Laptops", icon: Laptop },
-      // Directly under Laptops: a family is a grouping OF catalog rows and is
-      // only correctable once the rows exist. It feeds search deduplication,
-      // but it is catalog data an admin curates rather than a run they trigger.
-      { href: "/admin/catalog/families", label: "Families", icon: Layers },
-      { href: "/admin/catalog/customizations", label: "Upgrade Options", icon: SlidersHorizontal },
-    ],
-  },
-  {
-    // Stage 4 — a catalog row's score is meaningless until the benchmarks it
-    // reads exist, and the row itself is invisible to chat until it is embedded.
-    label: "Rank & Search",
-    links: [
-      { href: "/admin/benchmarks/cpu", label: "CPU Benchmarks", icon: Cpu },
-      { href: "/admin/benchmarks/gpu", label: "GPU Benchmarks", icon: Zap },
+      { href: "/admin/processing", label: "AI Clean-Up", icon: Wand2 },
       { href: "/admin/embeddings", label: "Embeddings", icon: Sparkles },
     ],
   },
   {
-    // Its own three-step flow, joining the pipeline late: the matcher matches
-    // videos against the catalog, so this depends on Catalog above and feeds
-    // the chatbot below.
+    id: "catalog",
+    label: "Catalog",
+    icon: Laptop,
+    links: [
+      { href: "/admin/catalog/laptops", label: "Laptops", icon: Laptop },
+      { href: "/admin/catalog/families", label: "Families", icon: Layers },
+      { href: "/admin/catalog/customizations", label: "Upgrade Options", icon: SlidersHorizontal },
+      { href: "/admin/taxonomy", label: "Types & Categories", icon: FolderTree },
+    ],
+  },
+  {
+    id: "scoring",
+    label: "Scoring & Search",
+    icon: Gauge,
+    links: [
+      { href: "/admin/benchmarks/cpu", label: "CPU Benchmarks", icon: Cpu },
+      { href: "/admin/benchmarks/gpu", label: "GPU Benchmarks", icon: Zap },
+    ],
+  },
+  {
+    id: "reviews",
     label: "Reviews",
+    icon: Video,
     links: [
-      { href: "/admin/reviews/channels", label: "Sources", icon: Tv },
-      { href: "/admin/reviews/raw", label: "Match Queue", icon: FileText },
-      // Sits after Match Queue because it is the queue's working surface: that
-      // screen is the read-only table of every raw review, this one is where
-      // the pending rows actually get attached to a product line.
-      { href: "/admin/reviews/link", label: "Link Reviews", icon: Link2 },
-      // Not "Aggregate": aggregation is only the last of the three sections on
-      // that page (Ingest → Process → Aggregate), so naming the nav entry after
-      // it would clash with the section heading and hide the other two runs.
       { href: "/admin/reviews/pipeline", label: "Review Pipeline", icon: Workflow },
+      { href: "/admin/reviews/channels", label: "Sources", icon: Tv },
+      { href: "/admin/reviews/link", label: "Link Reviews", icon: Link2 },
     ],
   },
   {
-    // Where the pipeline is consumed. The questionnaire defines the survey
-    // whose answers become `laptop_user_preference` — which is what turns a
-    // general PickScore into a personalized one and what the agent reads as
-    // its defaults — so it belongs beside the people who answer it, not in a
-    // settings drawer.
-    label: "Customers",
+    id: "users",
+    label: "Users",
+    icon: Users,
     links: [
-      { href: "/admin/questionnaire", label: "Questionnaire", icon: ListChecks },
       { href: "/admin/users", label: "Users", icon: Users },
+      { href: "/admin/questionnaire", label: "Questionnaire", icon: ListChecks },
     ],
   },
   {
-    // Records of what ran, across every stage above. Jobs used to sit beside
-    // the Dashboard, which put a log of finished work ahead of the work; both
-    // of these answer "what happened", so they answer it together, at the end.
-    label: "Monitoring",
+    id: "system",
+    label: "Pico & System",
+    icon: Bot,
     links: [
-      { href: "/admin/jobs", label: "Jobs", icon: History },
       { href: "/admin/agent-monitoring", label: "Chatbot Monitoring", icon: Activity },
-      // Every LLM call, not just the chatbot's — processor and review
-      // chunking too — so it is its own screen, not a chatbot tab.
+      { href: "/admin/llm-settings", label: "LLM Settings", icon: Settings2 },
       { href: "/admin/llm-usage", label: "Token Usage", icon: Coins },
     ],
   },
-  {
-    // Settings that change how the app runs, not data in it. Model choice spans
-    // the chatbot, review processing and AI Clean-up, so it
-    // gets one screen rather than a control buried in each stage's page.
-    label: "Settings",
-    links: [{ href: "/admin/llm-settings", label: "LLM Settings", icon: Bot }],
-  },
 ];
+
+/** Cookie holding the last group chosen; read server-side in layout.tsx. */
+export const NAV_GROUP_COOKIE = "admin_nav_group";
+
+/** A cookie value is trusted only if it names a real group. */
+export function navGroupById(id: string | undefined): NavGroup | null {
+  return navGroups.find((g) => g.id === id) ?? null;
+}
 
 /** A crumb with no `href` is plain text — the current page, or a group that has no page. */
 export interface AdminCrumb {
@@ -184,13 +159,12 @@ export function adminCrumbsFor(pathname: string, trail: string[] = []): AdminCru
   const crumbs: AdminCrumb[] = [];
 
   if (match && match.link.href !== DASHBOARD_HREF) {
-    // The root group is the one holding the dashboard, and the dashboard is
-    // already the first crumb — repeating "Overview" under it says nothing.
-    if (!match.groupHoldsRoot) {
-      // Group labels stay plain text: /admin/catalog, /admin/benchmarks and
-      // /admin/reviews are redirects into their first child, so linking one
-      // would silently land somewhere other than what the crumb names.
-      crumbs.push({ label: match.group });
+    // Pinned links have no group, and a group named like its page ("Users ›
+    // Users") would repeat itself. Group labels stay plain text: they are not
+    // pages, and /admin/catalog, /admin/benchmarks and /admin/reviews are
+    // redirects, so linking one would land somewhere other than it names.
+    if (match.group && match.group.label !== match.link.label) {
+      crumbs.push({ label: match.group.label });
     }
     crumbs.push({
       label: match.link.label,
@@ -205,25 +179,29 @@ export function adminCrumbsFor(pathname: string, trail: string[] = []): AdminCru
   return crumbs;
 }
 
+/** The group holding the page at `pathname`, or null for pinned/unknown pages. */
+export function groupFor(pathname: string): NavGroup | null {
+  return findNavLink(pathname)?.group ?? null;
+}
+
 /**
  * Longest matching href wins, so /admin/catalog/laptops/<id>/edit resolves to
- * Laptops rather than to whichever entry happens to be listed first.
+ * Laptops (and so to Catalog) rather than to whichever entry is listed first.
  */
 function findNavLink(pathname: string) {
-  let best: { group: string; groupHoldsRoot: boolean; link: NavLink } | null = null;
-
-  for (const group of navGroups) {
-    const groupHoldsRoot = group.links.some((l) => l.href === DASHBOARD_HREF);
-    for (const link of group.links) {
-      const matches =
-        link.href === DASHBOARD_HREF
-          ? pathname === DASHBOARD_HREF
-          : pathname === link.href || pathname.startsWith(`${link.href}/`);
-      if (matches && (!best || link.href.length > best.link.href.length)) {
-        best = { group: group.label, groupHoldsRoot, link };
-      }
+  let best: { group: NavGroup | null; link: NavLink } | null = null;
+  const consider = (group: NavGroup | null, link: NavLink) => {
+    const matches =
+      link.href === DASHBOARD_HREF
+        ? pathname === DASHBOARD_HREF
+        : pathname === link.href || pathname.startsWith(`${link.href}/`);
+    if (matches && (!best || link.href.length > best.link.href.length)) {
+      best = { group, link };
     }
-  }
+  };
 
-  return best;
+  for (const link of pinnedLinks) consider(null, link);
+  for (const group of navGroups) for (const link of group.links) consider(group, link);
+
+  return best as { group: NavGroup | null; link: NavLink } | null;
 }

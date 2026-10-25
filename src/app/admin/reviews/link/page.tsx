@@ -22,6 +22,8 @@ import { cn } from "@/lib/utils";
 
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
 import { AdminPageHeader } from "../../admin-page-header";
+import { useAdminQuery } from "../../admin-query-state";
+import { AllReviews } from "./all-reviews";
 import { ConfigPicker } from "./config-picker";
 import { DismissedList } from "./dismissed-list";
 import { FamilySearch } from "./family-search";
@@ -49,8 +51,16 @@ import { ReviewQueue, isDone } from "./review-queue";
 
 const QUEUE_LIMIT = 200;
 
+const VIEWS = [
+  { value: "link", label: "Link" },
+  { value: "all", label: "All reviews" },
+] as const;
+
 export default function ReviewLinkPage() {
   const { token } = useAuth();
+  // In the URL (?view=all) so the tab survives a reload and can be linked to.
+  const viewQuery = useAdminQuery({ filters: { view: "link" } });
+  const view = viewQuery.values.view === "all" ? "all" : "link";
   // `null` is the loading state, the shape the other admin screens use. A
   // separate boolean would have to be flipped synchronously inside the effect,
   // which cascades a render before the fetch starts.
@@ -279,10 +289,7 @@ export default function ReviewLinkPage() {
     }
   }
 
-  if (error) return <AdminErrorState message={error} onRetry={reload} />;
-  if (!reviews) return <AdminLoadingState />;
-
-  const doneCount = reviews.filter(isDone).length;
+  const doneCount = (reviews ?? []).filter(isDone).length;
   const openLink = selected?.links.find((l) => l.id === openLinkId) ?? null;
   const showSearch = !selected?.links.length || addingAnother;
 
@@ -292,13 +299,47 @@ export default function ReviewLinkPage() {
         title="Link Reviews"
         description="Attach each pending review to the product line it covers. The configuration is optional — leave it unset when the video doesn't say. Dismiss anything that isn't a laptop video."
         action={
+          view === "link" && (
           <Button variant="soft" onClick={reload} disabled={busy}>
             <RefreshCw className="size-4" />
             Refresh
           </Button>
+          )
         }
       />
 
+      {/* Two views of one job. Link: the reviews that still need a product
+          line, worked one at a time. All reviews: every raw review whatever
+          its status (the former Match queue) — browse, re-point, summarize. */}
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="View">
+        {VIEWS.map((v) => {
+          const active = view === v.value;
+          return (
+            <button
+              key={v.value}
+              type="button"
+              onClick={() => viewQuery.set({ view: v.value })}
+              aria-pressed={active}
+              className={cn(
+                "focus-visible:ring-ring/50 rounded-full border px-3 py-1.5 text-[12.5px] font-medium transition-colors outline-none focus-visible:ring-3",
+                active
+                  ? "border-transparent bg-brand text-white"
+                  : "border-line bg-surface hover:bg-surface-2",
+              )}
+            >
+              {v.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {view === "all" ? (
+        <AllReviews />
+      ) : error ? (
+        <AdminErrorState message={error} onRetry={reload} />
+      ) : !reviews ? (
+        <AdminLoadingState />
+      ) : (
       <div className="grid gap-4 lg:grid-cols-[minmax(280px,340px)_1fr]">
         <Card className="h-[calc(100vh-15rem)] gap-0 p-3">
           {/* Two tabs, not a hidden panel: the dismissed count is visible from
@@ -511,6 +552,7 @@ export default function ReviewLinkPage() {
           )}
         </Card>
       </div>
+      )}
     </div>
   );
 }

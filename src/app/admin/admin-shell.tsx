@@ -1,9 +1,9 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 import {
   Sidebar,
@@ -11,31 +11,41 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
   SidebarRail,
+  SidebarSeparator,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { BrandMark } from "@/components/brand-mark";
 import { Spinner } from "@/components/ui/spinner";
 import { Toaster } from "@/components/ui/sonner";
+import { jobTypeLabel } from "@/lib/api/admin/jobs";
+import { useActiveJobs } from "@/lib/admin/use-job";
 import { useAuth } from "@/lib/auth-context";
+import { cn } from "@/lib/utils";
 
+import { AccountItem, ThemeToggleItem } from "./admin-account";
 import { AdminFooter } from "./admin-footer";
-import { navGroups, type NavLink } from "./admin-nav";
+import { pinnedLinks, type NavLink } from "./admin-nav";
+import { NavGroupSwitcher, useNavGroup } from "./admin-nav-group";
 import { UnsavedChangesProvider, useAdminNavigation } from "./unsaved-changes";
 import { AdminTopbar } from "./admin-topbar";
 
 export function AdminShell({
   children,
   defaultOpen,
+  initialGroup,
 }: {
   children: React.ReactNode;
   defaultOpen: boolean;
+  /** The `admin_nav_group` cookie, read server-side. */
+  initialGroup?: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -66,9 +76,12 @@ export function AdminShell({
     <UnsavedChangesProvider>
       <SidebarProvider
         defaultOpen={defaultOpen}
-        style={{ "--sidebar-width": "15rem" } as React.CSSProperties}
+        style={{ "--sidebar-width": "14rem" } as React.CSSProperties}
       >
-        <Sidebar collapsible="icon">
+        {/* A floating glass island, like the storefront nav but on the side.
+            The look, the 12px gap and the collapsed width are all in
+            `.admin-island` (globals.css). */}
+        <Sidebar collapsible="icon" variant="floating" className="admin-island">
           <SidebarHeader>
             {/* Toggle lives in the topbar (AdminTopbar) so it stays reachable
               when the rail is collapsed and on mobile. */}
@@ -80,31 +93,14 @@ export function AdminShell({
             </div>
           </SidebarHeader>
 
-          <SidebarContent>
-            {navGroups.map((group) => (
-              <SidebarGroup key={group.label}>
-                <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {group.links.map((link, i) => (
-                      <NavItem
-                        key={link.href}
-                        link={link}
-                        pathname={pathname}
-                        // Only the dashboard needs an exact match; every other
-                        // route would otherwise light up under "/admin".
-                        exact={group.exactFirst && i === 0}
-                      />
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            ))}
-          </SidebarContent>
+          <AdminNav initialGroup={initialGroup} pathname={pathname} />
 
           <SidebarFooter>
             <SidebarMenu>
+              <ThemeToggleItem />
+              <SidebarToggleItem />
               <BackToSiteLink />
+              <AccountItem />
             </SidebarMenu>
           </SidebarFooter>
           <SidebarRail />
@@ -163,6 +159,100 @@ function BrandLink() {
   );
 }
 
+/**
+ * Dashboard and Jobs pinned on top; below them the group switcher and only the
+ * chosen group's pages. Its own component because the group hook needs the
+ * SidebarProvider above it (the switcher reads collapsed/mobile state).
+ */
+const PAGE_LIST_FADE_OUT_MS = 150;
+
+function AdminNav({ initialGroup, pathname }: { initialGroup?: string; pathname: string }) {
+  const [group, setGroup] = useNavGroup(initialGroup);
+  // Background jobs outlive the screen that started them, so "something is
+  // running" lives on the always-visible Jobs link (it used to be a topbar pill).
+  const { token } = useAuth();
+  const { count, firstJob } = useActiveJobs(token);
+  const jobsRunning =
+    count === 0
+      ? undefined
+      : count === 1 && firstJob
+        ? `${jobTypeLabel(firstJob.job_type)} · ${firstJob.progress_percentage}%`
+        : `${count} jobs running`;
+
+  // The page list fades out, then the next group's fades in. `shown` lags
+  // `group` by the fade-out, so the old links stay mounted while they leave.
+  const [shown, setShown] = useState(group);
+  const leaving = shown.id !== group.id;
+  useEffect(() => {
+    if (!leaving) return;
+    const timer = setTimeout(() => setShown(group), PAGE_LIST_FADE_OUT_MS);
+    return () => clearTimeout(timer);
+  }, [leaving, group]);
+
+  return (
+    <SidebarContent>
+      <SidebarGroup>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {pinnedLinks.map((link) => (
+              <NavItem
+                key={link.href}
+                link={link}
+                pathname={pathname}
+                // Only the dashboard needs an exact match; every other route
+                // would otherwise light up under "/admin".
+                exact={link.href === "/admin"}
+                running={link.href === "/admin/jobs" ? jobsRunning : undefined}
+              />
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+      <SidebarSeparator className="mx-0" />
+      <SidebarGroup>
+        <SidebarGroupContent className="flex flex-col gap-2">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <NavGroupSwitcher group={group} onChange={setGroup} />
+            </SidebarMenuItem>
+          </SidebarMenu>
+          <SidebarMenu
+            key={shown.id}
+            className={cn(
+              "animate-in fade-in duration-200 motion-reduce:animate-none",
+              leaving && "animate-out fade-out fill-mode-forwards duration-150",
+            )}
+          >
+            {shown.links.map((link) => (
+              <NavItem key={link.href} link={link} pathname={pathname} />
+            ))}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+    </SidebarContent>
+  );
+}
+
+/**
+ * Expand/collapse, at the foot of the island just above "Back to site". Desktop
+ * only: on mobile the sidebar is a Sheet, opened from the topbar's trigger
+ * (which is mobile-only for the same reason) and closed by tapping outside.
+ */
+function SidebarToggleItem() {
+  const { state, toggleSidebar, isMobile } = useSidebar();
+  if (isMobile) return null;
+  const collapsed = state === "collapsed";
+  const label = collapsed ? "Expand sidebar" : "Collapse sidebar";
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton onClick={toggleSidebar} tooltip={label} aria-label={label}>
+        {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
+        <span>{label}</span>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+}
+
 function BackToSiteLink() {
   const { guardNavigate } = useAdminNavigation();
   return (
@@ -182,10 +272,13 @@ function NavItem({
   link,
   pathname,
   exact = false,
+  running,
 }: {
   link: NavLink;
   pathname: string;
   exact?: boolean;
+  /** Set while background jobs run: a pulsing badge, and the tooltip says what. */
+  running?: string;
 }) {
   const Icon = link.icon;
   const { guardNavigate } = useAdminNavigation();
@@ -202,12 +295,21 @@ function NavItem({
           />
         }
         isActive={active}
-        tooltip={link.label}
+        tooltip={running ? `${link.label} · ${running}` : link.label}
         className="data-active:bg-brand-tint data-active:font-semibold data-active:text-brand"
       >
         <Icon />
         <span>{link.label}</span>
       </SidebarMenuButton>
+      {running && (
+        <SidebarMenuBadge
+          title={running}
+          className="text-brand bg-brand-tint pointer-events-none rounded-full px-1.5"
+        >
+          <span className="bg-brand size-1.5 rounded-full motion-safe:animate-pulse" aria-hidden />
+          <span className="sr-only">{running}</span>
+        </SidebarMenuBadge>
+      )}
     </SidebarMenuItem>
   );
 }

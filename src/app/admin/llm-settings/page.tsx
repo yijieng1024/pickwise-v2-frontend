@@ -66,7 +66,7 @@ const USE_INFO: Record<LLMUseName, { label: string; description: string }> = {
     description: "Summarises YouTube review chunks. Background admin job.",
   },
   processor: {
-    label: "AI Clean-up",
+    label: "AI Clean-Up",
     description:
       "Extracts and tags catalog records. Background job; only models with a rate-limit budget are accepted.",
   },
