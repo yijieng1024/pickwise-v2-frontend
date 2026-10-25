@@ -1,5 +1,6 @@
 import { Check, Info, X } from "lucide-react";
 
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import type { LaptopReviews, ReviewPoint } from "@/lib/api/reviews";
 import { cn } from "@/lib/utils";
 
@@ -10,7 +11,11 @@ const timestampLabel = (s: number) =>
  * "What reviewers say" on the details page. `reviews` is null when the
  * request failed — that is said plainly, never filled with placeholder points.
  */
-export function ReviewSentiment({ reviews }: { reviews: LaptopReviews | null }) {
+export function ReviewSentiment({
+  reviews,
+}: {
+  reviews: LaptopReviews | null;
+}) {
   return (
     <section className="border-line bg-surface rounded-3xl border p-7 md:col-span-6">
       <h2 className="mb-1 text-base font-semibold tracking-tight">
@@ -40,27 +45,50 @@ export function ReviewSentiment({ reviews }: { reviews: LaptopReviews | null }) 
             </p>
           )}
 
-          <PointList title="Strengths" points={reviews.strengths} />
-          <PointList title="Watch Out For" points={reviews.weaknesses} />
+          {/* Side by side so the two read as a comparison; stacked on
+              phones, strengths first. An empty side keeps its column. */}
+          <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">
+            <PointList
+              title="Strengths"
+              points={reviews.strengths}
+              empty="Reviewers didn't mention any strengths."
+            />
+            <PointList
+              title="Watch Out For"
+              points={reviews.weaknesses}
+              empty="Reviewers didn't mention any weaknesses."
+            />
+          </div>
         </>
       )}
     </section>
   );
 }
 
-function PointList({ title, points }: { title: string; points: ReviewPoint[] }) {
-  if (points.length === 0) return null;
+function PointList({
+  title,
+  points,
+  empty,
+}: {
+  title: string;
+  points: ReviewPoint[];
+  empty: string;
+}) {
   return (
-    <>
-      <h3 className="mt-5 mb-3 text-sm font-semibold first:mt-0">{title}</h3>
-      <ul className="flex flex-col gap-2.5">
-        {points.map((p) => (
-          <li key={`${p.video_id}-${p.timestamp_start_seconds}`}>
-            <Point p={p} />
-          </li>
-        ))}
-      </ul>
-    </>
+    <div className="min-w-0">
+      <h3 className="mb-3 text-sm font-semibold">{title}</h3>
+      {points.length === 0 ? (
+        <p className="text-[13px] text-muted-foreground">{empty}</p>
+      ) : (
+        <ul className="flex flex-col gap-2.5">
+          {points.map((p) => (
+            <li key={`${p.video_id}-${p.timestamp_start_seconds}`}>
+              <Point p={p} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -80,7 +108,10 @@ function Point({ p }: { p: ReviewPoint }) {
       )}
     >
       <Icon
-        className={cn("mt-0.5 size-4 shrink-0", strength ? "text-positive" : "text-negative")}
+        className={cn(
+          "mt-0.5 size-4 shrink-0",
+          strength ? "text-positive" : "text-negative",
+        )}
         strokeWidth={2.4}
       />
       <span className="min-w-0">
@@ -95,10 +126,24 @@ function Point({ p }: { p: ReviewPoint }) {
             Tested on {p.tested_on_name}
           </span>
         )}
-        <span className="mt-1.5 block text-[11px] text-muted-foreground">
-          {p.channel_name}
-          {p.video_title && <> · {p.video_title}</>} · Watch at{" "}
-          {timestampLabel(p.timestamp_start_seconds)} →
+        <span className="mt-1.5 flex items-start gap-1.5 text-[11px] text-muted-foreground">
+          {/* The initial stays underneath; the image only mounts once it has
+              loaded, so a missing or broken avatar leaves the initial. */}
+          <Avatar className="bg-surface-2 size-4 items-center justify-center overflow-hidden text-[9px] font-bold after:hidden">
+            {p.channel_name.charAt(0).toUpperCase()}
+            {p.channel_img_url && (
+              <AvatarImage
+                src={p.channel_img_url}
+                alt=""
+                className="absolute inset-0"
+              />
+            )}
+          </Avatar>
+          <span className="min-w-0">
+            {p.channel_name}
+            {p.video_title && <> · {p.video_title}</>} · Watch at{" "}
+            {timestampLabel(p.timestamp_start_seconds)} →
+          </span>
         </span>
       </span>
     </a>

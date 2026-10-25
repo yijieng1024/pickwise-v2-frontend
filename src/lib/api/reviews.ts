@@ -10,6 +10,8 @@ export interface ReviewPoint {
   tested_on_laptop_id: string | null;
   tested_on_name: string | null;
   channel_name: string;
+  /** YouTube channel avatar; null = show the name's initial. */
+  channel_img_url: string | null;
   video_id: string;
   video_title: string | null;
   timestamp_start_seconds: number;

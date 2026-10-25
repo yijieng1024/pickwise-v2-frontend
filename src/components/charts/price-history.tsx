@@ -10,6 +10,8 @@ import {
   YAxis,
 } from "recharts";
 
+import { formatDate } from "@/lib/utils";
+
 export interface PriceSeries {
   name: string;
   color: string;
@@ -19,13 +21,6 @@ export interface PriceSeries {
 }
 
 const formatRM = (value: number) => `RM ${value.toLocaleString()}`;
-
-const formatFullDate = (iso: string) =>
-  new Date(iso).toLocaleDateString(undefined, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
 
 export function PriceHistory({
   months,
@@ -40,12 +35,12 @@ export function PriceHistory({
   dates?: string[];
   height?: number;
 }) {
-  // The x-axis key MUST be unique per record. The month label can repeat (e.g.
-  // two edits in the same month -> "Jun 26" twice), and a recharts category
+  // The x-axis key MUST be unique per record. The date label can repeat (e.g.
+  // two edits on one day -> "22 Jun 2026" twice), and a recharts category
   // axis with duplicate values silently drops the connecting line AND stops
   // the tooltip from activating (it can't map a hover to a unique category).
   // So key on the unique ISO timestamp (fallback: row index) and surface the
-  // month label through tickFormatter instead.
+  // label through tickFormatter instead.
   const data = months.map((month, i) => {
     const row: Record<string, string | number | undefined> = {
       x: dates?.[i] ?? String(i),
@@ -85,7 +80,7 @@ export function PriceHistory({
           formatter={(value) => formatRM(Number(value))}
           labelFormatter={(label, payload) => {
             const row = payload?.[0]?.payload as { date?: string; month?: string } | undefined;
-            return row?.date ? formatFullDate(row.date) : (row?.month ?? label);
+            return row?.date ? formatDate(row.date) : (row?.month ?? label);
           }}
           contentStyle={{
             background: "var(--popover)",

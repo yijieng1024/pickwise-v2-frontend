@@ -68,6 +68,12 @@ export interface BackendLaptop {
   price_checked_at: string | null;
 }
 
+/** Mirrors the backend's `LaptopDetailRead` (GET /laptops/{id} only). */
+export interface BackendLaptopDetail extends BackendLaptop {
+  shopee_search_url?: string | null;
+  lazada_search_url?: string | null;
+}
+
 /** Mirrors the backend's `BrandRead` schema (GET /brands). */
 export interface BackendBrand {
   id: string;
