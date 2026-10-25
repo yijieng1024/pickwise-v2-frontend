@@ -14,6 +14,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 No test framework is configured.
 
+## Commit messages
+
+`<type>: <short summary>` — lower-case type, colon, space, then a short summary, e.g. `fix: admin edit page shows fresh data`. The type is one of:
+
+- `feat` — a new feature or behaviour
+- `fix` — a bug fix
+- `docs` — documentation only
+- `test` — tests only
+- `refactor` — code change with no behaviour change
+
+Commits pushed before this rule are never rewritten to match it.
+
 ## What this app is
 
 PickWise: an AI-powered, conversational laptop-recommendation and price-comparison frontend for the Malaysian market. Laptop listing, details, price history, chat (`/chat` — SSE streaming against `POST /agent/chat/stream` via `src/lib/api/agent.ts` (events: `meta`/`token`/`thinking`/`turn_reset`/`tool`/`done`/`error`), bento workspace layout, conversations CRUD + per-row action menu (rename via `PATCH /conversations/{id}` dialog, delete), shortlist restored on conversation reopen via `GET /conversations/{id}/laptops`, live thinking-flow panel (collapsible) + tool-activity chips per in-flight turn (thinking is session-only — the backend doesn't persist it, so reloaded threads lose it; a collapsed "Thinking" disclosure stays on messages finished this session), streamed words fade in via `animate-token-in`, thread scrolling via shadcn MessageScroller (follows the live edge, stops when the user scrolls up), auto-growing Textarea composer (Enter sends, Shift+Enter breaks, IME-composition guarded), real PickScore shortlist cards with first-photo thumbnails from `AgentLaptopCard.image_url`), home trending (top `general_use` PickScore ranking, mock fallback), and the details-page PickScore tile (`components/pick-score-card.tsx` + `src/lib/api/pickscore.ts` — 5 use-case tabs, 8-factor breakdown, GPU-proxy flag) are live against the FastAPI backend (`https://pickwise-v2-backend.onrender.com/api/v2`, repo: `C:\Users\user\Documents\Project\pickwise-v2-backend`), and so is `/saved` (wishlist — `saved_laptops` table + `/saved/*` CRUD, heart toggle on the details page) and `/compare` (URL-driven, up to four laptops — see the compare bullet below); the per-card XAI popover factors are still hardcoded mocks. The design reference is the prototype at `C:\Users\user\Downloads\PickWise Prototype\PickWise v2.dc.html` (design brief: `C:\Users\user\Downloads\PickWise Prototype\uploads\pickwise-v2-design-prompt.md`) — a glassmorphism visual language with a chat agent named **Pico**, **PickScore** rings + **XAI** factor breakdowns, and no live vendor pricing. Match it when building new UI:
