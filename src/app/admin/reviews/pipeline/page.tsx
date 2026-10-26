@@ -175,7 +175,7 @@ export default function ReviewPipelinePage() {
                   </Button>
                 ),
                 linked: (
-                  <Button variant="outline" render={<Link href="/admin/reviews/link" />}>
+                  <Button variant="outline" render={<Link href="/admin/reviews/link" />} nativeButton={false}>
                     Open Link Reviews
                   </Button>
                 ),

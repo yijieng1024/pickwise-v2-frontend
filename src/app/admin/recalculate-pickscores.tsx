@@ -23,10 +23,9 @@ import { useAuth } from "@/lib/auth-context";
 import { AdminJobPanel } from "./admin-job-panel";
 
 /**
- * "Recalculate PickScores": confirmation, then the job panel. Moved off the
- * Dashboard (whose PickScore freshness row links here) onto the benchmark
- * pages, since PickScore is derived from those numbers. Until a PickScore page
- * exists this is its home.
+ * "Recalculate Pick Scores": confirmation, then the job panel. Lives on the
+ * admin Pick Score page, which the Dashboard's freshness and attention rows
+ * link to.
  */
 export function useRecalculatePickScores() {
   const { token } = useAuth();

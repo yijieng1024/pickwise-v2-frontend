@@ -93,9 +93,10 @@ export const navGroups: NavGroup[] = [
   },
   {
     id: "scoring",
-    label: "Benchmark",
+    label: "Scoring",
     icon: Gauge,
     links: [
+      { href: "/admin/pickscore", label: "Pick Score", icon: Gauge },
       { href: "/admin/benchmarks/cpu", label: "CPU Benchmarks", icon: Cpu },
       { href: "/admin/benchmarks/gpu", label: "GPU Benchmarks", icon: Zap },
     ],

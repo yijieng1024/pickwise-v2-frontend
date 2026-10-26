@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import { MoreHorizontal, Pencil, PlayCircle, Plus, Search, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 
 import {
@@ -55,7 +56,6 @@ import { useAuth } from "@/lib/auth-context";
 import { useAdminQuery, useSearchDraft } from "../../admin-query-state";
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
 import { AdminPageHeader } from "../../admin-page-header";
-import { useRecalculatePickScores } from "../../recalculate-pickscores";
 import { OutcomeAlert } from "../../admin-outcome-alert";
 import { AdminPagination } from "../../admin-pagination";
 import { SortableTableHead } from "../../admin-sortable-head";
@@ -80,7 +80,6 @@ export default function AdminCpuBenchmarksPage() {
   // left for step 10 (the run leaves no record to report on).
   const [scrapeStarted] = useState(false);
   const [reloadTick, setReloadTick] = useState(0);
-  const recalculate = useRecalculatePickScores();
   const query = useAdminQuery({ filters: { q: "" }, sortKeys: CPU_SORT_KEYS });
   const { q: debouncedSearch } = query.values;
   const { page, sort } = query;
@@ -156,7 +155,6 @@ export default function AdminCpuBenchmarksPage() {
         description="PassMark CPU scores that feed Pick Score's performance factors."
         action={
           <div className="flex flex-wrap gap-3">
-            {recalculate.button}
             <Button variant="outline" size="sm" onClick={runScraper} disabled={scraping}>
               <PlayCircle data-icon="inline-start" />
               {scraping ? "Starting…" : "Run PassMark scraper"}
@@ -169,13 +167,15 @@ export default function AdminCpuBenchmarksPage() {
         }
       />
 
-      {recalculate.panel}
-
       {scrapeStarted && (
         <OutcomeAlert status="info" title="Refresh started">
           This runs in the background and may take a few minutes. There is no progress to
           report, so use the list below to see new scores as they land. Once it finishes,
-          use Recalculate Pick Scores above — scores are derived from these numbers.
+          recalculate on the{" "}
+          <Link href="/admin/pickscore" className="text-brand font-semibold hover:underline">
+            Pick Score page
+          </Link>
+          , since scores are derived from these numbers.
         </OutcomeAlert>
       )}
 

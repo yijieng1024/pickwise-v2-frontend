@@ -93,8 +93,8 @@ function attentionRows(s: DashboardSummary): AttentionRow[] {
       tone: "warn",
       title: "Some active laptops have no full Pick Score",
       detail: parts.join(" · "),
-      href: "/admin/benchmarks/cpu",
-      linkLabel: "Benchmarks",
+      href: "/admin/pickscore",
+      linkLabel: "Pick Score",
     });
   }
   const p = s.pico;
@@ -288,7 +288,7 @@ export function Freshness({ summary }: { summary: DashboardSummary }) {
           }
           chip={f.pickscore_recalculated_at ? timeAgo(f.pickscore_recalculated_at) : "Never"}
           tone={psTone}
-          link={{ href: "/admin/benchmarks/cpu", label: "Recalculate" }}
+          link={{ href: "/admin/pickscore", label: "Pick Score" }}
         />
         <FreshRow
           label='Oldest price "Last Checked"'
