@@ -1,642 +1,119 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import {
-  ArrowRight,
-  ChevronRight,
-  Layers,
-  MessagesSquare,
-  Tag,
-  RefreshCw,
-  Cpu,
-  Sparkles,
-  Upload,
-  UsersRound,
-  Zap,
-  Video,
-} from "lucide-react";
-import { toast } from "sonner";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Spinner } from "@/components/ui/spinner";
-import { useJob } from "@/lib/admin/use-job";
-import { getAgentRunStats } from "@/lib/api/admin/agent-monitoring";
-import { listCpuBenchmarks, listGpuBenchmarks } from "@/lib/api/admin/benchmarks";
-import { listBrands } from "@/lib/api/admin/brands";
-import { listUsers } from "@/lib/api/admin/users";
-import {
-  generateAllEmbeddings,
-  generateAllPickScores,
-  getEmbeddingStatus,
-  getPickScoreStatus,
-} from "@/lib/api/admin/embeddings";
-import { type Job, jobTypeLabel, listJobs } from "@/lib/api/admin/jobs";
-import { listLaptops } from "@/lib/api/admin/laptops";
-import { listPendingSummaries, listRawReviews } from "@/lib/api/admin/reviews";
-import { getScrapeStatusCounts, listRawScrapLaptops } from "@/lib/api/admin/scraper";
+import { timeAgo } from "@/lib/admin/freshness";
+import { type DashboardSummary, getDashboardSummary } from "@/lib/api/admin/dashboard";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
-import { cn } from "@/lib/utils";
 
-import { AdminJobPanel } from "./admin-job-panel";
 import { AdminPageHeader } from "./admin-page-header";
-import { DashboardSkeleton } from "./dashboard-skeleton";
+import { AdminErrorState, AdminLoadingState } from "./admin-states";
+import { SectionBoundary } from "./admin-section-boundary";
+import { RefreshAction } from "./admin-summary-ui";
+import { CatalogCard, Freshness, JobsCard, NeedsAttention, PicoCard, Trends } from "./dashboard-sections";
+
+/** Re-read while a job runs, so its progress bar moves. One request. */
+const RUNNING_POLL_MS = 10_000;
 
 /**
- * Everything here answers one question: what is stuck, and where?
- *
- * Deliberately not a catalog-size dashboard. Counts are queue depths, and
- * each one is the link that clears it — the pipeline order is the thing the
- * screen has to teach, because every stage depends on the one before it.
+ * Is anything broken, does anything need me, is the data fresh? One request
+ * (GET /admin/dashboard/summary). The actions that used to live here
+ * (Recalculate PickScores, Generate embeddings) moved to their own pages; the
+ * freshness rows link there.
  */
-
-interface Health {
-  targetsPending: number;
-  targetsFailed: number;
-  targetsTotal: number;
-  rawTotal: number;
-  rawPending: number;
-  laptopCount: number;
-  embedded: number;
-  embeddedTotal: number;
-  embedCoverage: number;
-  scored: number;
-  scoreCoverage: number;
-  reviewsPending: number;
-  summariesPending: number;
-  agentRuns: number;
-  agentErrorRate: number;
-  // Reference data — not queues, so shown as status rather than calls to action.
-  cpuBenchmarks: number;
-  gpuBenchmarks: number;
-  userCount: number;
-  brandCount: number;
-}
-
 export default function AdminDashboardPage() {
-  const { token } = useAuth();
-  const [health, setHealth] = useState<Health | null>(null);
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const { token, user } = useAuth();
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
-  const [running, setRunning] = useState<"embed" | "score" | null>(null);
-  const [confirmScore, setConfirmScore] = useState(false);
-  // Reload on finish so the "PickScores calculated" meter shows the new run.
-  const scoreJob = useJob(token, () => setReloadTick((t) => t + 1));
-
-  // Clear a prior error as soon as a retry is requested — "adjust state
-  // during render", not an effect (see laptops-browse.tsx).
-  const [prevReloadTick, setPrevReloadTick] = useState(reloadTick);
-  if (reloadTick !== prevReloadTick) {
-    setPrevReloadTick(reloadTick);
-    setError(null);
-  }
+  // The reload that last finished; loading while it trails reloadTick.
+  const [loadedTick, setLoadedTick] = useState(-1);
+  const loading = loadedTick !== reloadTick;
+  // Re-renders "Updated N min ago" without refetching.
+  const [, setClock] = useState(0);
 
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
-
-    // Every count is a `limit: 1` probe reading the total, so the dashboard
-    // never pulls a full table just to size it.
-    Promise.all([
-      getScrapeStatusCounts(token),
-      listRawScrapLaptops(token, { limit: 1 }),
-      listRawScrapLaptops(token, { limit: 1, processingStatus: "pending" }),
-      listLaptops({ limit: 1 }),
-      getEmbeddingStatus(),
-      getPickScoreStatus(),
-      listRawReviews(token, { status: "pending", limit: 1 }),
-      listPendingSummaries(token),
-      getAgentRunStats(token),
-      listJobs(token, { limit: 4 }),
-      listCpuBenchmarks({ limit: 1 }),
-      listGpuBenchmarks({ limit: 1 }),
-      listUsers(token, { limit: 1 }),
-      listBrands(),
-    ])
-      .then(
-        ([
-          targets,
-          raw,
-          rawPending,
-          laptops,
-          embeddings,
-          pickScores,
-          pendingReviews,
-          pendingSummaries,
-          agent,
-          jobList,
-          cpu,
-          gpu,
-          users,
-          brandList,
-        ]) => {
-          if (cancelled) return;
-          setHealth({
-            targetsPending: targets.pending,
-            targetsFailed: targets.failed,
-            targetsTotal: targets.total,
-            rawTotal: raw.total,
-            rawPending: rawPending.total,
-            laptopCount: laptops.total,
-            embedded: embeddings.embedded,
-            embeddedTotal: embeddings.total_laptops,
-            embedCoverage: embeddings.coverage_pct,
-            scored: pickScores.scored,
-            scoreCoverage: pickScores.coverage_pct,
-            reviewsPending: pendingReviews.total,
-            summariesPending: pendingSummaries.total,
-            agentRuns: agent.runs_today,
-            agentErrorRate: agent.error_rate_pct,
-            cpuBenchmarks: cpu.total,
-            gpuBenchmarks: gpu.total,
-            userCount: users.total,
-            brandCount: brandList.length,
-          });
-          setJobs(jobList.items);
-          setError(null);
-        },
-      )
+    getDashboardSummary(token)
+      .then((s) => {
+        if (cancelled) return;
+        setSummary(s);
+        setError(null);
+      })
       .catch((err) => {
-        if (!cancelled) {
-          setError(err instanceof ApiError ? err.message : "Couldn't load the dashboard.");
-        }
+        if (!cancelled) setError(err instanceof ApiError ? err.message : "Couldn't load the dashboard.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoadedTick(reloadTick);
       });
-
     return () => {
       cancelled = true;
     };
   }, [token, reloadTick]);
 
-  async function runEmbeddings() {
-    if (!token) return;
-    setRunning("embed");
-    try {
-      const accepted = await generateAllEmbeddings(token);
-      // This tile only starts the run; the Embeddings screen is where it is
-      // followed, so point there rather than tracking a job from the dashboard.
-      toast.success(`${accepted.message} Follow it on the Embeddings screen.`);
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Couldn't start embedding.");
-    } finally {
-      setRunning(null);
-    }
-  }
+  const anyRunning = (summary?.jobs.running.length ?? 0) > 0;
+  useEffect(() => {
+    if (!anyRunning) return;
+    const timer = setInterval(() => setReloadTick((t) => t + 1), RUNNING_POLL_MS);
+    return () => clearInterval(timer);
+  }, [anyRunning]);
 
-  async function runPickScores() {
-    if (!token) return;
-    setRunning("score");
-    try {
-      const accepted = await generateAllPickScores(token);
-      scoreJob.start(accepted);
-      toast.success(accepted.message);
-    } catch (err) {
-      // 409 `job_running`: one is already going — it is on the Jobs screen.
-      toast.error(err instanceof ApiError ? err.message : "Couldn't recalculate scores.",
-        err instanceof ApiError && err.code === "job_running"
-          ? { action: { label: "Open Jobs", onClick: () => window.location.assign("/admin/jobs") } }
-          : undefined,
-      );
-    } finally {
-      setRunning(null);
-    }
-  }
-
-  const stages = health
-    ? [
-        {
-          href: "/admin/queue",
-          stage: "Find pages",
-          count: health.targetsPending,
-          unit: "waiting to collect",
-          caption:
-            "Links the feed crawler found. Failed rows retry on the next bulk run.",
-          cta: "Open queue",
-          progress:
-            health.targetsTotal > 0
-              ? (health.targetsTotal - health.targetsPending) / health.targetsTotal
-              : 1,
-          footnote: `${health.targetsTotal - health.targetsPending} of ${health.targetsTotal} collected`,
-        },
-        {
-          href: "/admin/pipeline",
-          stage: "Collect specs",
-          count: health.rawTotal,
-          unit: "raw records",
-          caption: "Messy vendor text. Invisible to customers until processed.",
-          cta: "View records",
-          progress:
-            health.rawTotal > 0 ? (health.rawTotal - health.rawPending) / health.rawTotal : 1,
-          footnote: `${health.rawPending} not yet processed`,
-        },
-        {
-          href: "/admin/processing",
-          stage: "AI clean-up",
-          count: health.rawPending,
-          unit: "to process",
-          caption: "Turns vendor text into catalog entries and adds use-case tags.",
-          cta: "Process batch",
-          progress:
-            health.rawTotal > 0 ? (health.rawTotal - health.rawPending) / health.rawTotal : 1,
-          footnote: "Roughly 13s per record",
-        },
-        {
-          href: "/admin/catalog/laptops",
-          stage: "Publish",
-          count: health.laptopCount,
-          unit: "in the catalog",
-          caption: "Searchable by chat once embedded, and ranked once scored.",
-          cta: "Open catalog",
-          progress: health.embedCoverage / 100,
-          footnote: `${health.embedCoverage}% searchable`,
-        },
-      ]
-    : [];
-
-  const attention = health
-    ? [
-        {
-          href: "/admin/queue",
-          count: health.targetsFailed,
-          icon: Upload,
-          title: "Pages that could not be collected",
-          body: "Retried automatically on the next bulk run. Acer pages need a manual upload.",
-        },
-        {
-          href: "/admin/reviews/link",
-          count: health.reviewsPending,
-          icon: Video,
-          title: "Review videos need a human decision",
-          body: "Link each one to the product line it covers, or dismiss it if it isn't a laptop video.",
-        },
-        {
-          href: "/admin/reviews/pipeline",
-          count: health.summariesPending,
-          icon: Layers,
-          title: "Laptops with new review summaries",
-          body: "Aggregating is fast and only re-reads what is already stored.",
-        },
-      ].filter((a) => a.count > 0)
-    : [];
+  useEffect(() => {
+    const timer = setInterval(() => setClock((c) => c + 1), 30_000);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
         title="Dashboard"
-        description="Every laptop moves through four stages, and each one depends on the stage before it. A number below is a queue — open it to clear it. Re-running any stage is safe: finished items are skipped."
+        description="What needs you, how fresh the data is, and what's running."
         action={
-          <Button variant="outline" size="sm" onClick={() => setReloadTick((t) => t + 1)}>
-            <RefreshCw data-icon="inline-start" />
-            Refresh
-          </Button>
+          <RefreshAction
+            updatedLabel={summary ? timeAgo(summary.generated_at) : null}
+            onRefresh={() => setReloadTick((t) => t + 1)}
+            busy={loading}
+          />
         }
       />
 
-      {error ? (
-        <Card className="gap-0 p-6 text-center">
-          <p className="text-[13px] text-muted-foreground">{error}</p>
-          <div className="mt-3 flex justify-center">
-            <Button variant="outline" size="sm" onClick={() => setReloadTick((t) => t + 1)}>
-              <RefreshCw data-icon="inline-start" />
-              Retry
-            </Button>
-          </div>
+      {error && !summary ? (
+        <Card>
+          <AdminErrorState message={error} onRetry={() => setReloadTick((t) => t + 1)} />
         </Card>
-      ) : !health ? (
-        <DashboardSkeleton />
+      ) : !summary ? (
+        <Card>
+          <AdminLoadingState />
+        </Card>
       ) : (
         <>
-          {/* The pipeline, left to right. */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {stages.map((s, i) => (
-              <div key={s.stage} className="relative">
-                <Link
-                  href={s.href}
-                  className="border-line bg-surface hover:border-brand/30 flex h-full flex-col rounded-2xl border p-4 transition-colors"
-                >
-                  <span className="text-muted-foreground text-[11px] font-semibold tracking-[0.06em] uppercase">
-                    {s.stage}
-                  </span>
-                  <span className="mt-2.5 flex items-baseline gap-1.5">
-                    <span className="text-2xl font-bold tabular-nums">
-                      {s.count.toLocaleString()}
-                    </span>
-                    <span className="text-muted-foreground text-[12px]">{s.unit}</span>
-                  </span>
-                  <span className="text-muted-foreground mt-1 block min-h-[34px] text-[12.5px] leading-snug">
-                    {s.caption}
-                  </span>
-                  <span className="bg-surface-2 mt-3 block h-1.5 overflow-hidden rounded-full">
-                    <span
-                      className="bg-brand block h-full rounded-full"
-                      style={{ width: `${Math.round(s.progress * 100)}%` }}
-                    />
-                  </span>
-                  <span className="mt-2.5 flex items-center justify-between">
-                    <span className="text-brand text-[12.5px] font-semibold">{s.cta} →</span>
-                    <span className="text-muted-foreground text-[11.5px] tabular-nums">
-                      {s.footnote}
-                    </span>
-                  </span>
-                </Link>
-                {i < stages.length - 1 && (
-                  <ChevronRight
-                    className="text-muted-foreground/40 absolute top-1/2 -right-2.5 hidden size-4 -translate-y-1/2 xl:block"
-                    aria-hidden
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.3fr_1fr]">
-            {/* Waiting on you */}
-            <div className="flex flex-col gap-3">
-              <div className="flex items-baseline justify-between">
-                <h2 className="text-sm font-bold tracking-tight">Waiting on You</h2>
-                <span className="text-muted-foreground text-[12px]">
-                  routine states, not errors
-                </span>
-              </div>
-              {attention.length === 0 ? (
-                <Card className="gap-0 p-6 text-center">
-                  <p className="text-muted-foreground text-[13px]">
-                    Nothing is waiting. Every queue is clear.
-                  </p>
-                </Card>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {attention.map((a) => (
-                    <Link
-                      key={a.title}
-                      href={a.href}
-                      className="border-line bg-surface hover:bg-surface-2 flex items-center gap-3.5 rounded-2xl border p-3.5 transition-colors"
-                    >
-                      <span className="bg-brand-tint text-brand flex size-9 shrink-0 items-center justify-center rounded-full text-[13px] font-bold tabular-nums">
-                        {a.count}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-[13.5px] font-semibold">{a.title}</span>
-                        <span className="text-muted-foreground mt-0.5 block text-[12.5px]">
-                          {a.body}
-                        </span>
-                      </span>
-                      <ArrowRight className="text-muted-foreground size-4 shrink-0" />
-                    </Link>
-                  ))}
-                </div>
-              )}
-
-              <Link
-                href="/admin/agent-monitoring"
-                className="border-line bg-surface hover:bg-surface-2 flex items-center gap-3 rounded-2xl border p-3.5 transition-colors"
-              >
-                <MessagesSquare className="text-brand size-4 shrink-0" />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[13.5px] font-semibold">
-                    Pico answered {health.agentRuns.toLocaleString()} turns today
-                  </span>
-                  <span className="text-muted-foreground mt-0.5 block text-[12.5px] tabular-nums">
-                    {health.agentErrorRate}% ended in an error
-                  </span>
-                </span>
-                <ArrowRight className="text-muted-foreground size-4 shrink-0" />
-              </Link>
-            </div>
-
-            {/* Findable & rankable, plus recent runs */}
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-3">
-                <div className="flex items-baseline justify-between">
-                  <h2 className="text-sm font-bold tracking-tight">Findable and Rankable</h2>
-                  <Link
-                    href="/admin/embeddings"
-                    className="text-brand text-[12.5px] font-semibold hover:underline"
-                  >
-                    Embeddings →
-                  </Link>
-                </div>
-                <Card className="gap-0 p-4">
-                  <Meter
-                    label="Embedded for chat"
-                    value={health.embedded}
-                    total={health.embeddedTotal}
-                    pct={health.embedCoverage}
-                  />
-                  <div className="mt-3.5">
-                    <Meter
-                      label="PickScores calculated"
-                      value={health.scored}
-                      total={health.embeddedTotal}
-                      pct={health.scoreCoverage}
-                    />
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    <Button size="sm" onClick={runEmbeddings} disabled={running !== null}>
-                      {running === "embed" ? (
-                        <Spinner data-icon="inline-start" />
-                      ) : (
-                        <Sparkles data-icon="inline-start" />
-                      )}
-                      Generate missing embeddings
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setConfirmScore(true)}
-                      disabled={running !== null || scoreJob.isRunning}
-                    >
-                      {(running === "score" || scoreJob.isRunning) && (
-                        <Spinner data-icon="inline-start" />
-                      )}
-                      Recalculate PickScores
-                    </Button>
-                  </div>
-                  <p className="text-muted-foreground mt-2.5 text-[12px] leading-snug">
-                    Both run in the background as jobs — follow them here or in Jobs. The
-                    current scores stay live until a recalculation finishes.
-                  </p>
-                  {scoreJob.accepted && (
-                    <AdminJobPanel
-                      className="mt-3"
-                      accepted={scoreJob.accepted}
-                      job={scoreJob.job}
-                      pollError={scoreJob.pollError}
-                    />
-                  )}
-                </Card>
-                <AlertDialog open={confirmScore} onOpenChange={setConfirmScore}>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Recalculate every PickScore?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Rewrites every PickScore on the live site, for every active laptop and
-                        use case. Scores are percentiles of the whole catalog, so laptops you
-                        haven&apos;t changed can move by a point. The old scores stay until the
-                        run finishes; a failed or stopped run changes nothing.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => {
-                          setConfirmScore(false);
-                          void runPickScores();
-                        }}
-                      >
-                        Recalculate
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-
-              <div className="flex flex-col gap-3">
-                <div className="flex items-baseline justify-between">
-                  <h2 className="text-sm font-bold tracking-tight">Recent Runs</h2>
-                  <Link
-                    href="/admin/jobs"
-                    className="text-brand text-[12.5px] font-semibold hover:underline"
-                  >
-                    All jobs →
-                  </Link>
-                </div>
-                <Card className="gap-0 py-0">
-                  {jobs.length === 0 ? (
-                    <p className="text-muted-foreground p-5 text-center text-[13px]">
-                      No runs yet.
-                    </p>
-                  ) : (
-                    <ul className="divide-line divide-y">
-                      {jobs.map((job) => (
-                        <li
-                          key={job.id}
-                          className="flex items-center gap-3 px-4 py-2.5 text-[12.5px]"
-                        >
-                          <span
-                            className={cn(
-                              "size-2 shrink-0 rounded-full",
-                              job.status === "failed"
-                                ? "bg-negative"
-                                : job.status === "completed"
-                                  ? "bg-positive"
-                                  : "bg-brand",
-                            )}
-                            aria-hidden
-                          />
-                          <span className="min-w-0 flex-1 truncate font-medium">
-                            {jobTypeLabel(job.job_type)}
-                          </span>
-                          <span className="text-muted-foreground shrink-0 tabular-nums">
-                            {job.succeeded_count}/{job.total_count}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </Card>
-                <p className="text-muted-foreground text-[12px] leading-snug">
-                  A run with some items failing is still a completed run. Judge it by the
-                  failed count, not the status.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Reference data. Deliberately quieter than the cards above: these
-              are not queues, so they carry no call to action — they answer
-              "is the supporting data there?" and link to where it is edited.
-              Benchmarks lead because PickScore is meaningless without them. */}
-          <div className="flex flex-col gap-3">
-            <h2 className="text-sm font-bold tracking-tight">Reference Data</h2>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              {[
-                {
-                  href: "/admin/benchmarks/cpu",
-                  icon: Cpu,
-                  label: "CPU benchmarks",
-                  value: health.cpuBenchmarks,
-                  hint: "Feeds PickScore",
-                },
-                {
-                  href: "/admin/benchmarks/gpu",
-                  icon: Zap,
-                  label: "GPU benchmarks",
-                  value: health.gpuBenchmarks,
-                  hint: "Feeds PickScore",
-                },
-                {
-                  href: "/admin/catalog/brands",
-                  icon: Tag,
-                  label: "Brands",
-                  value: health.brandCount,
-                  hint: "Drives the crawler",
-                },
-                {
-                  href: "/admin/users",
-                  icon: UsersRound,
-                  label: "Users",
-                  value: health.userCount,
-                  hint: "Accounts and roles",
-                },
-              ].map((r) => (
-                <Link
-                  key={r.href}
-                  href={r.href}
-                  className="border-line bg-surface hover:border-brand/30 flex flex-col rounded-2xl border p-3.5 transition-colors"
-                >
-                  <span className="text-muted-foreground flex items-center gap-1.5 text-[11.5px] font-semibold">
-                    <r.icon className="size-3.5" />
-                    {r.label}
-                  </span>
-                  <span className="mt-1.5 text-xl font-bold tabular-nums">
-                    {r.value.toLocaleString()}
-                  </span>
-                  <span className="text-muted-foreground text-[11.5px]">{r.hint}</span>
-                </Link>
-              ))}
-            </div>
+          {/* One boundary per section: a section whose data is missing or
+              throws shows its own error card; the others still render. */}
+          <SectionBoundary name="Needs attention" resetKey={summary.generated_at}>
+            <NeedsAttention summary={summary} />
+          </SectionBoundary>
+          <SectionBoundary name="Trends" resetKey={summary.generated_at}>
+            <Trends summary={summary} />
+          </SectionBoundary>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <SectionBoundary name="Data freshness" resetKey={summary.generated_at}>
+              <Freshness summary={summary} />
+            </SectionBoundary>
+            <SectionBoundary name="Jobs" resetKey={summary.generated_at}>
+              <JobsCard summary={summary} currentUserId={user?.id ?? null} />
+            </SectionBoundary>
+            <SectionBoundary name="Catalog" resetKey={summary.generated_at}>
+              <CatalogCard summary={summary} />
+            </SectionBoundary>
+            <SectionBoundary name="Pico" resetKey={summary.generated_at}>
+              <PicoCard summary={summary} />
+            </SectionBoundary>
           </div>
         </>
       )}
-    </div>
-  );
-}
-
-function Meter({
-  label,
-  value,
-  total,
-  pct,
-}: {
-  label: string;
-  value: number;
-  total: number;
-  pct: number;
-}) {
-  return (
-    <div>
-      <div className="mb-1.5 flex items-baseline justify-between text-[12.5px]">
-        <span className="font-medium">{label}</span>
-        <span className="text-muted-foreground tabular-nums">
-          {value.toLocaleString()} of {total.toLocaleString()} · {pct}%
-        </span>
-      </div>
-      <div className="bg-surface-2 h-1.5 overflow-hidden rounded-full">
-        <div className="bg-brand h-full rounded-full" style={{ width: `${pct}%` }} />
-      </div>
     </div>
   );
 }

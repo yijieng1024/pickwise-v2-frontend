@@ -17,7 +17,7 @@ import {
 import { toast } from "sonner";
 
 import { StatusBarChart } from "@/components/charts/status-bar-chart";
-import { TREND_COLORS, TrendLine } from "@/components/charts/trend-line";
+import { TrendLine } from "@/components/charts/trend-line";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -241,7 +241,7 @@ export default function AdminAgentMonitoringPage() {
       (stats?.tool_usage ?? []).map((t) => ({
         label: t.name,
         value: t.count,
-        color: "var(--brand)",
+        slot: 0 as const,
       })),
     [stats],
   );
@@ -381,7 +381,7 @@ export default function AdminAgentMonitoringPage() {
                 <TrendLine
                   points={trend.points}
                   series={[
-                    { name: "Turns", color: TREND_COLORS[0], values: trend.turns },
+                    { name: "Turns", slot: 0, values: trend.turns },
                   ]}
                 />
               </Card>
@@ -394,7 +394,7 @@ export default function AdminAgentMonitoringPage() {
                 <TrendLine
                   points={trend.points}
                   series={[
-                    { name: "Error rate", color: TREND_COLORS[0], values: trend.errorRate },
+                    { name: "Error rate", slot: 0, values: trend.errorRate },
                   ]}
                   formatValue={(v) => `${v.toFixed(1)}%`}
                   allowDecimals
@@ -411,10 +411,10 @@ export default function AdminAgentMonitoringPage() {
               <TrendLine
                 points={trend.points}
                 series={[
-                  { name: "Median", color: TREND_COLORS[0], values: trend.median },
+                  { name: "Median", slot: 0, values: trend.median },
                   {
                     name: "95th percentile",
-                    color: TREND_COLORS[1],
+                    slot: 1,
                     dashed: true,
                     values: trend.p95,
                   },

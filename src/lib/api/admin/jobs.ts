@@ -9,7 +9,13 @@ export type JobType =
   | "processor.categorize_untagged"
   | "scraper.bulk_scrape"
   | "scraper.scrape_targets"
-  | "embeddings.generate_all";
+  | "embeddings.generate_all"
+  | "pickscore.generate_all"
+  | "reviews.ingest_bulk"
+  | "reviews.retry_transcripts"
+  | "reviews.process"
+  | "reviews.process_bulk"
+  | "reviews.rematch";
 
 /**
  * `cancelling` is a REQUEST, not an outcome — the worker has been asked to
@@ -154,6 +160,11 @@ const JOB_TYPE_LABELS: Record<string, string> = {
   "scraper.scrape_targets": "Scrape selected targets",
   "embeddings.generate_all": "Generate embeddings",
   "pickscore.generate_all": "Recalculate PickScores",
+  "reviews.ingest_bulk": "Run ingest",
+  "reviews.retry_transcripts": "Retry transcripts",
+  "reviews.process": "Summarize transcript",
+  "reviews.process_bulk": "Run processing",
+  "reviews.rematch": "Rematch pending",
 };
 
 export function jobTypeLabel(jobType: string): string {

@@ -160,3 +160,22 @@ export function getLLMModels(token: string, refresh = false): Promise<AvailableM
     next: { revalidate: 0 },
   });
 }
+
+// --- Review pause reason -------------------------------------------------
+
+export interface ReviewPauseReason {
+  reason: string | null;
+  updated_at: string | null;
+}
+
+/** Why review processing is paused. The pause itself is the backend's
+ * REVIEW_PROCESSING_PAUSED env var; this only explains it. Null or blank
+ * clears it; the backend caps it at 500 characters. */
+export function setReviewPauseReason(token: string, reason: string | null): Promise<ReviewPauseReason> {
+  return apiFetch<ReviewPauseReason>("/admin/settings/review-pause-reason", {
+    method: "PUT",
+    token,
+    body: JSON.stringify({ reason }),
+    next: { revalidate: 0 },
+  });
+}

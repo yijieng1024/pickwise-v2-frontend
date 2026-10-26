@@ -51,8 +51,10 @@ import { Card } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import {
   PROCESSING_PAUSED_MESSAGE,
+  type FunnelStepName,
   type RawReview,
   type RawReviewStatus,
+  type StuckReason,
   getPipelineStatus,
   listRawReviews,
   manualMatch,
@@ -63,6 +65,10 @@ import type { BackendLaptop } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
+import { useJob } from "@/lib/admin/use-job";
+
+import { AdminJobPanel } from "../../admin-job-panel";
+import { STUCK } from "../pipeline/pipeline-sections";
 import { useAdminQuery, useSearchDraft } from "../../admin-query-state";
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
 import { AdminPagination } from "../../admin-pagination";
@@ -103,6 +109,8 @@ export function AllReviews() {
   const [summarizeTarget, setSummarizeTarget] = useState<RawReview | null>(null);
   const [summarizing, setSummarizing] = useState(false);
   const [reloadTick, setReloadTick] = useState(0);
+  // Summarize transcript is a background job; the list reloads when it ends.
+  const summarizeJob = useJob(token, () => setReloadTick((t) => t + 1));
   // REVIEW_PROCESSING_PAUSED, read once: Summarize would only 409 while it is on.
   const [processingPaused, setProcessingPaused] = useState(false);
 
@@ -113,8 +121,11 @@ export function AllReviews() {
       .catch(() => {});  // unknown -> leave enabled; the backend still refuses with a 409 toast
   }, [token]);
 
-  const query = useAdminQuery({ filters: { status: "all", q: "" } });
-  const { status, q: debouncedSearch } = query.values;
+  // `step` / `stuck` arrive from a funnel count on Review Pipeline: the list
+  // behind that number, from the same classification the count came from.
+  const query = useAdminQuery({ filters: { status: "all", q: "", step: "", stuck: "" } });
+  const { status, q: debouncedSearch, step, stuck } = query.values;
+  const funnelFilter = stuck ? STUCK[stuck as StuckReason]?.label ?? stuck : step ? `Reached: ${step}` : null;
   const { page } = query;
   const [search, setSearch] = useSearchDraft(debouncedSearch, (value) =>
     query.set({ q: value }),
@@ -136,6 +147,8 @@ export function AllReviews() {
     listRawReviews(token, {
       status: status === "all" ? undefined : (status as RawReviewStatus),
       search: debouncedSearch || undefined,
+      step: (step || undefined) as FunnelStepName | undefined,
+      stuck: (stuck || undefined) as StuckReason | undefined,
       skip: (page - 1) * PAGE_SIZE,
       limit: PAGE_SIZE,
     })
@@ -151,20 +164,13 @@ export function AllReviews() {
     return () => {
       cancelled = true;
     };
-  }, [token, status, debouncedSearch, page, reloadTick]);
+  }, [token, status, debouncedSearch, step, stuck, page, reloadTick]);
 
   async function runSummarize() {
     if (!token || !summarizeTarget) return;
     setSummarizing(true);
     try {
-      const res = await processReview(token, summarizeTarget.id);
-      // 0 chunks is a real outcome, not a failure: the transcript was too
-      // short to chunk. A success toast for it would be misleading.
-      if (res.chunks_saved > 0) {
-        toast.success(`Saved ${res.chunks_saved} chunks from "${summarizeTarget.video_title}".`);
-      } else {
-        toast.info("No chunks saved — the transcript had nothing to summarize.");
-      }
+      summarizeJob.start(await processReview(token, summarizeTarget.id));
       setSummarizeTarget(null);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "Summarizing failed.");
@@ -179,6 +185,25 @@ export function AllReviews() {
         <p className="text-warning text-xs">
           {PROCESSING_PAUSED_MESSAGE} Summarize transcript is unavailable until it is lifted.
         </p>
+      )}
+
+      {summarizeJob.accepted && (
+        <AdminJobPanel accepted={summarizeJob.accepted} job={summarizeJob.job} pollError={summarizeJob.pollError} />
+      )}
+
+      {funnelFilter && (
+        <div className="bg-brand-tint text-brand flex flex-wrap items-center gap-2 rounded-xl px-4 py-2.5 text-sm">
+          <span>
+            Showing the Review Pipeline&apos;s <strong className="font-semibold">{funnelFilter}</strong> list.
+          </span>
+          <button
+            type="button"
+            onClick={() => query.set({ step: "", stuck: "" })}
+            className="ml-auto min-h-9 rounded-full px-3 font-semibold hover:underline"
+          >
+            Show all reviews
+          </button>
+        </div>
       )}
 
       <div className="border-line bg-surface flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center">
@@ -306,17 +331,17 @@ export function AllReviews() {
           <AlertDialogHeader>
             <AlertDialogTitle>Summarize this transcript?</AlertDialogTitle>
             <AlertDialogDescription>
-              Chunks, sentiment-tags and embeds &quot;{summarizeTarget?.video_title}&quot; so the
-              chatbot can quote it. This runs in the foreground and can take a minute or more.
-              Nothing skips a video that was already summarized — running it again stores a
-              second copy of its chunks.
+              Turns each transcript window of &quot;{summarizeTarget?.video_title}&quot; that has no
+              claim yet into a claim on the live site: one Gemma call and one embedding call per
+              window, from today&apos;s quota. It runs as a job; you can leave this page. Windows already
+              saved are skipped.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={summarizing}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={runSummarize} disabled={summarizing}>
               {summarizing && <Spinner data-icon="inline-start" />}
-              {summarizing ? "Summarizing…" : "Summarize"}
+              {summarizing ? "Starting…" : "Summarize"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

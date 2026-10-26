@@ -30,7 +30,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Spinner } from "@/components/ui/spinner";
 import {
   Table,
   TableBody,
@@ -50,13 +49,13 @@ import {
   triggerGpuScraper,
   updateGpuBenchmark,
 } from "@/lib/api/admin/benchmarks";
-import { generateAllPickScores } from "@/lib/api/admin/embeddings";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 
 import { useAdminQuery, useSearchDraft } from "../../admin-query-state";
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
 import { AdminPageHeader } from "../../admin-page-header";
+import { useRecalculatePickScores } from "../../recalculate-pickscores";
 import { OutcomeAlert } from "../../admin-outcome-alert";
 import { AdminPagination } from "../../admin-pagination";
 import { SortableTableHead } from "../../admin-sortable-head";
@@ -77,9 +76,11 @@ export default function AdminGpuBenchmarksPage() {
   // The scraper returns 200 with no job id and no status endpoint, so the
   // only honest signal is that we asked for it. Kept on screen rather than
   // as a toast, because the work outlives the toast by minutes.
-  const [scrapeStarted, setScrapeStarted] = useState(false);
-  const [rescoring, setRescoring] = useState(false);
+  // Never set to true: the "Refresh started" alert is the known PassMark bug
+  // left for step 10 (the run leaves no record to report on).
+  const [scrapeStarted] = useState(false);
   const [reloadTick, setReloadTick] = useState(0);
+  const recalculate = useRecalculatePickScores();
   const query = useAdminQuery({ filters: { q: "" }, sortKeys: GPU_SORT_KEYS });
   const { q: debouncedSearch } = query.values;
   const { page, sort } = query;
@@ -148,27 +149,14 @@ export default function AdminGpuBenchmarksPage() {
     }
   }
 
-  async function runRescore() {
-    if (!token) return;
-    setRescoring(true);
-    try {
-      const accepted = await generateAllPickScores(token);
-      toast.success(`${accepted.message} Follow it in Jobs.`);
-      setScrapeStarted(false);
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Couldn't recalculate scores.");
-    } finally {
-      setRescoring(false);
-    }
-  }
-
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
         title="GPU Benchmarks"
         description="PassMark GPU scores that feed PickScore's performance factors."
         action={
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
+            {recalculate.button}
             <Button variant="outline" size="sm" onClick={runScraper} disabled={scraping}>
               <PlayCircle data-icon="inline-start" />
               {scraping ? "Starting…" : "Run PassMark scraper"}
@@ -181,17 +169,13 @@ export default function AdminGpuBenchmarksPage() {
         }
       />
 
+      {recalculate.panel}
+
       {scrapeStarted && (
         <OutcomeAlert status="info" title="Refresh started">
           This runs in the background and may take a few minutes. There is no progress to
           report, so use the list below to see new scores as they land. Once it finishes,
-          recalculate PickScores — they are derived from these numbers.
-          <span className="mt-2 block">
-            <Button size="sm" variant="outline" onClick={runRescore} disabled={rescoring}>
-              {rescoring && <Spinner data-icon="inline-start" />}
-              Recalculate PickScores
-            </Button>
-          </span>
+          use Recalculate PickScores above — scores are derived from these numbers.
         </OutcomeAlert>
       )}
 

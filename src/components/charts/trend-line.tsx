@@ -1,5 +1,7 @@
 "use client";
 
+import { type PaletteIndex, useChartPalette } from "./chart-palette";
+import { ChartTableToggle } from "./chart-table-toggle";
 import {
   CartesianGrid,
   Line,
@@ -14,23 +16,19 @@ import {
  * A day-over-day trend line for the admin portal — "is this getting better or
  * worse?", which no single number on a stat tile can answer.
  *
- * Colors are the app's validated categorical pair (see globals.css / CLAUDE.md):
- * `#3b6db4` first, `#c2571b` second and dashed. That pair clears the lightness
- * band, chroma floor, CVD separation and contrast checks against both the light
- * and dark chart surfaces; the semantic green/red pair does not (it fails the
- * dark lightness band and lands in the CVD floor band), which is why a
- * success/failure series here is blue-and-orange rather than green-and-red. The
- * dash is the secondary encoding, so the two lines are separable without color.
+ * Colours come from the one admin palette (chart-palette.ts), per theme; a
+ * series names its palette slot, never a hex value. `dashed` is the non-colour
+ * channel that separates two series, and every chart can be read as a table
+ * (ChartTableToggle), so no value depends on colour alone.
  *
  * Deliberately single-axis: two measures on different scales get two charts,
  * never a second y-axis.
  */
 
-export const TREND_COLORS = ["#3b6db4", "#c2571b"] as const;
-
 export interface TrendSeries {
   name: string;
-  color: string;
+  /** Slot in the admin chart palette (0 = blue, 1 = orange, 2 = aqua, …). */
+  slot: PaletteIndex;
   /** Renders the line dashed — the non-color channel that separates series. */
   dashed?: boolean;
   /** One value per point; `null` plots a gap rather than a dishonest zero. */
@@ -64,6 +62,7 @@ export function TrendLine({
   formatValue = (v) => v.toLocaleString(),
   yWidth = 44,
   allowDecimals = false,
+  caption = "Trend",
 }: {
   points: TrendPoint[];
   series: TrendSeries[];
@@ -72,7 +71,11 @@ export function TrendLine({
   /** Widen when the y ticks are long ("1,200 ms"). */
   yWidth?: number;
   allowDecimals?: boolean;
+  /** Names the table view for screen readers. */
+  caption?: string;
 }) {
+  const palette = useChartPalette();
+  const colorOf = (s: TrendSeries) => palette[s.slot];
   const data = points.map((point, i) => {
     const row: Record<string, string | number | null | undefined> = {
       x: point.key,
@@ -94,14 +97,25 @@ export function TrendLine({
   const dashedByName = new Map(series.map((s) => [s.name, s.dashed ?? false]));
 
   return (
+    <ChartTableToggle
+      caption={caption}
+      columns={["Day", ...series.map((s) => s.name)]}
+      rows={points.map((p, i) => [
+        p.label,
+        ...series.map((s) => {
+          const v = s.values[i];
+          return v === null || v === undefined ? null : formatValue(v);
+        }),
+      ])}
+    >
     <div>
       {/* A legend is always present for two or more series, so identity never
           rests on color alone. One series needs none — the heading names it. */}
       {series.length > 1 && (
         <ul className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1">
           {series.map((s) => (
-            <li key={s.name} className="text-muted-foreground flex items-center gap-1.5 text-[12px]">
-              <SeriesKey color={s.color} dashed={s.dashed} />
+            <li key={s.name} className="text-muted-foreground flex items-center gap-1.5 text-xs">
+              <SeriesKey color={colorOf(s)} dashed={s.dashed} />
               {s.name}
             </li>
           ))}
@@ -141,7 +155,7 @@ export function TrendLine({
               const x = String(label);
               const note = noteByX.get(x);
               return (
-                <div className="border-line bg-popover text-popover-foreground rounded-xl border p-2.5 text-[12px] shadow-md">
+                <div className="border-line bg-popover text-popover-foreground rounded-xl border p-2.5 text-xs shadow-md">
                   <p className="font-semibold">{labelByX.get(x) ?? x}</p>
                   <ul className="mt-1 flex flex-col gap-0.5">
                     {(payload as readonly TooltipRow[]).map((row) => (
@@ -170,7 +184,7 @@ export function TrendLine({
               type="monotone"
               name={s.name}
               dataKey={s.name}
-              stroke={s.color}
+              stroke={colorOf(s)}
               strokeWidth={2}
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -182,13 +196,14 @@ export function TrendLine({
               // `--card` because every caller sits on a Card, and in dark mode
               // `--card` and `--surface` are different colors — a ring in the
               // wrong one reads as an outline rather than as a gap.
-              dot={showDots ? { r: 4, fill: s.color, stroke: "var(--card)", strokeWidth: 2 } : false}
-              activeDot={{ r: 6, fill: s.color, stroke: "var(--card)", strokeWidth: 2 }}
+              dot={showDots ? { r: 4, fill: colorOf(s), stroke: "var(--card)", strokeWidth: 2 } : false}
+              activeDot={{ r: 6, fill: colorOf(s), stroke: "var(--card)", strokeWidth: 2 }}
             />
           ))}
         </LineChart>
       </ResponsiveContainer>
     </div>
+    </ChartTableToggle>
   );
 }
 

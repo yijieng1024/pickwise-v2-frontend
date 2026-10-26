@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Coins } from "lucide-react";
 
-import { TREND_COLORS, TrendLine } from "@/components/charts/trend-line";
+import { TrendLine } from "@/components/charts/trend-line";
 import { Card } from "@/components/ui/card";
 import {
   Table,
@@ -132,8 +132,8 @@ export default function AdminLLMUsagePage() {
             <TrendLine
               points={trend.points}
               series={[
-                { name: "Input", color: TREND_COLORS[0], values: trend.input },
-                { name: "Output", color: TREND_COLORS[1], dashed: true, values: trend.output },
+                { name: "Input", slot: 0, values: trend.input },
+                { name: "Output", slot: 1, dashed: true, values: trend.output },
               ]}
               yWidth={64}
             />

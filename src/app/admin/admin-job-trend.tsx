@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { TREND_COLORS, TrendLine } from "@/components/charts/trend-line";
+import { TrendLine } from "@/components/charts/trend-line";
 import { Card } from "@/components/ui/card";
 import { type Job, listJobs } from "@/lib/api/admin/jobs";
 import { ApiError } from "@/lib/api/client";
@@ -141,8 +141,8 @@ export function AdminJobTrendCard({
         <TrendLine
           points={trend.points}
           series={[
-            { name: "Succeeded", color: TREND_COLORS[0], values: trend.succeeded },
-            { name: "Failed", color: TREND_COLORS[1], dashed: true, values: trend.failed },
+            { name: "Succeeded", slot: 0, values: trend.succeeded },
+            { name: "Failed", slot: 1, dashed: true, values: trend.failed },
           ]}
           yWidth={52}
         />

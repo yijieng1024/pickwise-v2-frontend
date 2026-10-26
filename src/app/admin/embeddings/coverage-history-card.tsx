@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { TREND_COLORS, TrendLine } from "@/components/charts/trend-line";
+import { TrendLine } from "@/components/charts/trend-line";
 import { Card } from "@/components/ui/card";
 import { type CoverageHistoryDay, getCoverageHistory } from "@/lib/api/admin/embeddings";
 import { ApiError } from "@/lib/api/client";
@@ -117,8 +117,8 @@ export function CoverageHistoryCard({ reloadTick = 0 }: { reloadTick?: number })
         <TrendLine
           points={trend.points}
           series={[
-            { name: "In catalog", color: TREND_COLORS[0], values: trend.catalog },
-            { name: "Embedded", color: TREND_COLORS[1], dashed: true, values: trend.embedded },
+            { name: "In catalog", slot: 0, values: trend.catalog },
+            { name: "Embedded", slot: 1, dashed: true, values: trend.embedded },
           ]}
           yWidth={52}
         />

@@ -101,7 +101,17 @@ Three strict elevation levels:
 ### Product Media & Visualizations
 
 - **Product Photos:** Image containers utilize `bg-white` in BOTH light and dark themes for clear transparent PNG display. CSS classes `mix-blend-multiply dark:mix-blend-normal` must be preserved. Images must use `object-contain` (never `object-cover`).
-- **Data Visualization** (`components/charts/*`): CVD-safe, high-contrast chart pairings:
+- **Data Visualization, admin** (`components/charts/*`): one palette for every admin chart, defined once in `components/charts/chart-palette.ts` and resolved per theme with `useChartPalette()`. Series name a slot (0–6), never a hex value. Each mode has its own steps, validated against its chart surface (light against `#ffffff`, dark against `#151a21`):
+
+  | Slot | 0 blue | 1 orange | 2 aqua | 3 yellow | 4 magenta | 5 green | 6 violet |
+  | --- | --- | --- | --- | --- | --- | --- | --- |
+  | Light | `#2a78d6` | `#eb6834` | `#1baf7a` | `#eda100` | `#e87ba4` | `#008300` | `#6250d6` |
+  | Dark | `#3987e5` | `#d95926` | `#199e70` | `#c98500` | `#d55181` | `#008300` | `#9085e9` |
+
+  - In light mode aqua, yellow and magenta are below 3:1 against white, so no chart may rely on colour alone: every admin chart has a "View as table" toggle (`ChartTableToggle`, built into each chart component), and bar charts keep their value labels.
+  - A category keeps a fixed colour by identity, never by rank (`brandSlot()` for brands), so colours don't jump when the order changes.
+  - A legend for more than one series, a tooltip with the exact number, one y-axis only, a recessive `var(--border)` grid. A second line series is dashed as the non-colour channel.
+- **Data Visualization, public pages** (compare, laptop details): CVD-safe pairings, unchanged:
   - Radar comparison: `#3b6db4` vs `#9333ea`
   - Price history: `#3b6db4` vs `#c2571b` (second series dashed)
   - Single series: `#3b6db4`
