@@ -55,7 +55,7 @@ export function useRecalculatePickScores() {
   const button = (
     <Button variant="outline" size="sm" onClick={() => setConfirm(true)} disabled={starting || job.isRunning}>
       {(starting || job.isRunning) && <Spinner data-icon="inline-start" />}
-      Recalculate PickScores
+      Recalculate Pick Scores
     </Button>
   );
 
@@ -65,9 +65,9 @@ export function useRecalculatePickScores() {
       <AlertDialog open={confirm} onOpenChange={setConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Recalculate every PickScore?</AlertDialogTitle>
+            <AlertDialogTitle>Recalculate every Pick Score?</AlertDialogTitle>
             <AlertDialogDescription>
-              Rewrites every PickScore on the live site, for every active laptop and use case.
+              Rewrites every Pick Score on the live site, for every active laptop and use case.
               Scores are percentiles of the whole catalog, so laptops you haven&apos;t changed can
               move by a point. The old scores stay until the run finishes; a failed or stopped run
               changes nothing.

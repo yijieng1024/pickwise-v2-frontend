@@ -99,7 +99,7 @@ export default async function Home() {
                   Top 5 for {label}
                 </h2>
                 <p className="mt-1.5 text-sm text-muted-foreground">
-                  PickScore re-weighted for {label.toLowerCase()} — the
+                  Pick Score re-weighted for {label.toLowerCase()} — the
                   highest scorers right now.
                 </p>
               </div>

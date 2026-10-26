@@ -84,14 +84,14 @@ function attentionRows(s: DashboardSummary): AttentionRow[] {
   const ps = a.pickscore;
   if (ps.missing + ps.withheld + ps.unverified > 0) {
     const parts = [
-      ps.missing > 0 && `${ps.missing} with no PickScore`,
+      ps.missing > 0 && `${ps.missing} with no Pick Score`,
       ps.withheld > 0 && `${ps.withheld} withheld`,
       ps.unverified > 0 && `${ps.unverified} with an Unverified benchmark`,
     ].filter(Boolean);
     rows.push({
       key: "pickscore",
       tone: "warn",
-      title: "Some active laptops have no full PickScore",
+      title: "Some active laptops have no full Pick Score",
       detail: parts.join(" · "),
       href: "/admin/benchmarks/cpu",
       linkLabel: "Benchmarks",
@@ -278,7 +278,7 @@ export function Freshness({ summary }: { summary: DashboardSummary }) {
     <SummaryCard id="freshness" title="Data freshness" description="How long since each piece of data was last updated.">
       <ul className="mt-2">
         <FreshRow
-          label="PickScore recalculated"
+          label="Pick Score recalculated"
           detail={
             psTone === "bad"
               ? "Never calculated"
@@ -449,7 +449,7 @@ export function CatalogCard({ summary }: { summary: DashboardSummary }) {
       </div>
       <div className="text-muted-foreground mt-4 text-xs font-semibold tracking-wide uppercase">Active laptops with…</div>
       <div className="mt-2.5 flex flex-col gap-3">
-        <ShareBar label="PickScore" value={c.active_with_pickscore} total={c.active} />
+        <ShareBar label="Pick Score" value={c.active_with_pickscore} total={c.active} />
         <ShareBar label="Embedding" value={c.active_with_embedding} total={c.active} />
         <ShareBar label="Reviews shown on the site" value={c.active_with_reviews} total={c.active} />
       </div>

@@ -153,7 +153,7 @@ export default function AdminGpuBenchmarksPage() {
     <div className="flex flex-col gap-4">
       <AdminPageHeader
         title="GPU Benchmarks"
-        description="PassMark GPU scores that feed PickScore's performance factors."
+        description="PassMark GPU scores that feed Pick Score's performance factors."
         action={
           <div className="flex flex-wrap gap-3">
             {recalculate.button}
@@ -175,7 +175,7 @@ export default function AdminGpuBenchmarksPage() {
         <OutcomeAlert status="info" title="Refresh started">
           This runs in the background and may take a few minutes. There is no progress to
           report, so use the list below to see new scores as they land. Once it finishes,
-          use Recalculate PickScores above — scores are derived from these numbers.
+          use Recalculate Pick Scores above — scores are derived from these numbers.
         </OutcomeAlert>
       )}
 
@@ -272,7 +272,7 @@ export default function AdminGpuBenchmarksPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete GPU benchmark?</AlertDialogTitle>
             <AlertDialogDescription>
-              Removes {deleteTarget?.gpu_name} from the PickScore lookup table.
+              Removes {deleteTarget?.gpu_name} from the Pick Score lookup table.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

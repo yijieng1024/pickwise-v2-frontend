@@ -153,7 +153,7 @@ export default function AdminCpuBenchmarksPage() {
     <div className="flex flex-col gap-4">
       <AdminPageHeader
         title="CPU Benchmarks"
-        description="PassMark CPU scores that feed PickScore's performance factors."
+        description="PassMark CPU scores that feed Pick Score's performance factors."
         action={
           <div className="flex flex-wrap gap-3">
             {recalculate.button}
@@ -175,7 +175,7 @@ export default function AdminCpuBenchmarksPage() {
         <OutcomeAlert status="info" title="Refresh started">
           This runs in the background and may take a few minutes. There is no progress to
           report, so use the list below to see new scores as they land. Once it finishes,
-          use Recalculate PickScores above — scores are derived from these numbers.
+          use Recalculate Pick Scores above — scores are derived from these numbers.
         </OutcomeAlert>
       )}
 
@@ -272,7 +272,7 @@ export default function AdminCpuBenchmarksPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete CPU benchmark?</AlertDialogTitle>
             <AlertDialogDescription>
-              Removes {deleteTarget?.cpu_name} from the PickScore lookup table.
+              Removes {deleteTarget?.cpu_name} from the Pick Score lookup table.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

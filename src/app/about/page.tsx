@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 export const metadata: Metadata = {
   title: "About — PickWise",
   description:
-    "Why PickWise exists: an agent that asks before it recommends, a transparent PickScore, and laptop advice built for the Malaysian market.",
+    "Why PickWise exists: an agent that asks before it recommends, a transparent Pick Score, and laptop advice built for the Malaysian market.",
 };
 
 const pillars = [
@@ -24,7 +24,7 @@ const pillars = [
   {
     icon: CircleGauge,
     title: "One honest score",
-    body: "PickScore condenses public benchmark data and specifications into a single rating built from eight weighted factors. The weights change with the use case — a great gaming laptop and a great student laptop are not the same machine — so every score is scored for something.",
+    body: "Pick Score condenses public benchmark data and specifications into a single rating built from eight weighted factors. The weights change with the use case — a great gaming laptop and a great student laptop are not the same machine — so every score is scored for something.",
   },
   {
     icon: ScanSearch,
@@ -42,7 +42,7 @@ const steps = [
   {
     step: "2",
     title: "Get a shortlist with scores",
-    body: "Pico narrows the catalog to a few strong candidates, each with a PickScore and a plain-English explanation of why it made the cut.",
+    body: "Pico narrows the catalog to a few strong candidates, each with a Pick Score and a plain-English explanation of why it made the cut.",
   },
   {
     step: "3",
@@ -62,7 +62,7 @@ const commitments = [
   },
   {
     title: "AI that admits it can be wrong",
-    body: "Pico's replies are AI-generated and PickScore is an opinion expressed as a number, not a guarantee. Verify specifications before you commit.",
+    body: "Pico's replies are AI-generated and Pick Score is an opinion expressed as a number, not a guarantee. Verify specifications before you commit.",
   },
   {
     title: "Your data stays yours",
@@ -88,7 +88,7 @@ export default function AboutPage() {
           <strong className="font-semibold text-foreground">Pico</strong> that
           asks what you need before telling you what to buy, backed by a
           transparent rating we call{" "}
-          <strong className="font-semibold text-foreground">PickScore</strong>.
+          <strong className="font-semibold text-foreground">Pick Score</strong>.
         </p>
       </div>
 

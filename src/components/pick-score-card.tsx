@@ -122,7 +122,7 @@ export function PickScoreCard({
     <section className="border-line bg-surface rounded-3xl border p-7 md:col-span-6">
       <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-base font-semibold tracking-tight">
-          PickScore by Use Case
+          Pick Score by Use Case
         </h2>
         <span className="text-[11px] text-muted-foreground">
           Deterministic: real benchmarks, no AI opinion
@@ -136,8 +136,8 @@ export function PickScoreCard({
       {/* Screen-reader summary of the selected breakdown */}
       <p className="sr-only" aria-live="polite">
         {current.score === null
-          ? `No PickScore for ${tabLabel(current.use_case)}.`
-          : `PickScore ${current.score} out of 100 for ${tabLabel(current.use_case)}.`}
+          ? `No Pick Score for ${tabLabel(current.use_case)}.`
+          : `Pick Score ${current.score} out of 100 for ${tabLabel(current.use_case)}.`}
         Top contributing factors: {topFactors.join(", ")}.
       </p>
 
@@ -182,7 +182,7 @@ export function PickScoreCard({
             For you
             <Progress
               value={null}
-              aria-label="Calculating your personal PickScore"
+              aria-label="Calculating your personal Pick Score"
               className="w-10 gap-0 [&_[data-slot=progress-indicator]]:w-1/2 motion-safe:[&_[data-slot=progress-indicator]]:animate-progress-slide"
             />
           </span>

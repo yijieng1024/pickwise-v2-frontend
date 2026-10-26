@@ -23,7 +23,7 @@ const generic = [
 const pickwise = [
   "Searches a catalog of laptops sold in Malaysia and only recommends ones currently listed with a known price.",
   "Prices are in Ringgit: the manufacturer's price, its recent price history, and live Malaysian listings when asked.",
-  "Each result carries a PickScore built from public benchmarks, weighted for coding and gaming.",
+  "Each result carries a Pick Score built from public benchmarks, weighted for coding and gaming.",
   "Can back a claim with what YouTube reviewers said, with a link to the moment they said it.",
 ];
 
@@ -46,7 +46,7 @@ const rows = [
   {
     topic: "Performance claims",
     generic: "Reputation and general impressions",
-    pickwise: "PickScore from PassMark CPU and GPU benchmarks, weighted by use case",
+    pickwise: "Pick Score from PassMark CPU and GPU benchmarks, weighted by use case",
   },
   {
     topic: "Real-world opinions",
@@ -156,7 +156,7 @@ export default function WhyPickWisePage() {
           assignment on it, a general chatbot is the better tool. Read more about how
           scores are built in{" "}
           <Link href="/pickscore" className="text-brand underline underline-offset-2">
-            How PickScore works
+            How Pick Score works
           </Link>
           .
         </p>

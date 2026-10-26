@@ -266,7 +266,7 @@ export function CompareView({
             >
                 <div className="pl-2">
                   <div className="text-brand flex items-center gap-1.5 text-[13px] font-semibold">
-                    PickScore
+                    Pick Score
                     {personalized && (
                       <span className="bg-brand flex size-3.5 items-center justify-center rounded-full text-white">
                         <UserRound className="size-2" />
@@ -282,7 +282,7 @@ export function CompareView({
                 {effective.map((laptop) => (
                   <div key={laptop.id} className="flex items-center gap-2.5 px-2">
                     {laptop.score === null ? (
-                      <span className="text-[13px] text-muted-foreground">No PickScore</span>
+                      <span className="text-[13px] text-muted-foreground">No Pick Score</span>
                     ) : (
                       <>
                         <PickScoreRing score={laptop.score.score} size={40} caption="none" />
@@ -320,7 +320,7 @@ export function CompareView({
                 the spec rows most people came to read. */}
             {hasScores && (
               <RowGroup
-                title="PickScore Factors"
+                title="Pick Score Factors"
                 icon={Sparkles}
                 rows={factorRows}
                 gridStyle={gridStyle}
@@ -522,8 +522,8 @@ function TradeoffPanel({
           </ul>
           <span className="text-[11.5px] text-muted-foreground">
             {bestName
-              ? `Weighted across all eight factors, ${bestName} takes the highest PickScore.`
-              : "The overall PickScores are level. The choice comes down to which factors above matter to you."}
+              ? `Weighted across all eight factors, ${bestName} takes the highest Pick Score.`
+              : "The overall Pick Scores are level. The choice comes down to which factors above matter to you."}
             {personalized
               ? " Scores are weighted to your Needs Wizard answers."
               : " Sign in and finish the Needs Wizard to weight these to your own priorities."}

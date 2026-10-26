@@ -61,7 +61,7 @@ export function PersonalPickScoreRing({
       className={cn("relative inline-flex", className)}
       title={
         personal != null
-          ? "Personalized PickScore — weighted from your Needs Wizard answers"
+          ? "Personalized Pick Score — weighted from your Needs Wizard answers"
           : undefined
       }
     >

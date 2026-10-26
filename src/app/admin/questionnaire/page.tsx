@@ -121,7 +121,7 @@ export default function AdminQuestionnairePage() {
     <div className="flex flex-col gap-4">
       <AdminPageHeader
         title="Questionnaire"
-        description="The questions new customers answer when they set up their preferences. Answers feed their personalized PickScores."
+        description="The questions new customers answer when they set up their preferences. Answers feed their personalized Pick Scores."
         action={
           <Button size="sm" onClick={() => setEditing("new")}>
             <Plus data-icon="inline-start" />

@@ -57,7 +57,7 @@ export function PickScorePopover({
   return (
     <Popover onOpenChange={load}>
       <PopoverTrigger
-        aria-label="PickScore breakdown"
+        aria-label="Pick Score breakdown"
         // The trigger sits on cards whose whole surface is a link.
         onClick={(e) => {
           e.preventDefault();
@@ -86,7 +86,7 @@ export function PickScorePopover({
       >
         <GlassSurface cornerRadius={16} className="max-h-[70vh] overflow-y-auto p-4">
           <p className="mb-3 text-xs font-semibold">
-            {score === null ? "No PickScore" : `PickScore ${score}`} ·{" "}
+            {score === null ? "No Pick Score" : `Pick Score ${score}`} ·{" "}
             {personal ? "For you" : labelForUseCase(useCase)}
           </p>
           {shown ? (

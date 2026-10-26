@@ -102,7 +102,7 @@ export function PickScoreBreakdown({
       {Boolean(flags.score_withheld) && (
         <p className="bg-surface-2 flex items-start gap-2 rounded-xl px-3 py-2 text-[12px] leading-snug">
           <TriangleAlert className="mt-0.5 size-3.5 flex-none text-muted-foreground" />
-          No PickScore: we couldn&apos;t identify this laptop&apos;s CPU or GPU,
+          No Pick Score: we couldn&apos;t identify this laptop&apos;s CPU or GPU,
           so too much of the score would be guesswork. The factors that could
           be measured are below.
         </p>

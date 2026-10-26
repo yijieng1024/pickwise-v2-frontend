@@ -741,7 +741,7 @@ export default function ChatPage() {
       {personalScores && (
         <p className="flex items-start gap-1.5 text-[11px] leading-snug text-muted-foreground">
           <UserRound className="text-brand mt-px size-3 flex-none" />
-          PickScores personalized from your Needs Wizard answers — your
+          Pick Scores personalized from your Needs Wizard answers — your
           budget, priorities and portability reweight each factor.
         </p>
       )}
@@ -1125,7 +1125,7 @@ export default function ChatPage() {
             ) : (
               <p className="text-xs leading-relaxed text-muted-foreground">
                 When Pico finds laptops that fit, they land here with their
-                PickScore — tap one for full specs and price history.
+                Pick Score — tap one for full specs and price history.
               </p>
             )}
           </div>

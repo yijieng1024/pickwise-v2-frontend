@@ -21,7 +21,7 @@ const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
 const perks = [
   "An agent that asks before it recommends",
-  "PickScores personalized to your budget and priorities",
+  "Pick Scores personalized to your budget and priorities",
   "Conversations that pick up where you left off",
 ];
 
@@ -160,7 +160,7 @@ export default function LoginPage() {
           </h2>
           <p className="text-sm leading-relaxed opacity-85">
             Tell Pico what you need — in English, Malay or Chinese. It
-            searches the Malaysian market, weighs every match with PickScore,
+            searches the Malaysian market, weighs every match with Pick Score,
             and explains why each one fits you.
           </p>
           <div className="mt-auto flex flex-col gap-3 text-[13px]">

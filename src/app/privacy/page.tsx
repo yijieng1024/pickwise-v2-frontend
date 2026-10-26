@@ -54,7 +54,7 @@ export default function PrivacyPage() {
       <LegalSection title="2. How we use your data">
         <LegalList
           items={[
-            "Personalizing recommendations and PickScores to your stated needs, budget, and preferences.",
+            "Personalizing recommendations and Pick Scores to your stated needs, budget, and preferences.",
             "Powering Pico conversations and remembering their history.",
             "Sending account emails — verification and password reset. We don't send marketing email.",
             "Monitoring and improving recommendation and search quality.",

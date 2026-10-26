@@ -5,9 +5,9 @@ import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
-  title: "How PickScore Works — PickWise",
+  title: "How Pick Score Works — PickWise",
   description:
-    "A plain-English explanation of PickScore: the eight things we measure, how each laptop is ranked against the catalog, and why the same laptop scores differently for gaming and for study.",
+    "A plain-English explanation of Pick Score: the eight things we measure, how each laptop is ranked against the catalog, and why the same laptop scores differently for gaming and for study.",
 };
 
 const factors = [
@@ -113,7 +113,7 @@ export default function PickScorePage() {
       {/* Hero */}
       <div className="max-w-2xl motion-safe:animate-fade-in-up">
         <p className="text-brand text-[11px] font-semibold tracking-wide uppercase">
-          How PickScore works
+          How Pick Score works
         </p>
         <h1 className="mt-2 text-4xl font-bold tracking-tighter text-balance sm:text-5xl">
           One number, and the full receipt behind it.
@@ -121,7 +121,7 @@ export default function PickScorePage() {
         <p className="mt-5 text-[15px] leading-relaxed text-muted-foreground">
           Every laptop on PickWise gets a{" "}
           <strong className="font-semibold text-foreground">
-            PickScore out of 100
+            Pick Score out of 100
           </strong>
           . It answers one question: compared with every other laptop we list,
           how good is this one{" "}
@@ -228,7 +228,7 @@ export default function PickScorePage() {
             more place in the queue.
           </p>
           <p>
-            It also means a PickScore is always relative to{" "}
+            It also means a Pick Score is always relative to{" "}
             <strong className="font-semibold text-foreground">
               what PickWise actually lists
             </strong>
@@ -350,7 +350,7 @@ export default function PickScorePage() {
         style={{ animationDelay: "480ms" }}
       >
         <h2 className="text-2xl font-semibold tracking-tight">
-          What a PickScore won&apos;t do
+          What a Pick Score won&apos;t do
         </h2>
         <dl className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
           {honesty.map(({ title, body }) => (
@@ -366,7 +366,7 @@ export default function PickScorePage() {
           ))}
         </dl>
         <p className="mt-6 max-w-2xl text-[13px] leading-relaxed text-muted-foreground">
-          PickScore is an opinion expressed as a number — a well-reasoned one,
+          Pick Score is an opinion expressed as a number — a well-reasoned one,
           built from public benchmarks and published specifications, but not a
           guarantee of how a laptop will feel to use. Every score on PickWise
           can show its full breakdown, factor by factor, so you can disagree

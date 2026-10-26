@@ -159,7 +159,7 @@ const JOB_TYPE_LABELS: Record<string, string> = {
   "scraper.bulk_scrape": "Bulk scrape brand",
   "scraper.scrape_targets": "Scrape selected targets",
   "embeddings.generate_all": "Generate embeddings",
-  "pickscore.generate_all": "Recalculate PickScores",
+  "pickscore.generate_all": "Recalculate Pick Scores",
   "reviews.ingest_bulk": "Run ingest",
   "reviews.retry_transcripts": "Retry transcripts",
   "reviews.process": "Summarize transcript",

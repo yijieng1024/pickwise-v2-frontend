@@ -424,7 +424,7 @@ export default function AdminCatalogLaptopsPage() {
             <AlertDialogTitle>Delete laptop?</AlertDialogTitle>
             <AlertDialogDescription>
               This permanently removes {target?.product_name} from the catalog, along with its
-              embedding, price history and PickScores. This can&apos;t be undone. To retire a laptop
+              embedding, price history and Pick Scores. This can&apos;t be undone. To retire a laptop
               that is no longer sold, set it to Suspended instead: it leaves search and public
               browse, and its data and reviews are kept.
             </AlertDialogDescription>

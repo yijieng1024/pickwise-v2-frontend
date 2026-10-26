@@ -403,7 +403,7 @@ function PreferencesCard({ token }: { token: string }) {
             Laptop Preferences
           </h2>
           <p className="mt-0.5 text-[13px] text-muted-foreground">
-            What Pico uses to personalize your PickScores.
+            What Pico uses to personalize your Pick Scores.
           </p>
         </div>
         <Button
@@ -430,7 +430,7 @@ function PreferencesCard({ token }: { token: string }) {
         {status === "loaded" && !hasPrefs && (
           <p className="text-[13px] text-muted-foreground">
             No preferences saved yet. Answer six quick questions and Pico will
-            tune every PickScore to you.
+            tune every Pick Score to you.
           </p>
         )}
         {status === "loaded" && prefs && hasPrefs && (

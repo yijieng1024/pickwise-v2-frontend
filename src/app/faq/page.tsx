@@ -11,7 +11,7 @@ import {
 export const metadata: Metadata = {
   title: "FAQ — PickWise",
   description:
-    "Answers to common questions about PickWise, Pico, PickScore, personalized scores, prices, and your account.",
+    "Answers to common questions about PickWise, Pico, Pick Score, personalized scores, prices, and your account.",
 };
 
 type Faq = { q: string; a: React.ReactNode };
@@ -27,7 +27,7 @@ const groups: { title: string; faqs: Faq[] }[] = [
             PickWise is a laptop recommendation and price-comparison service
             for the Malaysian market. It pairs a laptop catalog with{" "}
             <strong>Pico</strong>, an AI agent that asks what you need before
-            recommending, and <strong>PickScore</strong>, a transparent rating
+            recommending, and <strong>Pick Score</strong>, a transparent rating
             that shows exactly why each laptop scored the way it did.
           </p>
         ),
@@ -67,13 +67,13 @@ const groups: { title: string; faqs: Faq[] }[] = [
     ],
   },
   {
-    title: "PickScore",
+    title: "Pick Score",
     faqs: [
       {
-        q: "What is PickScore?",
+        q: "What is Pick Score?",
         a: (
           <p>
-            PickScore is our own rating methodology. It condenses public
+            Pick Score is our own rating methodology. It condenses public
             benchmark data and product specifications into a single score
             built from eight weighted factors, and every score comes with a
             breakdown showing how each factor contributed. It&apos;s an
@@ -93,7 +93,7 @@ const groups: { title: string; faqs: Faq[] }[] = [
         q: "Why does the same laptop have different scores?",
         a: (
           <p>
-            Because a score is always <em>for</em> something. PickScore is
+            Because a score is always <em>for</em> something. Pick Score is
             computed per use case — general use, and four more specialised
             profiles — with different factor weights for each. A machine that
             tops the gaming ranking can sit mid-table for portability-focused
@@ -106,7 +106,7 @@ const groups: { title: string; faqs: Faq[] }[] = [
         a: (
           <p>
             If you&apos;re signed in and have completed the Needs Wizard,
-            PickWise re-weights PickScore to your stated budget and
+            PickWise re-weights Pick Score to your stated budget and
             priorities. Personalized scores are marked with a small person
             badge wherever they appear — on the details page and on
             Pico&apos;s shortlist cards. Without preferences saved, you see
@@ -192,7 +192,7 @@ const groups: { title: string; faqs: Faq[] }[] = [
             Open the account menu and choose <strong>Preferences</strong>, or
             visit your profile&apos;s &ldquo;Laptop preferences&rdquo; card —
             both lead back to the Needs Wizard, where you can update your
-            answers any time. Personalized PickScores update to match.
+            answers any time. Personalized Pick Scores update to match.
           </p>
         ),
       },
@@ -238,7 +238,7 @@ export default function FaqPage() {
           Frequently Asked Questions
         </h1>
         <p className="mt-4 text-[14px] leading-relaxed text-muted-foreground">
-          Quick answers about PickWise, Pico, and PickScore. Can&apos;t find
+          Quick answers about PickWise, Pico, and Pick Score. Can&apos;t find
           yours? Ask{" "}
           <Link
             href="/chat"
