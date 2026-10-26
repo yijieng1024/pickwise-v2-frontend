@@ -139,7 +139,7 @@ function ProblemRow({ p }: { p: ProblemLaptop }) {
       </div>
       <Link
         href={`/admin/catalog/laptops/${p.laptop_id}/edit`}
-        className="text-brand inline-flex min-h-11 items-center self-start text-sm font-semibold whitespace-nowrap hover:underline"
+        className="text-brand-text inline-flex min-h-11 items-center self-start text-sm font-semibold whitespace-nowrap hover:underline"
       >
         Edit laptop <span aria-hidden className="ml-1">→</span>
       </Link>

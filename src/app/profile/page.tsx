@@ -173,7 +173,7 @@ function AccountCard({ user }: { user: AuthUser }) {
             </span>
           )}
           {user.role === "admin" && (
-            <span className="rounded-full bg-brand-tint px-2.5 py-0.5 text-[11px] font-semibold text-brand">
+            <span className="rounded-full bg-brand-tint px-2.5 py-0.5 text-[11px] font-semibold text-brand-text">
               Admin
             </span>
           )}
@@ -198,7 +198,7 @@ function AccountCard({ user }: { user: AuthUser }) {
           type="button"
           disabled={avatarBusy}
           onClick={() => fileInputRef.current?.click()}
-          className="bg-surface-2 hover:bg-brand-tint hover:text-brand rounded-full px-4 py-2 text-[12.5px] font-semibold transition-colors disabled:opacity-60"
+          className="bg-surface-2 hover:bg-brand-tint hover:text-brand-text rounded-full px-4 py-2 text-[12.5px] font-semibold transition-colors disabled:opacity-60"
         >
           {avatarBusy ? "Working…" : "Change photo"}
         </button>

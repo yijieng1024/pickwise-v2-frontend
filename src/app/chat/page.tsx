@@ -191,7 +191,7 @@ function renderMarkdownLite(text: string, animate = false) {
           href={m[2]}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-brand font-medium underline underline-offset-2 hover:opacity-80"
+          className="text-brand-text font-medium underline underline-offset-2 hover:opacity-80"
         >
           {words(m[1])}
         </a>,
@@ -281,7 +281,7 @@ function renderMarkdownLite(text: string, animate = false) {
       if (bullet) {
         out.push(
           <p key={i} className="flex gap-2 pl-1">
-            <span className="text-brand">•</span>
+            <span className="text-brand-text">•</span>
             <span>{inline(bullet[1], 0)}</span>
           </p>,
         );
@@ -315,7 +315,7 @@ function ThinkingFlow({ text, active }: { text: string; active: boolean }) {
         aria-expanded={open}
         className="flex w-full cursor-pointer items-center gap-2 text-[11.5px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
       >
-        <Brain className="text-brand size-3.5" />
+        <Brain className="text-brand-text size-3.5" />
         Thinking
         {active && (
           <span className="border-brand-tint border-t-brand size-3 motion-safe:animate-spin rounded-full border-2" />
@@ -433,7 +433,7 @@ function ResultCard({
           </span>
         </span>
       </div>
-      <span className="text-brand text-[11px] font-semibold opacity-0 transition-opacity group-hover:opacity-100">
+      <span className="text-brand-text text-[11px] font-semibold opacity-0 transition-opacity group-hover:opacity-100">
         →
       </span>
     </div>
@@ -719,7 +719,7 @@ export default function ChatPage() {
   if (isLoading || !user || !token) {
     return (
       <main className="flex min-h-[60vh] items-center justify-center">
-        <Spinner className="text-brand size-6" />
+        <Spinner className="text-brand-text size-6" />
       </main>
     );
   }
@@ -740,7 +740,7 @@ export default function ChatPage() {
     <>
       {personalScores && (
         <p className="flex items-start gap-1.5 text-[11px] leading-snug text-muted-foreground">
-          <UserRound className="text-brand mt-px size-3 flex-none" />
+          <UserRound className="text-brand-text mt-px size-3 flex-none" />
           Pick Scores personalized from your Needs Wizard answers — your
           budget, priorities and portability reweight each factor.
         </p>
@@ -764,7 +764,7 @@ export default function ChatPage() {
           <button
             type="button"
             onClick={startNewConversation}
-            className="border-line bg-canvas mb-4 flex items-center justify-center gap-2 rounded-full border py-2.5 text-[13px] font-semibold transition-colors hover:border-brand hover:text-brand"
+            className="border-line bg-canvas mb-4 flex items-center justify-center gap-2 rounded-full border py-2.5 text-[13px] font-semibold transition-colors hover:border-brand hover:text-brand-text"
           >
             <Plus className="size-3.5" /> New Conversation
           </button>
@@ -780,7 +780,7 @@ export default function ChatPage() {
                     className={cn(
                       "group flex items-center justify-between rounded-[10px] pr-2 transition-colors",
                       chat.id === activeId
-                        ? "bg-brand-tint text-brand"
+                        ? "bg-brand-tint text-brand-text"
                         : "hover:bg-surface-2 text-foreground",
                     )}
                   >
@@ -882,7 +882,7 @@ export default function ChatPage() {
                         key={p}
                         type="button"
                         onClick={() => send(p)}
-                        className="border-brand text-brand hover:bg-brand-tint rounded-full border px-4 py-2 text-[13px] font-medium"
+                        className="border-brand text-brand-text hover:bg-brand-tint rounded-full border px-4 py-2 text-[13px] font-medium"
                       >
                         {p}
                       </button>
@@ -893,7 +893,7 @@ export default function ChatPage() {
 
               {threadLoading && (
                 <div className="flex justify-center pt-14">
-                  <Spinner className="text-brand size-5" />
+                  <Spinner className="text-brand-text size-5" />
                 </div>
               )}
 
@@ -1082,7 +1082,7 @@ export default function ChatPage() {
                   className={cn(
                     "flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-[12.5px] font-medium transition-colors",
                     activeTool === tool
-                      ? "bg-brand-tint text-brand"
+                      ? "bg-brand-tint text-brand-text"
                       : "text-muted-foreground",
                   )}
                 >
@@ -1095,7 +1095,7 @@ export default function ChatPage() {
                     {activeTool === tool ? (
                       <span className="size-3 motion-safe:animate-spin rounded-full border-2 border-white/40 border-t-white" />
                     ) : (
-                      <Icon className="text-brand size-3.5" />
+                      <Icon className="text-brand-text size-3.5" />
                     )}
                   </span>
                   {label}

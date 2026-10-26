@@ -1,7 +1,7 @@
 "use client";
 
 import { type PaletteIndex, useChartPalette } from "./chart-palette";
-import { ChartTableToggle } from "./chart-table-toggle";
+import { ChartDataTable } from "./chart-data-table";
 import {
   CartesianGrid,
   Line,
@@ -18,8 +18,8 @@ import {
  *
  * Colours come from the one admin palette (chart-palette.ts), per theme; a
  * series names its palette slot, never a hex value. `dashed` is the non-colour
- * channel that separates two series, and every chart can be read as a table
- * (ChartTableToggle), so no value depends on colour alone.
+ * channel that separates two series, and every chart carries its numbers as a
+ * hidden table for screen readers (ChartDataTable).
  *
  * Deliberately single-axis: two measures on different scales get two charts,
  * never a second y-axis.
@@ -27,7 +27,7 @@ import {
 
 export interface TrendSeries {
   name: string;
-  /** Slot in the admin chart palette (0 = blue, 1 = orange, 2 = aqua, …). */
+  /** Slot in the admin chart palette (0 = blue, 1 = orange, 2 = cyan, …). */
   slot: PaletteIndex;
   /** Renders the line dashed — the non-color channel that separates series. */
   dashed?: boolean;
@@ -97,7 +97,7 @@ export function TrendLine({
   const dashedByName = new Map(series.map((s) => [s.name, s.dashed ?? false]));
 
   return (
-    <ChartTableToggle
+    <ChartDataTable
       caption={caption}
       columns={["Day", ...series.map((s) => s.name)]}
       rows={points.map((p, i) => [
@@ -181,7 +181,7 @@ export function TrendLine({
           {series.map((s) => (
             <Line
               key={s.name}
-              type="monotone"
+              type="linear"
               name={s.name}
               dataKey={s.name}
               stroke={colorOf(s)}
@@ -203,7 +203,7 @@ export function TrendLine({
         </LineChart>
       </ResponsiveContainer>
     </div>
-    </ChartTableToggle>
+    </ChartDataTable>
   );
 }
 

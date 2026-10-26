@@ -59,7 +59,7 @@ export function LegalSection({
 
 export function LegalList({ items }: { items: ReactNode[] }) {
   return (
-    <ul className="flex list-disc flex-col gap-2 pl-5 marker:text-brand">
+    <ul className="flex list-disc flex-col gap-2 pl-5 marker:text-brand-text">
       {items.map((item, i) => (
         <li key={i}>{item}</li>
       ))}

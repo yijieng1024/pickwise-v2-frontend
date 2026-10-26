@@ -20,7 +20,7 @@ const alertVariants = cva(
         error:
           "border-negative/30 bg-negative/8 text-negative *:data-[slot=alert-description]:text-negative/90 *:[svg]:text-current",
         info:
-          "border-brand/25 bg-brand-tint text-brand *:data-[slot=alert-description]:text-brand/90 *:[svg]:text-current",
+          "border-brand/25 bg-brand-tint text-brand-text *:data-[slot=alert-description]:text-brand-text/90 *:[svg]:text-current",
       },
     },
     defaultVariants: {

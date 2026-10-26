@@ -120,7 +120,7 @@ export function Header() {
         {/* Mark + wordmark composed live rather than shipping the lockup SVG:
             the wordmark then uses the page's own font and stays selectable. */}
         <Link href="/" className="flex items-center gap-2">
-          <BrandMark className="text-brand size-6.5 shrink-0" />
+          <BrandMark className="text-brand-text size-6.5 shrink-0" />
           <span className="text-[15px] font-bold tracking-tight">
             PickWise
           </span>
@@ -136,7 +136,7 @@ export function Header() {
                 className={
                   "rounded-full px-3.5 py-1.5 text-[13.5px] font-medium whitespace-nowrap transition-colors " +
                   (active
-                    ? "bg-brand-tint font-semibold text-brand"
+                    ? "bg-brand-tint font-semibold text-brand-text"
                     : "text-muted-foreground hover:text-foreground")
                 }
               >
@@ -236,7 +236,7 @@ export function Header() {
             <div className="hidden items-center gap-2 sm:flex">
               <Link
                 href="/login"
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-brand"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-brand-text"
               >
                 Log In
               </Link>
@@ -281,7 +281,7 @@ export function Header() {
                   </>
                 ) : (
                   <>
-                    <BrandMark className="text-brand size-8 shrink-0" />
+                    <BrandMark className="text-brand-text size-8 shrink-0" />
                     <span className="text-[15px] font-bold tracking-tight">PickWise</span>
                   </>
                 )}
@@ -301,7 +301,7 @@ export function Header() {
                           className={cn(
                             DRAWER_ITEM,
                             active
-                              ? "bg-brand-tint font-semibold text-brand"
+                              ? "bg-brand-tint font-semibold text-brand-text"
                               : "text-muted-foreground hover:bg-muted hover:text-foreground active:bg-surface-2",
                           )}
                         />

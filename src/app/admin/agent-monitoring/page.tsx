@@ -691,7 +691,7 @@ function RunDetail({ run }: { run: AgentRunDetail }) {
 
       <div className="flex flex-col gap-1">
         <span className="flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground">
-          <Sparkles className="text-brand size-3.5" /> Pico
+          <Sparkles className="text-brand-text size-3.5" /> Pico
         </span>
         <p className="bg-brand-tint/40 rounded-lg p-3 whitespace-pre-wrap">{run.reply_text || "—"}</p>
       </div>
@@ -718,7 +718,7 @@ function RunDetail({ run }: { run: AgentRunDetail }) {
           run.tool_calls.map((call, i) => (
             <div key={i} className="border-line rounded-lg border p-3">
               <div className="mb-2 flex flex-wrap items-center gap-2">
-                <span className="bg-brand-tint text-brand flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold tabular-nums">
+                <span className="bg-brand-tint text-brand-text flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold tabular-nums">
                   {i + 1}
                 </span>
                 <span className="font-semibold">{call.name}</span>
@@ -800,7 +800,7 @@ function StatTile({
             ? "bg-negative/10 text-negative"
             : tone === "warning"
               ? "bg-warning/10 text-warning"
-              : "bg-brand-tint text-brand",
+              : "bg-brand-tint text-brand-text",
         )}
       >
         <Icon className="size-4" />

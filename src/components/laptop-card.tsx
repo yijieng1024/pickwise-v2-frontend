@@ -117,7 +117,7 @@ export function LaptopCard({
       <div className="flex flex-1 flex-col gap-2.5 p-5">
         <div className="flex items-start justify-between gap-3">
           {laptop.tags[0] && (
-            <Badge className="bg-brand-tint text-brand h-auto rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase">
+            <Badge className="bg-brand-tint text-brand-text h-auto rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase">
               {laptop.tags[0]}
             </Badge>
           )}
@@ -178,7 +178,7 @@ export function LaptopCard({
               Compare
             </label>
           ) : (
-            <span className="text-brand text-xs font-semibold">Details →</span>
+            <span className="text-brand-text text-xs font-semibold">Details →</span>
           )}
         </div>
       </div>

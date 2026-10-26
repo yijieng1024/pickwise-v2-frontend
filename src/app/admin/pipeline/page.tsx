@@ -142,11 +142,11 @@ export default function AdminRawRecordsPage() {
       <Card className="gap-0 p-4">
         <p className="text-muted-foreground text-[12.5px] leading-relaxed">
           To collect more, run a scrape from the{" "}
-          <Link href="/admin/queue" className="text-brand font-medium hover:underline">
+          <Link href="/admin/queue" className="text-brand-text font-medium hover:underline">
             scrape queue
           </Link>
           . To turn these into catalog entries, run{" "}
-          <Link href="/admin/processing" className="text-brand font-medium hover:underline">
+          <Link href="/admin/processing" className="text-brand-text font-medium hover:underline">
             AI clean-up
           </Link>{" "}
           — it reports how many are pending and lets you choose the batch size.
@@ -328,7 +328,7 @@ function RawRecordDialog({
                   href={record.source_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 break-all text-brand hover:underline"
+                  className="inline-flex items-center gap-1 break-all text-brand-text hover:underline"
                 >
                   {record.source_url}
                   <ExternalLink className="size-3 shrink-0" />
@@ -370,7 +370,7 @@ function RawRecordDialog({
                         href={url}
                         target="_blank"
                         rel="noreferrer"
-                        className="break-all text-brand hover:underline"
+                        className="break-all text-brand-text hover:underline"
                       >
                         {url}
                       </a>

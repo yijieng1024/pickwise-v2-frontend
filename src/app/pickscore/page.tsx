@@ -112,7 +112,7 @@ export default function PickScorePage() {
     <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-14 sm:px-6">
       {/* Hero */}
       <div className="max-w-2xl motion-safe:animate-fade-in-up">
-        <p className="text-brand text-[11px] font-semibold tracking-wide uppercase">
+        <p className="text-brand-text text-[11px] font-semibold tracking-wide uppercase">
           How Pick Score works
         </p>
         <h1 className="mt-2 text-4xl font-bold tracking-tighter text-balance sm:text-5xl">
@@ -303,7 +303,7 @@ export default function PickScorePage() {
           Finish the{" "}
           <Link
             href="/wizard"
-            className="text-brand underline underline-offset-2"
+            className="text-brand-text underline underline-offset-2"
           >
             Needs Wizard
           </Link>{" "}
@@ -403,7 +403,7 @@ export default function PickScorePage() {
         </div>
         <p className="text-[12.5px] text-muted-foreground">
           More questions? Try the{" "}
-          <Link href="/faq" className="text-brand underline underline-offset-2">
+          <Link href="/faq" className="text-brand-text underline underline-offset-2">
             FAQ
           </Link>
           .

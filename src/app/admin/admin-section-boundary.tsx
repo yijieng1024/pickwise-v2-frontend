@@ -48,7 +48,7 @@ export class SectionBoundary extends Component<
           <button
             type="button"
             onClick={() => this.setState({ error: null })}
-            className="bg-surface-2 hover:bg-brand-tint hover:text-brand min-h-9 shrink-0 rounded-full px-3 text-sm font-semibold focus-visible:shadow-[0_0_0_3px_var(--brand-tint)] focus-visible:outline-none"
+            className="bg-surface-2 hover:bg-brand-tint hover:text-brand-text min-h-9 shrink-0 rounded-full px-3 text-sm font-semibold focus-visible:shadow-[0_0_0_3px_var(--brand-tint)] focus-visible:outline-none"
           >
             Try again
           </button>

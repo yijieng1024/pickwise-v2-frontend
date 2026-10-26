@@ -307,10 +307,10 @@ export default function AdminFamilyDetailPage({
           {selected.size > 0 && (
             <Card className="bg-brand-tint gap-0 border-transparent p-3">
               <div className="flex flex-wrap items-center gap-3">
-                <span className="text-brand text-[13px] font-semibold">
+                <span className="text-brand-text text-[13px] font-semibold">
                   {selected.size} selected
                 </span>
-                <span className="text-brand/80 text-[12.5px]">
+                <span className="text-brand-text text-[12.5px]">
                   {allSelected
                     ? "That is every member — moving them all empties this family, and you will be offered the delete that finishes the merge."
                     : "Moved in one request: either all of them land, or none do."}

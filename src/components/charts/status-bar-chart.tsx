@@ -3,7 +3,7 @@
 import { Bar, BarChart, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { type PaletteIndex, useChartPalette } from "./chart-palette";
-import { ChartTableToggle } from "./chart-table-toggle";
+import { ChartDataTable } from "./chart-data-table";
 
 export interface StatusBarDatum {
   label: string;
@@ -23,7 +23,7 @@ export function StatusBarChart({
 }) {
   const palette = useChartPalette();
   return (
-    <ChartTableToggle caption={caption} columns={["", "Count"]} rows={data.map((d) => [d.label, d.value])}>
+    <ChartDataTable caption={caption} columns={["", "Count"]} rows={data.map((d) => [d.label, d.value])}>
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={data} margin={{ top: 20, right: 8, bottom: 0, left: 8 }} barCategoryGap="30%">
           <XAxis
@@ -57,6 +57,6 @@ export function StatusBarChart({
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-    </ChartTableToggle>
+    </ChartDataTable>
   );
 }

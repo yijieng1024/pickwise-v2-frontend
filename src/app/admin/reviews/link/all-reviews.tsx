@@ -192,7 +192,7 @@ export function AllReviews() {
       )}
 
       {funnelFilter && (
-        <div className="bg-brand-tint text-brand flex flex-wrap items-center gap-2 rounded-xl px-4 py-2.5 text-sm">
+        <div className="bg-brand-tint text-brand-text flex flex-wrap items-center gap-2 rounded-xl px-4 py-2.5 text-sm">
           <span>
             Showing the Review Pipeline&apos;s <strong className="font-semibold">{funnelFilter}</strong> list.
           </span>

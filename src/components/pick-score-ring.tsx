@@ -51,7 +51,7 @@ export function PickScoreRing({
           />
         </svg>
         <span
-          className="absolute inset-0 flex flex-col items-center justify-center font-bold tabular-nums text-brand"
+          className="absolute inset-0 flex flex-col items-center justify-center font-bold tabular-nums text-brand-text"
           style={{ fontSize: size * 0.29, lineHeight: 1 }}
         >
           {score}

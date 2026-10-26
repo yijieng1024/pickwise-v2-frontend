@@ -93,7 +93,7 @@ export function PriceHistory({
         {series.map((s) => (
           <Line
             key={s.name}
-            type="monotone"
+            type="linear"
             name={s.name}
             dataKey={s.name}
             stroke={s.color}

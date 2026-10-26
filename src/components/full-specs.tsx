@@ -287,7 +287,7 @@ export function FullSpecs({ raw }: { raw: BackendLaptop }) {
             style={{ animationDelay: `${i * 60}ms` }}
           >
             <div className="mb-4 flex items-center gap-2.5">
-              <div className="bg-brand-tint text-brand flex size-8 flex-none items-center justify-center rounded-[10px]">
+              <div className="bg-brand-tint text-brand-text flex size-8 flex-none items-center justify-center rounded-[10px]">
                 <Icon className="size-4" />
               </div>
               <h3 className="text-[11.5px] font-bold tracking-wide text-muted-foreground uppercase">

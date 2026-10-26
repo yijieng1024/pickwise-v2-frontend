@@ -43,7 +43,7 @@ export type Tone = "neutral" | "active" | "good" | "warn" | "bad";
  */
 const TONE_CLASS: Record<Tone, string> = {
   neutral: "bg-muted-foreground/15 text-muted-foreground",
-  active: "bg-brand/15 text-brand",
+  active: "bg-brand/15 text-brand-text",
   good: "bg-positive/15 text-positive",
   warn: "bg-warning/15 text-warning",
   bad: "bg-negative/15 text-negative",

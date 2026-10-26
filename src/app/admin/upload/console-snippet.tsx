@@ -73,7 +73,7 @@ export function ConsoleSnippetCard() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-sm font-bold tracking-tight">
-            <Terminal className="text-brand size-4" />
+            <Terminal className="text-brand-text size-4" />
             Capture Script
           </h2>
           <p className="text-muted-foreground mt-1 text-[12.5px] leading-relaxed">

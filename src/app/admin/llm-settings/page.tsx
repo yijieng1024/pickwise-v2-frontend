@@ -618,7 +618,7 @@ function UseCard({
 
 function SourceBadge({ source }: { source: LLMSettingSource }) {
   return source === "app_settings" ? (
-    <Badge className="bg-brand-tint text-brand">Saved</Badge>
+    <Badge className="bg-brand-tint text-brand-text">Saved</Badge>
   ) : (
     <Badge variant="outline" className="text-muted-foreground">
       Default (env)

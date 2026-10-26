@@ -170,7 +170,7 @@ export function CompareView({
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-8 pb-24 sm:px-6">
       <Link
         href="/laptops"
-        className="text-brand mb-8 flex items-center gap-2 font-medium hover:underline"
+        className="text-brand-text mb-8 flex items-center gap-2 font-medium hover:underline"
       >
         <ChevronLeft className="size-4" /> Back to Browse
       </Link>
@@ -265,7 +265,7 @@ export function CompareView({
               className="bg-brand-tint mb-7 grid items-center gap-2 rounded-2xl p-3"
             >
                 <div className="pl-2">
-                  <div className="text-brand flex items-center gap-1.5 text-[13px] font-semibold">
+                  <div className="text-brand-text flex items-center gap-1.5 text-[13px] font-semibold">
                     Pick Score
                     {personalized && (
                       <span className="bg-brand flex size-3.5 items-center justify-center rounded-full text-white">
@@ -341,7 +341,7 @@ export function CompareView({
           size="lg"
           shape="pill"
           onClick={() => setTechOpen((o) => !o)}
-          className="border-line bg-transparent text-muted-foreground hover:border-brand hover:bg-transparent hover:text-brand dark:bg-transparent dark:hover:bg-transparent"
+          className="border-line bg-transparent text-muted-foreground hover:border-brand hover:bg-transparent hover:text-brand-text dark:bg-transparent dark:hover:bg-transparent"
         >
           <ChevronRight
             data-icon="inline-start"

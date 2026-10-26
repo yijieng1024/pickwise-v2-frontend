@@ -75,7 +75,7 @@ export default function AboutPage() {
     <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-14 sm:px-6">
       {/* Hero */}
       <div className="max-w-2xl motion-safe:animate-fade-in-up">
-        <p className="text-brand text-[11px] font-semibold tracking-wide uppercase">
+        <p className="text-brand-text text-[11px] font-semibold tracking-wide uppercase">
           About PickWise
         </p>
         <h1 className="mt-2 text-4xl font-bold tracking-tighter text-balance sm:text-5xl">
@@ -102,7 +102,7 @@ export default function AboutPage() {
             key={title}
             className="border-line bg-surface rounded-2xl border p-6"
           >
-            <div className="bg-brand-tint text-brand flex size-9 items-center justify-center rounded-xl">
+            <div className="bg-brand-tint text-brand-text flex size-9 items-center justify-center rounded-xl">
               <Icon className="size-4.5" />
             </div>
             <h2 className="mt-4 text-[15px] font-bold tracking-tight">
@@ -166,14 +166,14 @@ export default function AboutPage() {
           The fine print lives in our{" "}
           <Link
             href="/terms"
-            className="text-brand underline underline-offset-2"
+            className="text-brand-text underline underline-offset-2"
           >
             Terms of Service
           </Link>{" "}
           and{" "}
           <Link
             href="/privacy"
-            className="text-brand underline underline-offset-2"
+            className="text-brand-text underline underline-offset-2"
           >
             Privacy Policy
           </Link>
@@ -210,7 +210,7 @@ export default function AboutPage() {
         </div>
         <p className="text-[12.5px] text-muted-foreground">
           Questions first? Try the{" "}
-          <Link href="/faq" className="text-brand underline underline-offset-2">
+          <Link href="/faq" className="text-brand-text underline underline-offset-2">
             FAQ
           </Link>
           .

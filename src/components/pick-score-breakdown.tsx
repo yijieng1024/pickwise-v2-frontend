@@ -125,7 +125,7 @@ export function PickScoreBreakdown({
                   compact ? "w-28 text-[11.5px]" : "w-36 text-[12px]",
                 )}
               >
-                <Icon className="text-brand size-3.5 flex-none" />
+                <Icon className="text-brand-text size-3.5 flex-none" />
                 <span className="truncate">{meta?.label ?? f.factor}</span>
               </span>
               <div className="bg-surface-2 h-2 min-w-0 flex-1 overflow-hidden rounded-full">

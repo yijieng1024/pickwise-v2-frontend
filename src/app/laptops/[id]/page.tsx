@@ -145,7 +145,7 @@ export default async function LaptopDetailsPage({
       <div className="mb-8 flex items-center justify-between">
         <Link
           href="/laptops"
-          className="text-brand flex items-center gap-2 font-medium hover:underline"
+          className="text-brand-text flex items-center gap-2 font-medium hover:underline"
         >
           <ChevronLeft className="size-4" /> Back to Browse
         </Link>
@@ -182,12 +182,12 @@ export default async function LaptopDetailsPage({
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-1.5">
                 {laptop.tags[0] && (
-                  <span className="bg-brand-tint text-brand rounded-full px-2.5 py-1 text-[10.5px] font-semibold tracking-wide uppercase">
+                  <span className="bg-brand-tint text-brand-text rounded-full px-2.5 py-1 text-[10.5px] font-semibold tracking-wide uppercase">
                     {laptop.tags[0]}
                   </span>
                 )}
                 {best && (
-                  <span className="bg-brand-tint text-brand flex items-center gap-1 rounded-full px-2.5 py-1 text-[10.5px] font-semibold">
+                  <span className="bg-brand-tint text-brand-text flex items-center gap-1 rounded-full px-2.5 py-1 text-[10.5px] font-semibold">
                     <Sparkles className="size-3" />
                     Best fit: {labelForUseCase(best.use_case)}
                   </span>

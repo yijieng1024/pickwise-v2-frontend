@@ -147,7 +147,7 @@ export default function PrivacyPage() {
               details and laptop preferences anytime on your{" "}
               <Link
                 href="/profile"
-                className="text-brand underline underline-offset-2"
+                className="text-brand-text underline underline-offset-2"
               >
                 profile page
               </Link>
@@ -195,7 +195,7 @@ export default function PrivacyPage() {
           our{" "}
           <Link
             href="/terms"
-            className="text-brand underline underline-offset-2"
+            className="text-brand-text underline underline-offset-2"
           >
             Terms of Service
           </Link>

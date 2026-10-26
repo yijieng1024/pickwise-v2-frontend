@@ -90,7 +90,7 @@ export function ConfigEvidencePanel({
                   href={`${videoUrl}&t=${hit.timestamp_seconds}s`}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="text-brand inline-flex items-center gap-1 text-[11px] hover:underline"
+                  className="text-brand-text inline-flex items-center gap-1 text-[11px] hover:underline"
                 >
                   <MessageSquareQuote className="size-3" />
                   {timestamp(hit.timestamp_seconds)}

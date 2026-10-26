@@ -99,7 +99,7 @@ function VerifyEmail() {
       <ResendVerification />
       <p className="text-[12.5px] text-muted-foreground">
         Already verified?{" "}
-        <Link href="/login" className="text-brand font-medium hover:underline">
+        <Link href="/login" className="text-brand-text font-medium hover:underline">
           Sign in
         </Link>
       </p>

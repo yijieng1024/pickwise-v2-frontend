@@ -65,7 +65,7 @@ export default async function Home() {
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 sm:px-6 lg:px-8">
       <section className="flex flex-col items-center pt-24 pb-0 text-center md:pt-32">
-        <div className="bg-brand-tint text-brand mb-9 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium motion-safe:animate-fade-in-up">
+        <div className="bg-brand-tint text-brand-text mb-9 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium motion-safe:animate-fade-in-up">
           <Sparkles className="size-4" /> Welcome to PickWise! Pico is waiting for you!
         </div>
 
@@ -79,7 +79,7 @@ export default async function Home() {
 
         <p className="mt-6 text-sm text-muted-foreground">
           Or use our step-by-step guide →{" "}
-          <Link href="/wizard" className="text-brand font-medium hover:underline">
+          <Link href="/wizard" className="text-brand-text font-medium hover:underline">
             Start the Needs Wizard
           </Link>
         </p>
@@ -105,7 +105,7 @@ export default async function Home() {
               </div>
               <Link
                 href="/laptops"
-                className="text-brand flex items-center gap-1 text-sm font-medium hover:underline"
+                className="text-brand-text flex items-center gap-1 text-sm font-medium hover:underline"
               >
                 View All <ChevronRight className="size-4" />
               </Link>
@@ -147,7 +147,7 @@ export default async function Home() {
                 className="border-line bg-surface rounded-2xl border p-6 motion-safe:animate-fade-in-up"
                 style={{ animationDelay: `${i * 100}ms` }}
               >
-                <div className="bg-brand-tint text-brand flex size-9 items-center justify-center rounded-xl">
+                <div className="bg-brand-tint text-brand-text flex size-9 items-center justify-center rounded-xl">
                   <Icon className="size-4.5" />
                 </div>
                 <h3 className="mt-4 text-[15px] font-bold tracking-tight">

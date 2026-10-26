@@ -290,7 +290,7 @@ export default function AdminUploadPage() {
               dragging ? "border-brand bg-brand-tint/50" : "border-brand/25 bg-surface",
             )}
           >
-            <FileUp className="text-brand size-6" />
+            <FileUp className="text-brand-text size-6" />
             <p className="mt-2.5 text-[15px] font-semibold">Drop saved pages here</p>
             <p className="text-muted-foreground mt-1.5 max-w-sm text-[12.5px] leading-relaxed">
               Any number of files at once. <strong className="font-semibold">Filenames
@@ -461,7 +461,7 @@ export default function AdminUploadPage() {
                         href={t.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-brand block truncate font-mono text-[12px] hover:underline"
+                        className="text-brand-text block truncate font-mono text-[12px] hover:underline"
                       >
                         {t.url}
                       </a>

@@ -203,7 +203,7 @@ export function PickScoreCard({
             {tabLabel(current.use_case)}
           </span>
           {best && (
-            <span className="bg-brand-tint text-brand flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold">
+            <span className="bg-brand-tint text-brand-text flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold">
               <Sparkles className="size-3" />
               Best fit: {tabLabel(best.use_case)} · {best.score}
             </span>

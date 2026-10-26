@@ -39,7 +39,7 @@ export function AuthPanel({
 /** Brand-tinted informational note, matching the login page's notice style. */
 export function AuthNotice({ children }: { children: React.ReactNode }) {
   return (
-    <p className="bg-brand-tint text-brand rounded-xl px-4 py-3 text-[12.5px] font-medium">
+    <p className="bg-brand-tint text-brand-text rounded-xl px-4 py-3 text-[12.5px] font-medium">
       {children}
     </p>
   );

@@ -3,7 +3,7 @@
 import { Bar, BarChart, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { type PaletteIndex, useChartPalette } from "./chart-palette";
-import { ChartTableToggle } from "./chart-table-toggle";
+import { ChartDataTable } from "./chart-data-table";
 
 export interface HorizontalBarDatum {
   /** Stable identity (e.g. brand id), so React keys never follow the rank. */
@@ -33,7 +33,7 @@ export function HorizontalBarChart({
   const height = Math.max(80, data.length * 32 + 8);
 
   return (
-    <ChartTableToggle caption={caption} columns={["", valueLabel]} rows={data.map((d) => [d.label, d.value])}>
+    <ChartDataTable caption={caption} columns={["", valueLabel]} rows={data.map((d) => [d.label, d.value])}>
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={data} layout="vertical" margin={{ top: 0, right: 40, bottom: 0, left: 0 }} barCategoryGap="25%">
           <XAxis type="number" hide domain={[0, "dataMax"]} />
@@ -69,6 +69,6 @@ export function HorizontalBarChart({
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-    </ChartTableToggle>
+    </ChartDataTable>
   );
 }

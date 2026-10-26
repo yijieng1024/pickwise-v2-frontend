@@ -201,7 +201,7 @@ export default function LoginPage() {
           </div>
 
           {notice && (
-            <p className="rounded-xl bg-brand-tint px-4 py-3 text-[12.5px] font-medium text-brand">
+            <p className="rounded-xl bg-brand-tint px-4 py-3 text-[12.5px] font-medium text-brand-text">
               {notice}
             </p>
           )}

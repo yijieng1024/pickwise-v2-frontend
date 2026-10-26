@@ -75,7 +75,7 @@ export default function WhyPickWisePage() {
     <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-14 sm:px-6">
       {/* Hero */}
       <div className="max-w-2xl motion-safe:animate-fade-in-up">
-        <p className="text-brand text-[11px] font-semibold tracking-wide uppercase">
+        <p className="text-brand-text text-[11px] font-semibold tracking-wide uppercase">
           PickWise vs a general AI chatbot
         </p>
         <h1 className="mt-2 text-4xl font-bold tracking-tighter text-balance sm:text-5xl">
@@ -123,7 +123,7 @@ export default function WhyPickWisePage() {
               <tr>
                 <th className="w-1/4 p-4 font-semibold"></th>
                 <th className="p-4 font-semibold text-muted-foreground">General AI chatbot</th>
-                <th className="text-brand p-4 font-semibold">PickWise</th>
+                <th className="text-brand-text p-4 font-semibold">PickWise</th>
               </tr>
             </thead>
             <tbody>
@@ -155,7 +155,7 @@ export default function WhyPickWisePage() {
           choosing a laptop, such as setting one up, fixing it, or writing your
           assignment on it, a general chatbot is the better tool. Read more about how
           scores are built in{" "}
-          <Link href="/pickscore" className="text-brand underline underline-offset-2">
+          <Link href="/pickscore" className="text-brand-text underline underline-offset-2">
             How Pick Score works
           </Link>
           .
@@ -212,7 +212,7 @@ function AnswerCard({
           : "border-line bg-surface rounded-2xl border p-6"
       }
     >
-      <h3 className={tone === "brand" ? "text-brand text-[15px] font-bold" : "text-[15px] font-bold"}>
+      <h3 className={tone === "brand" ? "text-brand-text text-[15px] font-bold" : "text-[15px] font-bold"}>
         {title}
       </h3>
       <ul className="mt-4 flex flex-col gap-3">
@@ -221,7 +221,7 @@ function AnswerCard({
             <Icon
               className={
                 tone === "brand"
-                  ? "text-brand mt-0.5 size-4 shrink-0"
+                  ? "text-brand-text mt-0.5 size-4 shrink-0"
                   : "text-negative mt-0.5 size-4 shrink-0"
               }
             />

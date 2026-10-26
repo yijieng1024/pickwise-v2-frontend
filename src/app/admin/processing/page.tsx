@@ -232,7 +232,7 @@ export default function AdminProcessingPage() {
                 started with. When it is rate-limited, times out or errors, the processor
                 falls back to {model.fallback_chain.slice(1).join(" → ") || "no other model"}, in
                 that order. Change the backups (and every other feature&apos;s models) in{" "}
-                <Link href="/admin/llm-settings" className="text-brand font-medium hover:underline">
+                <Link href="/admin/llm-settings" className="text-brand-text font-medium hover:underline">
                   LLM Settings
                 </Link>
                 .
@@ -327,7 +327,7 @@ export default function AdminProcessingPage() {
               </p>
               <p className="text-muted-foreground mt-2.5 text-[12.5px]">
                 Past runs are on the{" "}
-                <Link href="/admin/jobs" className="text-brand font-medium hover:underline">
+                <Link href="/admin/jobs" className="text-brand-text font-medium hover:underline">
                   jobs screen
                 </Link>
                 .
@@ -346,13 +346,13 @@ export default function AdminProcessingPage() {
 
           <Card className="gap-0 p-4">
             <span className="flex items-center gap-2 text-[13px] font-semibold">
-              <Sparkles className="text-brand size-3.5" />
+              <Sparkles className="text-brand-text size-3.5" />
               After a batch finishes
             </span>
             <p className="text-muted-foreground mt-1.5 text-[12.5px] leading-relaxed">
               New catalog entries are invisible to chat until they are embedded, and show a
               blank score until they are ranked. Both are one click from{" "}
-              <Link href="/admin" className="text-brand font-medium hover:underline">
+              <Link href="/admin" className="text-brand-text font-medium hover:underline">
                 pipeline health
               </Link>
               .

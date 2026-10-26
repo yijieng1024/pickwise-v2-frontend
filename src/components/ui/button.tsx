@@ -23,7 +23,7 @@ const buttonVariants = cva(
         // but diverge hard in dark (a neutral grey vs the app's blue-tinted
         // panel), and --brand-tint has no shadcn equivalent at all.
         soft: "bg-surface-2 text-foreground hover:opacity-80",
-        tint: "bg-brand-tint text-brand hover:opacity-80",
+        tint: "bg-brand-tint text-brand-text hover:opacity-80",
       },
       size: {
         default:

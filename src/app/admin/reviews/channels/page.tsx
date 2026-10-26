@@ -125,7 +125,7 @@ export default function AdminReviewChannelsPage() {
                           className="size-7 shrink-0 rounded-full object-cover"
                         />
                       ) : (
-                        <span className="bg-brand-tint text-brand flex size-7 shrink-0 items-center justify-center rounded-full text-[13px] font-bold">
+                        <span className="bg-brand-tint text-brand-text flex size-7 shrink-0 items-center justify-center rounded-full text-[13px] font-bold">
                           {c.channel_name.charAt(0).toUpperCase()}
                         </span>
                       )}

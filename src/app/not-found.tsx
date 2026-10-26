@@ -24,10 +24,10 @@ export default function NotFound() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center px-4 py-20 text-center sm:px-6">
       <div className="motion-safe:animate-fade-in-up">
-        <div className="bg-brand-tint text-brand mx-auto flex size-14 items-center justify-center rounded-2xl">
+        <div className="bg-brand-tint text-brand-text mx-auto flex size-14 items-center justify-center rounded-2xl">
           <SearchX className="size-6.5" />
         </div>
-        <p className="text-brand mt-6 text-[11px] font-semibold tracking-wide uppercase">
+        <p className="text-brand-text mt-6 text-[11px] font-semibold tracking-wide uppercase">
           Error 404
         </p>
         <h1 className="mt-2 text-4xl font-bold tracking-tighter text-balance sm:text-5xl">
@@ -75,7 +75,7 @@ export default function NotFound() {
             <li key={href}>
               <Link
                 href={href}
-                className="hover:text-brand text-[13px] text-muted-foreground underline underline-offset-2"
+                className="hover:text-brand-text text-[13px] text-muted-foreground underline underline-offset-2"
               >
                 {label}
               </Link>

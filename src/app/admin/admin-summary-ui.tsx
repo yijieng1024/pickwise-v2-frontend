@@ -49,7 +49,7 @@ export function CardLink({ href, children }: { href: string; children: React.Rea
   return (
     <Link
       href={href}
-      className="text-brand ml-auto inline-flex min-h-11 items-center px-1 text-sm font-semibold whitespace-nowrap hover:underline"
+      className="text-brand-text ml-auto inline-flex min-h-11 items-center px-1 text-sm font-semibold whitespace-nowrap hover:underline"
     >
       {children} <span aria-hidden className="ml-1">→</span>
     </Link>
@@ -123,7 +123,7 @@ export function RefreshAction({
         type="button"
         onClick={onRefresh}
         disabled={busy}
-        className="bg-surface-2 hover:bg-brand-tint hover:text-brand min-h-10 rounded-full px-4 text-sm font-semibold disabled:opacity-60 focus-visible:shadow-[0_0_0_3px_var(--brand-tint)] focus-visible:outline-none"
+        className="bg-surface-2 hover:bg-brand-tint hover:text-brand-text min-h-10 rounded-full px-4 text-sm font-semibold disabled:opacity-60 focus-visible:shadow-[0_0_0_3px_var(--brand-tint)] focus-visible:outline-none"
       >
         {busy ? "Refreshing…" : "Refresh"}
       </button>

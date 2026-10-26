@@ -81,6 +81,12 @@ export function AdminShell({
         {/* A floating glass island, like the storefront nav but on the side.
             The look, the 12px gap and the collapsed width are all in
             `.admin-island` (globals.css). */}
+        {/* The page background the glass island sits over (globals.css). */}
+        <div className="admin-backdrop" aria-hidden>
+          <span />
+          <span />
+          <span />
+        </div>
         <Sidebar collapsible="icon" variant="floating" className="admin-island">
           <SidebarHeader>
             {/* Toggle lives in the topbar (AdminTopbar) so it stays reachable
@@ -107,11 +113,11 @@ export function AdminShell({
           <SidebarRail />
         </Sidebar>
 
-        <SidebarInset>
+        <SidebarInset className="bg-transparent">
           <AdminTopbar />
           {/* flex-1 on the content keeps the footer at the bottom of the inset on
             short screens instead of floating under a half-empty page. */}
-          <div className="flex flex-1 flex-col gap-3 p-4">
+          <div className="flex w-full flex-1 flex-col gap-3 p-4 md:pt-4 md:pr-8 md:pb-12 md:pl-6">
             {/* The listing screens read their filters from useSearchParams,
                 which a production build refuses to prerender without a Suspense
                 boundary above it. One boundary here covers every page, and the
@@ -143,7 +149,7 @@ function BrandLink() {
       onNavigate={(e) => guardNavigate(e, "/admin")}
       className="flex min-w-0 items-center gap-2"
     >
-      <BrandMark className="text-brand size-6 shrink-0" />
+      <BrandMark className="text-brand-text size-6 shrink-0" />
       {/* Stacked wordmark: the "Admin" line is what distinguishes this from
           the storefront, so it rides with the name rather than sitting
           elsewhere in the chrome. Both hide together on the icon rail,
@@ -297,7 +303,7 @@ function NavItem({
         }
         isActive={active}
         tooltip={running ? `${link.label} · ${running}` : link.label}
-        className="data-active:bg-brand-tint data-active:font-semibold data-active:text-brand"
+        className="data-active:bg-brand-tint data-active:font-semibold data-active:text-brand-text"
       >
         <Icon />
         <span>{link.label}</span>
@@ -305,7 +311,7 @@ function NavItem({
       {running && (
         <SidebarMenuBadge
           title={running}
-          className="text-brand bg-brand-tint pointer-events-none rounded-full px-1.5"
+          className="text-brand-text bg-brand-tint pointer-events-none rounded-full px-1.5"
         >
           <span className="bg-brand size-1.5 rounded-full motion-safe:animate-pulse" aria-hidden />
           <span className="sr-only">{running}</span>

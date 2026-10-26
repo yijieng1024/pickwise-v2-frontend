@@ -202,6 +202,7 @@
      untouched. */
   --color-brand: var(--brand);
   --color-brand-tint: var(--brand-tint);
+  --color-brand-text: var(--brand-text);
   --color-canvas: var(--bg);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
@@ -263,11 +264,15 @@
   /* Glassmorphism system (light) */
   --brand: var(--primary);
   --brand-tint: #eaf1fa;
+  /* Brand-coloured text (text-brand-text). Same as --brand in light mode. */
+  --brand-text: var(--brand);
   --bg: #fbfbfd;
   --surface: #ffffff;
   --surface-2: #f5f5f7;
   --glass: rgba(255, 255, 255, 0.62);
   --glass-edge: rgba(255, 255, 255, 0.55);
+  --glass-border: rgba(226, 231, 239, 0.9);
+  --glass-shadow: rgba(15, 23, 42, 0.08);
   --shadow: rgba(4, 46, 97, 0.08);
   --line: rgba(29, 29, 31, 0.07);
   --positive: #1a7f4f;
@@ -315,11 +320,16 @@
   /* Glassmorphism system (dark) */
   --brand: var(--primary);
   --brand-tint: #0d2038;
+  /* Lighter than --brand so text passes 4.5:1 on --brand-tint (5.25) and
+     --surface (5.60). Fills keep --brand: white on it is 4.88. */
+  --brand-text: oklch(0.66 0.13 256.5);
   --bg: #0b0f14;
   --surface: #151a21;
   --surface-2: #1c232c;
   --glass: rgba(21, 26, 33, 0.58);
   --glass-edge: rgba(255, 255, 255, 0.12);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: rgba(0, 0, 0, 0.35);
   --shadow: rgba(0, 0, 0, 0.4);
   --line: rgba(242, 244, 247, 0.08);
   --positive: #4ade80;
@@ -339,15 +349,62 @@
   }
 }
 
-/* The admin sidebar as a floating island — the storefront nav island's glass
-   (GlassSurface: translucent fill, 20px blur, inner-edge highlight, layered
-   shadow), stood on its side, and pushed further so it reads as a separate
-   object: the nav floats over scrolling content, this floats over a plain
-   page, where the nav's white edge and soft shadow all but vanish. So: a
-   --line hairline outside the highlight, a deeper shadow and a more solid
-   fill. The topbar's two pills (`.admin-glass`) share the surface. Styled
-   here rather than through GlassSurface because shadcn's Sidebar owns the
-   element.
+/* The admin page background (AdminBackdrop in admin-shell.tsx): the --bg
+   base with three large, faint, blurred circles, blue top-left, cyan
+   lower-left, violet bottom-right, from docs/admin-redesign. Fixed to the
+   viewport and static. Fainter in dark mode. Cards are opaque, so only the
+   glass below sits over the circles. */
+.admin-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--bg);
+}
+.admin-backdrop > span {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+}
+.admin-backdrop > span:nth-child(1) {
+  width: 420px;
+  height: 420px;
+  top: -120px;
+  left: -140px;
+  background: #2a78d6;
+  opacity: 0.22;
+}
+.admin-backdrop > span:nth-child(2) {
+  width: 340px;
+  height: 340px;
+  top: 55%;
+  left: -80px;
+  background: #0e8aa8;
+  opacity: 0.16;
+}
+.admin-backdrop > span:nth-child(3) {
+  width: 380px;
+  height: 380px;
+  bottom: -140px;
+  right: -100px;
+  background: #6250d6;
+  opacity: 0.22;
+}
+.dark .admin-backdrop > span:nth-child(1),
+.dark .admin-backdrop > span:nth-child(3) {
+  opacity: 0.1;
+}
+.dark .admin-backdrop > span:nth-child(2) {
+  opacity: 0.07;
+}
+
+/* The admin sidebar as a floating island of frosted glass over that
+   background: a semi-transparent surface, an 18px backdrop blur, a thin
+   border and one soft shadow, as in the designs. The topbar pill
+   (`.admin-glass`, mobile only) shares the surface. Where backdrop blur is
+   not supported the surface is opaque. Styled here rather than through
+   GlassSurface because shadcn's Sidebar owns the element.
    `variant="floating"` supplies the inset; the 12px gap below replaces its
    8px, and the collapsed rail's reserved width is widened to match (its
    Tailwind utilities are layered, so these unlayered rules win). Desktop
@@ -363,16 +420,17 @@
 }
 .admin-island [data-slot="sidebar-inner"],
 .admin-glass {
-  border: 1px solid color-mix(in oklab, var(--line) 30%, transparent);
-  background: color-mix(in oklab, var(--surface) 82%, transparent);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  box-shadow:
-    0 1px 3px var(--shadow),
-    0 12px 28px -8px var(--shadow),
-    0 36px 72px -20px var(--shadow),
-    0 0 0 1px color-mix(in oklab, var(--brand) 2.5%, transparent),
-    inset 0 1px 0 var(--glass-edge);
+  border: 1px solid var(--glass-border);
+  background: color-mix(in oklab, var(--surface) 72%, transparent);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 8px 30px var(--glass-shadow);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .admin-island [data-slot="sidebar-inner"],
+  .admin-glass {
+    background: var(--surface);
+  }
 }
 /* The island hugs its content instead of running the full height: the
    container is a full-height flex box, so the panel opts out of stretching,

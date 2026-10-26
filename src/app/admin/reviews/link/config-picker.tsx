@@ -276,7 +276,7 @@ export function ConfigPicker({
                           {decisive && (
                             <Badge
                               variant="outline"
-                              className="border-brand/40 text-brand mt-0.5 h-4 w-fit px-1 py-0 text-[10px] font-normal"
+                              className="border-brand/40 text-brand-text mt-0.5 h-4 w-fit px-1 py-0 text-[10px] font-normal"
                             >
                               matches the video
                             </Badge>

@@ -346,10 +346,10 @@ export default function AdminQueuePage() {
       {selected.size > 0 && (
         <Card className="bg-brand-tint gap-0 border-transparent p-3">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="text-brand text-[13px] font-semibold">
+            <span className="text-brand-text text-[13px] font-semibold">
               {selected.size} selected
             </span>
-            <span className="text-brand/80 text-[12.5px]">
+            <span className="text-brand-text text-[12.5px]">
               Selected rows are always re-scraped, even ones that already succeeded.
             </span>
             <div className="ml-auto flex gap-3">
@@ -410,7 +410,7 @@ export default function AdminQueuePage() {
                         href={t.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-brand flex items-center gap-1.5 truncate font-mono text-[12px] hover:underline"
+                        className="text-brand-text flex items-center gap-1.5 truncate font-mono text-[12px] hover:underline"
                       >
                         <span className="truncate">{t.url}</span>
                         <ExternalLink className="size-3 shrink-0" />

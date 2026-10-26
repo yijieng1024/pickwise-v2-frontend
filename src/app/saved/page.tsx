@@ -29,7 +29,7 @@ function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center py-24 text-center">
-      <div className="bg-brand-tint text-brand mb-6 flex size-16 items-center justify-center rounded-full">
+      <div className="bg-brand-tint text-brand-text mb-6 flex size-16 items-center justify-center rounded-full">
         <Heart className="size-8" />
       </div>
       <h1 className="mb-2 text-3xl font-bold tracking-tight">{title}</h1>
@@ -131,7 +131,7 @@ export default function SavedPage() {
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 pb-24 sm:px-6 lg:px-8">
       {isLoading || (user && laptops === null && !failed) ? (
         <div className="flex justify-center py-24">
-          <Spinner className="text-brand size-6" />
+          <Spinner className="text-brand-text size-6" />
         </div>
       ) : !user ? (
         <EmptyState

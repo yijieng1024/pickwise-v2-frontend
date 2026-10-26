@@ -3,7 +3,7 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { type PaletteIndex, useChartPalette } from "./chart-palette";
-import { ChartTableToggle } from "./chart-table-toggle";
+import { ChartDataTable } from "./chart-data-table";
 import type { TrendPoint } from "./trend-line";
 
 export interface StackSeries {
@@ -37,7 +37,7 @@ export function StackedBarChart({
   const labelByX = new Map(points.map((p) => [p.key, p.label]));
 
   return (
-    <ChartTableToggle
+    <ChartDataTable
       caption={caption}
       columns={["Day", ...series.map((s) => s.name)]}
       rows={points.map((p, i) => [p.label, ...series.map((s) => s.values[i] ?? 0)])}
@@ -93,6 +93,6 @@ export function StackedBarChart({
           ))}
         </BarChart>
       </ResponsiveContainer>
-    </ChartTableToggle>
+    </ChartDataTable>
   );
 }

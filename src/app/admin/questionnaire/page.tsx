@@ -160,7 +160,7 @@ export default function AdminQuestionnairePage() {
               <ul className="divide-line divide-y">
                 {active.map((q, i) => (
                   <li key={q.id} className="flex items-center gap-3 p-3.5">
-                    <span className="bg-brand-tint text-brand flex size-6 shrink-0 items-center justify-center rounded-full text-[11.5px] font-bold tabular-nums">
+                    <span className="bg-brand-tint text-brand-text flex size-6 shrink-0 items-center justify-center rounded-full text-[11.5px] font-bold tabular-nums">
                       {i + 1}
                     </span>
                     <div className="min-w-0 flex-1">

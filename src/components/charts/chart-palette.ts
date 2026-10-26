@@ -7,13 +7,13 @@ import { useTheme } from "next-themes";
  * mode has its own steps, validated against its chart surface: light against
  * #ffffff, dark against #151a21. Order is the series order.
  *
- * In light mode aqua, yellow and magenta are below 3:1 against white, so no
- * chart may rely on colour alone: every chart has a "View as table" toggle,
- * and the brand bars keep their value labels.
+ * Every step passes 3:1 against its surface, so no chart needs a visible
+ * table. The brand bars keep their value labels, and every chart carries a
+ * hidden data table for screen readers (ChartDataTable).
  */
 export const CHART_PALETTE = {
-  light: ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6"],
-  dark: ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9"],
+  light: ["#2a78d6", "#d9622b", "#0e8aa8", "#b07800", "#cf5a8a", "#2f8a2f", "#6250d6"],
+  dark: ["#3987e5", "#d95926", "#1a9fbf", "#c98500", "#d55181", "#008300", "#9085e9"],
 } as const;
 
 export type PaletteIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6;

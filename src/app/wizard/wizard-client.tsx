@@ -216,7 +216,7 @@ export function WizardClient({ questions, brands }: WizardClientProps) {
                 <Icon
                   className={cn(
                     "mb-3 block size-5.5",
-                    active ? "text-brand" : "text-muted-foreground",
+                    active ? "text-brand-text" : "text-muted-foreground",
                   )}
                   strokeWidth={1.8}
                 />

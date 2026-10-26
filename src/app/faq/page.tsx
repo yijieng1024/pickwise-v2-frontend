@@ -81,7 +81,7 @@ const groups: { title: string; faqs: Faq[] }[] = [
             guarantee of real-world performance.{" "}
             <Link
               href="/pickscore"
-              className="text-brand underline underline-offset-2"
+              className="text-brand-text underline underline-offset-2"
             >
               See exactly how it&apos;s calculated
             </Link>
@@ -203,7 +203,7 @@ const groups: { title: string; faqs: Faq[] }[] = [
             We collect only what the service needs to work, there is no
             advertising, and we never sell your data. The full details —
             including how Pico conversations are stored — are in the{" "}
-            <Link href="/privacy" className="text-brand">
+            <Link href="/privacy" className="text-brand-text">
               Privacy Policy
             </Link>
             .
@@ -216,7 +216,7 @@ const groups: { title: string; faqs: Faq[] }[] = [
           <p>
             Yes — you can request deletion of your account and its data at any
             time. See the{" "}
-            <Link href="/privacy" className="text-brand">
+            <Link href="/privacy" className="text-brand-text">
               Privacy Policy
             </Link>{" "}
             for how.
@@ -231,7 +231,7 @@ export default function FaqPage() {
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-14 sm:px-6">
       <div className="motion-safe:animate-fade-in-up">
-        <p className="text-brand text-[11px] font-semibold tracking-wide uppercase">
+        <p className="text-brand-text text-[11px] font-semibold tracking-wide uppercase">
           FAQ
         </p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
@@ -242,14 +242,14 @@ export default function FaqPage() {
           yours? Ask{" "}
           <Link
             href="/chat"
-            className="text-brand underline underline-offset-2"
+            className="text-brand-text underline underline-offset-2"
           >
             Pico
           </Link>{" "}
           — or read the longer story on the{" "}
           <Link
             href="/about"
-            className="text-brand underline underline-offset-2"
+            className="text-brand-text underline underline-offset-2"
           >
             About page
           </Link>

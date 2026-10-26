@@ -172,7 +172,7 @@ export default function AdminGpuBenchmarksPage() {
           This runs in the background and may take a few minutes. There is no progress to
           report, so use the list below to see new scores as they land. Once it finishes,
           recalculate on the{" "}
-          <Link href="/admin/pickscore" className="text-brand font-semibold hover:underline">
+          <Link href="/admin/pickscore" className="text-brand-text font-semibold hover:underline">
             Pick Score page
           </Link>
           , since scores are derived from these numbers.

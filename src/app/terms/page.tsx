@@ -116,7 +116,7 @@ export default function TermsPage() {
           deletion of your account and data (see the{" "}
           <Link
             href="/privacy"
-            className="text-brand underline underline-offset-2"
+            className="text-brand-text underline underline-offset-2"
           >
             Privacy Policy
           </Link>

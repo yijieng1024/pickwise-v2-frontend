@@ -28,7 +28,7 @@ export function Footer() {
         <div className="mb-11 grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
           <div className="flex flex-col gap-3.5">
             <div className="flex items-center gap-2">
-              <BrandMark className="text-brand size-6.5 shrink-0" />
+              <BrandMark className="text-brand-text size-6.5 shrink-0" />
               <span className="text-[16px] font-bold tracking-tight">
                 PickWise
               </span>
@@ -46,7 +46,7 @@ export function Footer() {
               <Link
                 key={label}
                 href={href}
-                className="hover:text-brand text-[13px] text-foreground"
+                className="hover:text-brand-text text-[13px] text-foreground"
               >
                 {label}
               </Link>
@@ -61,7 +61,7 @@ export function Footer() {
               <Link
                 key={label}
                 href={href}
-                className="hover:text-brand text-[13px] text-foreground"
+                className="hover:text-brand-text text-[13px] text-foreground"
               >
                 {label}
               </Link>
@@ -76,7 +76,7 @@ export function Footer() {
               <a
                 key={label}
                 href={href}
-                className="hover:text-brand text-[13px] text-foreground"
+                className="hover:text-brand-text text-[13px] text-foreground"
               >
                 {label}
               </a>
@@ -89,10 +89,10 @@ export function Footer() {
             &copy; {new Date().getFullYear()} PickWise.
           </span>
           <div className="flex items-center gap-4.5 text-xs">
-            <Link href="/terms" className="hover:text-brand text-muted-foreground">
+            <Link href="/terms" className="hover:text-brand-text text-muted-foreground">
               Terms
             </Link>
-            <Link href="/privacy" className="hover:text-brand text-muted-foreground">
+            <Link href="/privacy" className="hover:text-brand-text text-muted-foreground">
               Privacy
             </Link>
           </div>
