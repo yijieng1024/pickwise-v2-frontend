@@ -30,7 +30,7 @@ import { useActiveJobs } from "@/lib/admin/use-job";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
-import { AccountItem, ThemeToggleItem } from "./admin-account";
+import { AccountItem, LogoutItem, ThemeToggleItem } from "./admin-account";
 import { AdminFooter } from "./admin-footer";
 import { pinnedLinks, type NavLink } from "./admin-nav";
 import { NavGroupSwitcher, useNavGroup } from "./admin-nav-group";
@@ -100,6 +100,7 @@ export function AdminShell({
               <ThemeToggleItem />
               <SidebarToggleItem />
               <BackToSiteLink />
+              <LogoutItem />
               <AccountItem />
             </SidebarMenu>
           </SidebarFooter>
