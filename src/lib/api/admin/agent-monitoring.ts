@@ -22,7 +22,10 @@ export interface AgentRunSummary {
    */
   model: string | null;
   model_position: number | null;
-  /** True when any step of the turn ran on a backup model. */
+  /**
+   * True when a backup model answered at least one step. On runs from before
+   * model calls were recorded, true means only that a backup was started.
+   */
   fallback_triggered: boolean;
   created_at: string;
 }
@@ -33,6 +36,27 @@ export interface AgentToolCall {
   output_preview: string | null;
   duration_ms: number | null;
   error: string | null;
+}
+
+/** Mirrors the backend's `AgentModelCallRead` schema: one model call of a turn. */
+export interface AgentModelCall {
+  /** A failed call and the fallback that answered for it share a step. */
+  step: number;
+  /** Call order across the run. */
+  seq: number;
+  model: string;
+  chain_position: number;
+  is_fallback: boolean;
+  status: "answered" | "error";
+  error_type: string | null;
+  error_message: string | null;
+  started_at: string;
+  /** Includes the wait for the model's rate limiter, up to 5 s. */
+  duration_ms: number | null;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  /** Names of the tools this call asked for. */
+  tool_calls: string[];
 }
 
 /** Mirrors the backend's `AgentRunLogDetail` schema. */
@@ -49,6 +73,8 @@ export interface AgentRunDetail {
   input_tokens: number | null;
   output_tokens: number | null;
   tool_calls: AgentToolCall[];
+  /** In call order. Absent until the backend that records them is deployed. */
+  model_calls?: AgentModelCall[];
   /**
    * The model that wrote the reply, and its place in the use's chain: 0 = the
    * primary, n = backup n. Null when no LLM call completed (the turn errored
@@ -56,7 +82,10 @@ export interface AgentRunDetail {
    */
   model: string | null;
   model_position: number | null;
-  /** True when any step of the turn ran on a backup model. */
+  /**
+   * True when a backup model answered at least one step. On runs from before
+   * model calls were recorded, true means only that a backup was started.
+   */
   fallback_triggered: boolean;
   created_at: string;
 }

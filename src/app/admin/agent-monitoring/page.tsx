@@ -41,6 +41,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Card } from "@/components/ui/card";
 import {
+  type AgentModelCall,
   type AgentMonitoringStats,
   type AgentRunDetail,
   type AgentRunStatus,
@@ -707,6 +708,8 @@ function RunDetail({ run }: { run: AgentRunDetail }) {
         </div>
       )}
 
+      <ModelCalls calls={run.model_calls ?? []} />
+
       {/* Tool calls */}
       <div className="flex flex-col gap-2">
         <span className="font-semibold">
@@ -741,6 +744,73 @@ function RunDetail({ run }: { run: AgentRunDetail }) {
       <div className="border-line flex flex-col gap-1.5 border-t pt-3">
         <CopyableId label="Run" value={run.id} />
         <CopyableId label="Conversation" value={run.conversation_id} />
+      </div>
+    </div>
+  );
+}
+
+/** Every model call of the turn, in order. A failed call and the fallback that
+ * answered for it share a step number. */
+function ModelCalls({ calls }: { calls: AgentModelCall[] }) {
+  if (calls.length === 0) return null;
+  const firstStart = parseUtc(calls[0].started_at).getTime();
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="font-semibold">Model calls ({calls.length})</span>
+      <div className="border-line overflow-x-auto rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Step</TableHead>
+              <TableHead>Started</TableHead>
+              <TableHead>Model</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Duration</TableHead>
+              <TableHead className="text-right">Tokens in / out</TableHead>
+              <TableHead>Tools</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {calls.map((call) => (
+              <TableRow key={call.seq} className="align-top">
+                <TableCell className="tabular-nums">{call.step}</TableCell>
+                <TableCell className="tabular-nums">
+                  +{((parseUtc(call.started_at).getTime() - firstStart) / 1000).toFixed(1)} s
+                </TableCell>
+                <TableCell className="whitespace-normal">
+                  <div className="font-mono text-[12.5px]">{call.model}</div>
+                  <div className="text-[12px] text-muted-foreground">
+                    {positionLabel(call.chain_position)}
+                  </div>
+                  {call.error_message && (
+                    <p className="text-negative mt-1 text-[12px] break-words">
+                      {call.error_type}: {call.error_message}
+                    </p>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    className={cn(
+                      "capitalize",
+                      statusBadgeClass[call.status === "answered" ? "success" : "error"],
+                    )}
+                  >
+                    {call.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {call.duration_ms === null ? "—" : `${call.duration_ms.toLocaleString()} ms`}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {call.input_tokens === null
+                    ? "—"
+                    : `${call.input_tokens.toLocaleString()} / ${(call.output_tokens ?? 0).toLocaleString()}`}
+                </TableCell>
+                <TableCell>{call.tool_calls.length ? call.tool_calls.join(", ") : "—"}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
