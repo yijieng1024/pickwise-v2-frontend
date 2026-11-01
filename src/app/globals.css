@@ -128,7 +128,6 @@
   }
 
   --animate-island-in: pw-island-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-  --animate-island-pop: pw-island-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
 
   @keyframes pw-island-in {
     from {
@@ -141,17 +140,6 @@
     }
   }
 
-  @keyframes pw-island-pop {
-    0% {
-      transform: scale(1);
-    }
-    40% {
-      transform: scale(1.06, 1.14);
-    }
-    100% {
-      transform: scale(1);
-    }
-  }
 }
 
 @theme inline {
@@ -409,6 +397,12 @@
    8px, and the collapsed rail's reserved width is widened to match (its
    Tailwind utilities are layered, so these unlayered rules win). Desktop
    only: on mobile the sidebar is a Sheet with its own surface. */
+/* NavIndicator draws the selected background once it has placed itself. Until
+   then the link keeps its own, so the first paint is already right. */
+[data-nav-pill-ready] [aria-current="page"] {
+  background: transparent;
+}
+
 .admin-island {
   padding: 12px;
 }

@@ -23,6 +23,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { BrandMark } from "@/components/brand-mark";
+import { NavIndicator } from "@/components/nav-indicator";
 import { Spinner } from "@/components/ui/spinner";
 import { Toaster } from "@/components/ui/sonner";
 import { jobTypeLabel } from "@/lib/api/admin/jobs";
@@ -173,6 +174,10 @@ function BrandLink() {
  */
 const PAGE_LIST_FADE_OUT_MS = 150;
 
+function isActiveLink(href: string, pathname: string, exact = false) {
+  return exact ? pathname === href : pathname.startsWith(href);
+}
+
 function AdminNav({ initialGroup, pathname }: { initialGroup?: string; pathname: string }) {
   const [group, setGroup] = useNavGroup(initialGroup);
   // Background jobs outlive the screen that started them, so "something is
@@ -197,7 +202,15 @@ function AdminNav({ initialGroup, pathname }: { initialGroup?: string; pathname:
   }, [leaving, group]);
 
   return (
-    <SidebarContent>
+    <SidebarContent className="relative isolate">
+      {/* One pill for the whole list, so it can cross from the pinned links to
+          the group's. It fades with the list when the user changes group by
+          hand; on a navigation the current page is no longer in that list. */}
+      <NavIndicator
+        activeKey={pathname}
+        hidden={leaving && shown.links.some((link) => isActiveLink(link.href, pathname))}
+        className="rounded-md"
+      />
       <SidebarGroup>
         <SidebarGroupContent>
           <SidebarMenu>
@@ -289,9 +302,7 @@ function NavItem({
 }) {
   const Icon = link.icon;
   const { guardNavigate } = useAdminNavigation();
-  const active = exact
-    ? pathname === link.href
-    : pathname.startsWith(link.href);
+  const active = isActiveLink(link.href, pathname, exact);
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
@@ -299,6 +310,7 @@ function NavItem({
           <Link
             href={link.href}
             onNavigate={(e) => guardNavigate(e, link.href)}
+            aria-current={active ? "page" : undefined}
           />
         }
         isActive={active}

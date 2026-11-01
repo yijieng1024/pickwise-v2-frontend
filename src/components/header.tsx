@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -19,6 +19,7 @@ import {
 
 import { BrandMark } from "@/components/brand-mark";
 import { GlassSurface } from "@/components/glass-surface";
+import { NavIndicator } from "@/components/nav-indicator";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserAvatar } from "@/components/user-avatar";
 import { Button } from "@/components/ui/button";
@@ -68,10 +69,8 @@ export function Header() {
   );
   const [scrolled, setScrolled] = useState(false);
   const [entered, setEntered] = useState(false);
-  const [popping, setPopping] = useState(false);
-  const isFirstRender = useRef(true);
 
-  // Smart navbar: shrinks on scroll, springs in on first paint, pops on navigation.
+  // Smart navbar: shrinks on scroll, springs in on first paint.
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
     onScroll();
@@ -83,23 +82,12 @@ export function Header() {
     };
   }, []);
 
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    setPopping(true);
-    const popTimer = setTimeout(() => setPopping(false), 450);
-    return () => clearTimeout(popTimer);
-  }, [pathname]);
-
   return (
     <header className="sticky top-4 z-50 flex w-full justify-center px-4">
       <div
         className={cn(
           "w-full max-w-6xl transition-all duration-500",
           !entered && "motion-safe:animate-island-in",
-          popping && "motion-safe:animate-island-pop",
         )}
       >
       <GlassSurface
@@ -126,13 +114,17 @@ export function Header() {
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-1 overflow-x-auto md:flex">
+        {/* The padding is room for the pill's overshoot: this box scrolls, so
+            anything past its edge would be clipped. */}
+        <nav className="no-scrollbar relative isolate -mx-1.5 hidden items-center gap-1 overflow-x-auto px-1.5 py-0.5 md:flex">
+          <NavIndicator activeKey={pathname} className="rounded-full" />
           {visibleLinks.map(({ href, label }) => {
             const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
             return (
               <Link
                 key={href}
                 href={href}
+                aria-current={active ? "page" : undefined}
                 className={
                   "rounded-full px-3.5 py-1.5 text-[13.5px] font-medium whitespace-nowrap transition-colors " +
                   (active
