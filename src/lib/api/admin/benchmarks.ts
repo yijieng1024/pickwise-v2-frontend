@@ -1,3 +1,4 @@
+import type { JobAccepted } from "@/lib/api/admin/jobs";
 import { apiFetch, apiFetchWithTotal } from "@/lib/api/client";
 
 /** Mirrors the backend's `CPUBenchmarkRead` schema. */
@@ -79,8 +80,8 @@ export function deleteCpuBenchmark(token: string, id: string): Promise<void> {
   });
 }
 
-export function triggerCpuScraper(token: string): Promise<{ status: string; message: string }> {
-  return apiFetch<{ status: string; message: string }>("/benchmarks/scrape/cpu", {
+export function triggerCpuScraper(token: string): Promise<JobAccepted> {
+  return apiFetch<JobAccepted>("/benchmarks/scrape/cpu", {
     method: "POST",
     token,
     next: { revalidate: 0 },
@@ -134,8 +135,8 @@ export function deleteGpuBenchmark(token: string, id: string): Promise<void> {
   });
 }
 
-export function triggerGpuScraper(token: string): Promise<{ status: string; message: string }> {
-  return apiFetch<{ status: string; message: string }>("/benchmarks/scrape/gpu", {
+export function triggerGpuScraper(token: string): Promise<JobAccepted> {
+  return apiFetch<JobAccepted>("/benchmarks/scrape/gpu", {
     method: "POST",
     token,
     next: { revalidate: 0 },

@@ -15,7 +15,9 @@ export type JobType =
   | "reviews.retry_transcripts"
   | "reviews.process"
   | "reviews.process_bulk"
-  | "reviews.rematch";
+  | "reviews.rematch"
+  | "benchmarks.refresh_cpu"
+  | "benchmarks.refresh_gpu";
 
 /**
  * `cancelling` is a REQUEST, not an outcome — the worker has been asked to
@@ -165,6 +167,8 @@ const JOB_TYPE_LABELS: Record<string, string> = {
   "reviews.process": "Summarize transcript",
   "reviews.process_bulk": "Run processing",
   "reviews.rematch": "Rematch pending",
+  "benchmarks.refresh_cpu": "Refresh PassMark CPU marks",
+  "benchmarks.refresh_gpu": "Refresh PassMark GPU marks",
 };
 
 export function jobTypeLabel(jobType: string): string {
@@ -177,6 +181,10 @@ export function jobTypeLabel(jobType: string): string {
  */
 export function jobResultSummary(job: Pick<Job, "job_type" | "result">): string | null {
   const r = job.result;
+  if (r && job.job_type.startsWith("benchmarks.refresh_")) {
+    if (r.written === false) return "Stopped before writing — the previous marks are unchanged.";
+    return `${Number(r.rows_written).toLocaleString()} rows written.`;
+  }
   if (!r || job.job_type !== "pickscore.generate_all") return null;
   if (r.written === false) return "Stopped before writing — the previous scores are unchanged.";
   const rows = Number(r.rows_created ?? 0) + Number(r.rows_updated ?? 0);

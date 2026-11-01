@@ -51,12 +51,13 @@ import {
   updateGpuBenchmark,
 } from "@/lib/api/admin/benchmarks";
 import { ApiError } from "@/lib/api/client";
+import { useJob } from "@/lib/admin/use-job";
 import { useAuth } from "@/lib/auth-context";
 
 import { useAdminQuery, useSearchDraft } from "../../admin-query-state";
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
 import { AdminPageHeader } from "../../admin-page-header";
-import { OutcomeAlert } from "../../admin-outcome-alert";
+import { AdminJobPanel } from "../../admin-job-panel";
 import { AdminPagination } from "../../admin-pagination";
 import { SortableTableHead } from "../../admin-sortable-head";
 
@@ -73,13 +74,8 @@ export default function AdminGpuBenchmarksPage() {
   const [deleteTarget, setDeleteTarget] = useState<GpuBenchmark | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [scraping, setScraping] = useState(false);
-  // The scraper returns 200 with no job id and no status endpoint, so the
-  // only honest signal is that we asked for it. Kept on screen rather than
-  // as a toast, because the work outlives the toast by minutes.
-  // Never set to true: the "Refresh started" alert is the known PassMark bug
-  // left for step 10 (the run leaves no record to report on).
-  const [scrapeStarted] = useState(false);
   const [reloadTick, setReloadTick] = useState(0);
+  const refreshJob = useJob(token, () => setReloadTick((t) => t + 1));
   const query = useAdminQuery({ filters: { q: "" }, sortKeys: GPU_SORT_KEYS });
   const { q: debouncedSearch } = query.values;
   const { page, sort } = query;
@@ -139,8 +135,9 @@ export default function AdminGpuBenchmarksPage() {
     if (!token) return;
     setScraping(true);
     try {
-      const res = await triggerGpuScraper(token);
-      toast.success(res.message);
+      const accepted = await triggerGpuScraper(token);
+      refreshJob.start(accepted);
+      toast.success(accepted.message);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "Failed to start scraper.");
     } finally {
@@ -155,9 +152,9 @@ export default function AdminGpuBenchmarksPage() {
         description="PassMark GPU scores that feed Pick Score's performance factors."
         action={
           <div className="flex flex-wrap gap-3">
-            <Button variant="outline" size="sm" onClick={runScraper} disabled={scraping}>
+            <Button variant="outline" size="sm" onClick={runScraper} disabled={scraping || refreshJob.isRunning}>
               <PlayCircle data-icon="inline-start" />
-              {scraping ? "Starting…" : "Run PassMark scraper"}
+              {scraping ? "Starting…" : refreshJob.isRunning ? "Refreshing…" : "Run PassMark scraper"}
             </Button>
             <Button size="sm" onClick={() => setCreateOpen(true)}>
               <Plus data-icon="inline-start" />
@@ -167,16 +164,25 @@ export default function AdminGpuBenchmarksPage() {
         }
       />
 
-      {scrapeStarted && (
-        <OutcomeAlert status="info" title="Refresh started">
-          This runs in the background and may take a few minutes. There is no progress to
-          report, so use the list below to see new scores as they land. Once it finishes,
-          recalculate on the{" "}
-          <Link href="/admin/pickscore" className="text-brand-text font-semibold hover:underline">
-            Pick Score page
-          </Link>
-          , since scores are derived from these numbers.
-        </OutcomeAlert>
+      {refreshJob.accepted && (
+        <>
+          <AdminJobPanel
+            accepted={refreshJob.accepted}
+            job={refreshJob.job}
+            pollError={refreshJob.pollError}
+          />
+          <p className="text-[12.5px] text-muted-foreground">
+            This run is also on the{" "}
+            <Link href="/admin/jobs" className="text-brand-text font-semibold hover:underline">
+              Jobs page
+            </Link>
+            , so it&apos;s safe to leave. Once it finishes, recalculate on the{" "}
+            <Link href="/admin/pickscore" className="text-brand-text font-semibold hover:underline">
+              Pick Score page
+            </Link>
+            , since scores are derived from these numbers.
+          </p>
+        </>
       )}
 
       <div className="relative max-w-xs">
