@@ -304,7 +304,12 @@ export default async function LaptopDetailsPage({
       <div className="grid grid-cols-1 gap-6 md:grid-cols-6">
         {/* PickScore per use case (hidden until scores are generated) */}
         {pickScores && pickScores.scores.length > 0 && (
-          <PickScoreCard laptopId={laptop.id} scores={pickScores.scores} os={raw.os} />
+          <PickScoreCard
+            laptopId={laptop.id}
+            scores={pickScores.scores}
+            benchmarksRefreshedAt={pickScores.benchmarks_refreshed_at}
+            os={raw.os}
+          />
         )}
 
         {/* Full specs */}

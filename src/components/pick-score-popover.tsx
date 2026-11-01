@@ -8,6 +8,7 @@ import { PickScoreBreakdown } from "@/components/pick-score-breakdown";
 import { PickScoreRing } from "@/components/pick-score-ring";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
+  type BenchmarksRefreshedAt,
   type PickScoreFactor,
   type UseCaseSlug,
   getLaptopPickScores,
@@ -17,6 +18,7 @@ import {
 interface Breakdown {
   breakdown: PickScoreFactor[];
   flags: Record<string, unknown>;
+  benchmarks_refreshed_at?: BenchmarksRefreshedAt | null;
 }
 
 /**
@@ -48,7 +50,13 @@ export function PickScorePopover({
     getLaptopPickScores(laptopId, useCase)
       .then((res) => {
         const row = res.scores[0];
-        if (row) setGeneral({ breakdown: row.breakdown, flags: row.flags });
+        if (row) {
+          setGeneral({
+            breakdown: row.breakdown,
+            flags: row.flags,
+            benchmarks_refreshed_at: res.benchmarks_refreshed_at,
+          });
+        }
         else setFailed(true);
       })
       .catch(() => setFailed(true));
@@ -95,6 +103,7 @@ export function PickScorePopover({
               flags={shown.flags}
               mode={personal ? "personalized" : "general"}
               compact
+              benchmarksRefreshedAt={shown.benchmarks_refreshed_at}
             />
           ) : (
             <p className="text-[12px] text-muted-foreground">

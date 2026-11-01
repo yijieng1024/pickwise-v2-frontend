@@ -10,7 +10,7 @@ import {
   Zap,
 } from "lucide-react";
 
-import type { PickScoreFactor } from "@/lib/api/pickscore";
+import type { BenchmarksRefreshedAt, PickScoreFactor } from "@/lib/api/pickscore";
 import { cn } from "@/lib/utils";
 
 export const FACTOR_META: Record<string, { label: string; icon: typeof Cpu }> = {
@@ -77,6 +77,17 @@ function reason(f: PickScoreFactor, mode: Mode): string | null {
   }
 }
 
+/** Our scrape date, not PassMark's: they update daily, and our marks are only
+ * as fresh as our last scrape. One line for both lists, so the older date. */
+function benchmarkFootnote(refreshed?: BenchmarksRefreshedAt | null): string | null {
+  const dates = [refreshed?.cpu, refreshed?.gpu].filter((d): d is string => Boolean(d));
+  if (dates.length === 0) return null;
+  const older = dates.map((d) => new Date(d)).sort((a, b) => a.getTime() - b.getTime())[0];
+  const label = older.toLocaleDateString("en-GB", { month: "short", year: "numeric", timeZone: "UTC" });
+  const lists = refreshed?.cpu && refreshed?.gpu ? "CPU and GPU" : refreshed?.cpu ? "CPU" : "GPU";
+  return `${lists} benchmarks last updated: ${label}`;
+}
+
 /**
  * The 8-factor PickScore breakdown, shared by the details page card and the
  * card popovers. Every factor shows its 0-100 score, its weight, why it
@@ -89,13 +100,16 @@ export function PickScoreBreakdown({
   flags,
   mode,
   compact = false,
+  benchmarksRefreshedAt,
 }: {
   breakdown: PickScoreFactor[];
   flags: Record<string, unknown>;
   mode: Mode;
   compact?: boolean;
+  benchmarksRefreshedAt?: BenchmarksRefreshedAt | null;
 }) {
   const factors = [...breakdown].sort((a, b) => b.contribution - a.contribution);
+  const footnote = benchmarkFootnote(benchmarksRefreshedAt);
 
   return (
     <div className={cn("flex min-w-0 flex-col", compact ? "gap-2.5" : "gap-3.5")}>
@@ -170,6 +184,7 @@ export function PickScoreBreakdown({
           </div>
         );
       })}
+      {footnote && <p className="text-[10.5px] leading-snug text-muted-foreground">{footnote}</p>}
     </div>
   );
 }

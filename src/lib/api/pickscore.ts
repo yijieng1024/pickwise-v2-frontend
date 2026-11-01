@@ -60,9 +60,17 @@ export interface UseCasePickScore {
   updated_at: string;
 }
 
+/** When each PassMark list was last refreshed. Null until it first is. */
+export interface BenchmarksRefreshedAt {
+  cpu: string | null;
+  gpu: string | null;
+}
+
 export interface LaptopPickScoresResponse {
   laptop_id: string;
   scores: UseCasePickScore[];
+  /** Absent until the backend that records refreshes is deployed. */
+  benchmarks_refreshed_at?: BenchmarksRefreshedAt;
 }
 
 export interface RankedLaptopPickScore {
@@ -89,6 +97,7 @@ export interface PersonalPickScore {
   mode: string;
   breakdown: PickScoreFactor[];
   flags: Record<string, unknown>;
+  benchmarks_refreshed_at?: BenchmarksRefreshedAt | null;
 }
 
 /** Precomputed general-mode PickScores of one laptop (all five use cases). */

@@ -7,6 +7,7 @@ import { FACTOR_META, PickScoreBreakdown } from "@/components/pick-score-breakdo
 import { PickScoreRing } from "@/components/pick-score-ring";
 import { Progress } from "@/components/ui/progress";
 import {
+  type BenchmarksRefreshedAt,
   type UseCasePickScore,
   USE_CASES,
   bestFit,
@@ -34,10 +35,12 @@ const PERSONAL = "personal";
 export function PickScoreCard({
   laptopId,
   scores,
+  benchmarksRefreshedAt,
   os,
 }: {
   laptopId: string;
   scores: UseCasePickScore[];
+  benchmarksRefreshedAt?: BenchmarksRefreshedAt;
   /** The laptop's OS: a macOS laptop is never a Gaming best fit. */
   os: string | null;
 }) {
@@ -223,6 +226,7 @@ export function PickScoreCard({
             breakdown={current.breakdown}
             flags={current.flags}
             mode={isPersonal ? "personalized" : "general"}
+            benchmarksRefreshedAt={benchmarksRefreshedAt}
           />
           <p className="mt-1.5 text-[10.5px] leading-relaxed text-muted-foreground">
             {isPersonal
