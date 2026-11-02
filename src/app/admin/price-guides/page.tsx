@@ -46,9 +46,11 @@ import {
   type PriceGuidePreview,
   type AmbiguousRow,
   type ConflictLaptop,
+  type ExtractionRun,
   type SuffixRuleLaptop,
   applyPriceGuide,
   deletePriceGuide,
+  getExtractionRun,
   getPriceGuidePreview,
   listPriceGuides,
   startPriceGuideExtraction,
@@ -75,8 +77,8 @@ const KINDS: Array<{ value: PriceGuideKind; label: string }> = [
 const WORKFLOW_URL =
   "https://github.com/yijieng1024/pickwise-v2-backend/actions/workflows/price-guide.yml";
 const EXTRACT_POLL_MS = 15_000;
-/** The workflow's own 30-minute timeout, plus time in GitHub's queue. */
-const EXTRACT_WAIT_MS = 35 * 60_000;
+/** How long a started extraction may take to show up at GitHub as a run. */
+const RUN_START_WAIT_MS = 3 * 60_000;
 
 type Outcome =
   | "matched"
@@ -444,11 +446,17 @@ export default function AdminPriceGuidesPage() {
   const [driveLink, setDriveLink] = useState("");
   const [kind, setKind] = useState<PriceGuideKind | null>(null);
   const [starting, setStarting] = useState(false);
-  // `known` is the list when the run started: the workflow gives no job id, so
-  // a guide that wasn't in it is how a finished extraction shows up.
-  const [waiting, setWaiting] = useState<{ known: Set<string>; since: number } | null>(null);
-  const [waitExpired, setWaitExpired] = useState(false);
-  const [arrived, setArrived] = useState<PriceGuide | null>(null);
+  // `runId` is null until GitHub shows the run: a dispatch may not name it, so then
+  // the first run that isn't `previousRunId` is ours.
+  const [waiting, setWaiting] = useState<{
+    runId: number | null;
+    previousRunId: number | null;
+    since: number;
+  } | null>(null);
+  const [run, setRun] = useState<ExtractionRun | null>(null);
+  const [runUnreadable, setRunUnreadable] = useState(false);
+  const [noRunStarted, setNoRunStarted] = useState(false);
+  const [finished, setFinished] = useState<ExtractionRun | null>(null);
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmApply, setConfirmApply] = useState(false);
@@ -510,24 +518,45 @@ export default function AdminPriceGuidesPage() {
     };
   }, [token, guideId, reloadTick]);
 
+  // A run that is still going, found on load: GitHub knows, so a reload loses nothing.
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    getExtractionRun(token)
+      .then((latest) => {
+        if (cancelled || !latest || latest.status === "completed") return;
+        setRun(latest);
+        setWaiting({ runId: latest.run_id, previousRunId: null, since: Date.now() });
+      })
+      .catch(() => {
+        // This only finds a run already going. Starting one reports its own errors.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
   useEffect(() => {
     if (!token || !waiting) return;
     const timer = setInterval(async () => {
       try {
-        const list = await listPriceGuides(token);
-        setGuides(list);
-        const fresh = list.find((g) => !waiting.known.has(g.id));
-        if (fresh) {
-          setWaiting(null);
-          setArrived(fresh);
+        const next = await getExtractionRun(token, waiting.runId ?? undefined);
+        setRunUnreadable(false);
+        if (!next || next.run_id === waiting.previousRunId) {
+          if (Date.now() - waiting.since > RUN_START_WAIT_MS) {
+            setWaiting(null);
+            setNoRunStarted(true);
+          }
           return;
         }
+        setRun(next);
+        if (next.status !== "completed") return;
+        setWaiting(null);
+        setFinished(next);
+        setReloadTick((t) => t + 1);
       } catch {
         // A failed poll says nothing about the workflow. The next tick retries.
-      }
-      if (Date.now() - waiting.since > EXTRACT_WAIT_MS) {
-        setWaiting(null);
-        setWaitExpired(true);
+        setRunUnreadable(true);
       }
     }, EXTRACT_POLL_MS);
     return () => clearInterval(timer);
@@ -538,10 +567,18 @@ export default function AdminPriceGuidesPage() {
     if (!token || !kind || !guides) return;
     setStarting(true);
     try {
-      await startPriceGuideExtraction(token, driveLink.trim(), kind);
-      setWaiting({ known: new Set(guides.map((g) => g.id)), since: Date.now() });
-      setWaitExpired(false);
-      setArrived(null);
+      // Read first: when the dispatch names no run, this is how ours is told apart.
+      const previous = await getExtractionRun(token);
+      const started = await startPriceGuideExtraction(token, driveLink.trim(), kind);
+      setRun(null);
+      setRunUnreadable(false);
+      setWaiting({
+        runId: started.run_id,
+        previousRunId: previous?.run_id ?? null,
+        since: Date.now(),
+      });
+      setNoRunStarted(false);
+      setFinished(null);
       setDriveLink("");
       toast.success("Extraction started.");
     } catch (err) {
@@ -591,7 +628,7 @@ export default function AdminPriceGuidesPage() {
       // A viewed guide leaves the list, so `guide` falls back to the newest and
       // the preview resets on its own.
       setGuides((list) => list?.filter((g) => g.id !== deleteTarget.id) ?? null);
-      if (arrived?.id === deleteTarget.id) setArrived(null);
+      if (finished?.guide_id === deleteTarget.id) setFinished(null);
       toast.success(`${deleteTarget.filename} deleted.`);
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "Couldn't delete the guide.");
@@ -683,58 +720,73 @@ export default function AdminPriceGuidesPage() {
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-2 text-[13.5px] font-semibold">
               <Loader2 className="text-muted-foreground size-3.5 motion-safe:animate-spin" />
-              Waiting for the guide
+              {run?.status === "in_progress"
+                ? (run.step ?? "Running")
+                : "Waiting for GitHub to start the run"}
             </span>
             <span className="text-muted-foreground text-[12.5px] tabular-nums">
               Started{" "}
-              {new Date(waiting.since).toLocaleTimeString("en-MY", { timeStyle: "short" })}
+              {new Date(run?.created_at ?? waiting.since).toLocaleTimeString("en-MY", {
+                timeStyle: "short",
+              })}
             </span>
             <Button size="sm" variant="ghost" className="ml-auto" onClick={() => setWaiting(null)}>
               Stop waiting
             </Button>
           </div>
           <p className="text-muted-foreground mt-1 text-[12.5px]">
-            Extraction runs in GitHub Actions and takes a few minutes. It reports no progress
-            here, so this waits for the guide to appear, and a failed run looks the same as a slow
-            one until you{" "}
+            Extraction runs in GitHub Actions and usually takes a few minutes.{" "}
+            {runUnreadable && "GitHub isn't answering right now, so this is still trying. "}
             <a
-              href={WORKFLOW_URL}
+              href={run?.url ?? WORKFLOW_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="text-brand-text inline-flex items-center gap-1 hover:underline"
             >
-              check the run <ExternalLink className="size-3" />
+              Open the run <ExternalLink className="size-3" />
             </a>
-            . A PDF that is already stored adds nothing, so no new guide appears.
           </p>
         </Card>
       )}
 
-      {waitExpired && (
-        <OutcomeAlert status="warning" title="No new guide after 35 minutes">
-          The run failed, or this PDF is already stored. The{" "}
+      {noRunStarted && (
+        <OutcomeAlert status="warning" title="GitHub didn't start a run">
+          Nothing showed up after 3 minutes. Check the{" "}
           <a href={WORKFLOW_URL} target="_blank" rel="noopener noreferrer" className="underline">
-            workflow&apos;s log
-          </a>{" "}
-          says which.
+            workflow&apos;s page
+          </a>
+          , then start the extraction again.
         </OutcomeAlert>
       )}
 
-      {arrived && (
-        <OutcomeAlert status="success" title={`${arrived.filename} is ready`}>
-          {arrived.row_count} rows stored.{" "}
-          <button
-            type="button"
-            className="underline"
-            onClick={() => {
-              query.set({ guide: arrived.id, outcome: "matched" });
-              setArrived(null);
-            }}
-          >
-            Open its preview
-          </button>
-        </OutcomeAlert>
-      )}
+      {finished &&
+        (finished.conclusion !== "success" ? (
+          <OutcomeAlert status="error" title="The extraction didn't finish">
+            {finished.step ? `It stopped at "${finished.step}". ` : ""}Nothing was stored. The{" "}
+            <a href={finished.url} target="_blank" rel="noopener noreferrer" className="underline">
+              run&apos;s log
+            </a>{" "}
+            says why.
+          </OutcomeAlert>
+        ) : !finished.is_new_guide ? (
+          <OutcomeAlert status="info" title={finished.filename ?? "The run finished"}>
+            {finished.note ?? "It left no record of what it did."} No new guide was added.
+          </OutcomeAlert>
+        ) : (
+          <OutcomeAlert status="success" title={`${finished.filename} is ready`}>
+            {finished.note}.{" "}
+            <button
+              type="button"
+              className="underline"
+              onClick={() => {
+                query.set({ guide: finished.guide_id ?? "", outcome: "matched" });
+                setFinished(null);
+              }}
+            >
+              Open its preview
+            </button>
+          </OutcomeAlert>
+        ))}
 
       <Card className="py-0">
         {listError ? (
@@ -791,8 +843,7 @@ export default function AdminPriceGuidesPage() {
                         size="sm"
                         variant="ghost"
                         aria-label={`Delete ${g.filename}`}
-                        // An extraction reports nothing to the server, so only this
-                        // page knows one is running.
+                        // A run could write to the guide while it is being deleted.
                         disabled={busy || waiting !== null}
                         onClick={() => setDeleteTarget(g)}
                       >

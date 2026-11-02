@@ -13,6 +13,25 @@ export interface PriceGuide {
   uploaded_at: string;
   uploaded_by: string | null;
   row_count: number;
+  /** What the last workflow run did to this guide. */
+  last_run_id: number | null;
+  last_run_note: string | null;
+}
+
+/** One workflow run as GitHub reports it. Mirrors the backend's `ExtractionRun`. */
+export interface ExtractionRun {
+  run_id: number;
+  /** `completed` is the only final value; the rest are queued, running or waiting. */
+  status: string;
+  conclusion: string | null;
+  url: string;
+  created_at: string;
+  /** The step running now, or the one that failed. */
+  step: string | null;
+  guide_id: string | null;
+  filename: string | null;
+  note: string | null;
+  is_new_guide: boolean;
 }
 
 export interface GuideRow {
@@ -84,18 +103,27 @@ export function listPriceGuides(token: string): Promise<PriceGuide[]> {
 }
 
 /**
- * Starts the GitHub Actions workflow. There is no job to poll: the guide simply
- * appears in `listPriceGuides` when the workflow finishes.
+ * Starts the GitHub Actions workflow. Follow it with `getExtractionRun`. `run_id` is
+ * null when GitHub doesn't name the run.
  */
 export function startPriceGuideExtraction(
   token: string,
   driveLink: string,
   kind: PriceGuideKind,
-): Promise<{ drive_file_id: string; kind: PriceGuideKind; message: string }> {
+): Promise<{ drive_file_id: string; kind: PriceGuideKind; message: string; run_id: number | null }> {
   return apiFetch("/admin/price-guides/extract", {
     method: "POST",
     token,
     body: JSON.stringify({ drive_link: driveLink, kind }),
+    next: { revalidate: 0 },
+  });
+}
+
+/** One run, or the latest with no id. Null when the workflow has never run. */
+export function getExtractionRun(token: string, runId?: number): Promise<ExtractionRun | null> {
+  const query = runId === undefined ? "" : `?run_id=${runId}`;
+  return apiFetch<ExtractionRun | null>(`/admin/price-guides/extraction${query}`, {
+    token,
     next: { revalidate: 0 },
   });
 }
