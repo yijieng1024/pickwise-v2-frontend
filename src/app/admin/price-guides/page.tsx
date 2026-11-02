@@ -64,6 +64,7 @@ import { cn } from "@/lib/utils";
 import { AdminJobPanel } from "../admin-job-panel";
 import { OutcomeAlert } from "../admin-outcome-alert";
 import { AdminPageHeader } from "../admin-page-header";
+import { AdminPagination } from "../admin-pagination";
 import { useAdminQuery } from "../admin-query-state";
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../admin-states";
 import { AdminStatusPill } from "../admin-status-pill";
@@ -77,6 +78,7 @@ const KINDS: Array<{ value: PriceGuideKind; label: string }> = [
 const WORKFLOW_URL =
   "https://github.com/yijieng1024/pickwise-v2-backend/actions/workflows/price-guide.yml";
 const EXTRACT_POLL_MS = 15_000;
+const PAGE_SIZE = 25;
 /** How long a started extraction may take to show up at GitHub as a run. */
 const RUN_START_WAIT_MS = 3 * 60_000;
 
@@ -298,12 +300,16 @@ function OutcomeTable<T>({
   rows,
   columns,
   rowKey,
+  page,
+  onPageChange,
   selected,
   onSelectedChange,
 }: {
   rows: T[];
   columns: Array<Column<T>>;
   rowKey: (row: T) => string;
+  page: number;
+  onPageChange: (page: number) => void;
   /** Leave out for a list "Use guide price" does not serve. */
   selected?: Set<string>;
   onSelectedChange?: (next: Set<string>) => void;
@@ -312,8 +318,15 @@ function OutcomeTable<T>({
     return <AdminEmptyState icon={FileText} title="Nothing in this group" />;
   }
 
-  const keys = rows.map(rowKey);
-  const allSelected = !!selected && keys.every((k) => selected.has(k));
+  // The API sends every row, so paging is only a slice. A ?page= past the end, or a
+  // list that shrank on reload, lands on the last page instead of an empty table.
+  const current = Math.min(page, Math.ceil(rows.length / PAGE_SIZE));
+  const offset = (current - 1) * PAGE_SIZE;
+  const pageRows = rows.slice(offset, offset + PAGE_SIZE);
+  const pageKeys = pageRows.map(rowKey);
+  const allKeys = rows.map(rowKey);
+  const pageSelected = !!selected && pageKeys.every((k) => selected.has(k));
+  const tabSelected = !!selected && allKeys.every((k) => selected.has(k));
 
   function toggle(toggled: string[], on: boolean) {
     const next = new Set(selected);
@@ -322,68 +335,106 @@ function OutcomeTable<T>({
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            {selected && (
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={pageSelected}
+                  onCheckedChange={() => toggle(pageKeys, !pageSelected)}
+                  aria-label="Select all rows on this page"
+                />
+              </TableHead>
+            )}
+            {columns.map((c) => (
+              <TableHead key={c.head}>{c.head}</TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {pageRows.map((row, index) => {
+            const key = rowKey(row);
+            return (
+              <TableRow key={key}>
+                {selected && (
+                  <TableCell>
+                    <Checkbox
+                      checked={selected.has(key)}
+                      onCheckedChange={() => toggle([key], !selected.has(key))}
+                      aria-label={`Select row ${offset + index + 1}`}
+                    />
+                  </TableCell>
+                )}
+                {columns.map((c) => (
+                  <TableCell key={c.head} className="text-[13px] whitespace-normal">
+                    {c.cell(row)}
+                  </TableCell>
+                ))}
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+      {(selected || rows.length > PAGE_SIZE) && (
+        <div className="border-line flex flex-col gap-2 border-t px-3 py-2.5">
           {selected && (
-            <TableHead className="w-10">
-              <Checkbox
-                checked={allSelected}
-                onCheckedChange={() => toggle(keys, !allSelected)}
-                aria-label="Select all rows in this group"
-              />
-            </TableHead>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="self-start"
+              onClick={() => toggle(allKeys, !tabSelected)}
+            >
+              {tabSelected
+                ? `Clear all ${rows.length} in this tab`
+                : `Select all ${rows.length} in this tab`}
+            </Button>
           )}
-          {columns.map((c) => (
-            <TableHead key={c.head}>{c.head}</TableHead>
-          ))}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.map((row, index) => {
-          const key = rowKey(row);
-          return (
-            <TableRow key={key}>
-              {selected && (
-                <TableCell>
-                  <Checkbox
-                    checked={selected.has(key)}
-                    onCheckedChange={() => toggle([key], !selected.has(key))}
-                    aria-label={`Select row ${index + 1}`}
-                  />
-                </TableCell>
-              )}
-              {columns.map((c) => (
-                <TableCell key={c.head} className="text-[13px] whitespace-normal">
-                  {c.cell(row)}
-                </TableCell>
-              ))}
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+          {rows.length > PAGE_SIZE && (
+            <AdminPagination
+              page={current}
+              pageSize={PAGE_SIZE}
+              total={rows.length}
+              onPageChange={onPageChange}
+            />
+          )}
+        </div>
+      )}
+    </>
   );
 }
 
 function OutcomeRows({
   outcome,
   preview,
+  page,
+  onPageChange,
   selected,
   onSelectedChange,
 }: {
   outcome: Outcome;
   preview: PriceGuidePreview;
+  page: number;
+  onPageChange: (page: number) => void;
   selected: Set<string>;
   onSelectedChange: (next: Set<string>) => void;
 }) {
   const laptopId = (l: GuideLaptop) => l.id;
   const sku = (r: GuideRow) => r.sku;
-  const selection = { selected, onSelectedChange };
+  const paging = { page, onPageChange };
+  const selection = { ...paging, selected, onSelectedChange };
 
   switch (outcome) {
     case "matched":
-      return <OutcomeTable rows={preview.matched} columns={MATCHED_COLUMNS} rowKey={laptopId} />;
+      return (
+        <OutcomeTable
+          rows={preview.matched}
+          columns={MATCHED_COLUMNS}
+          rowKey={laptopId}
+          {...paging}
+        />
+      );
     case "matched_by_suffix_rule":
       return (
         <OutcomeTable
@@ -403,15 +454,31 @@ function OutcomeRows({
         />
       );
     case "ambiguous":
-      return <OutcomeTable rows={preview.ambiguous} columns={AMBIGUOUS_COLUMNS} rowKey={sku} />;
+      return (
+        <OutcomeTable rows={preview.ambiguous} columns={AMBIGUOUS_COLUMNS} rowKey={sku} {...paging} />
+      );
     case "conflict":
-      return <OutcomeTable rows={preview.conflict} columns={CONFLICT_COLUMNS} rowKey={laptopId} />;
+      return (
+        <OutcomeTable
+          rows={preview.conflict}
+          columns={CONFLICT_COLUMNS}
+          rowKey={laptopId}
+          {...paging}
+        />
+      );
     case "unmatched_guide":
       return (
-        <OutcomeTable rows={preview.unmatched_guide} columns={GUIDE_ROW_COLUMNS} rowKey={sku} />
+        <OutcomeTable
+          rows={preview.unmatched_guide}
+          columns={GUIDE_ROW_COLUMNS}
+          rowKey={sku}
+          {...paging}
+        />
       );
     case "unpriced":
-      return <OutcomeTable rows={preview.unpriced} columns={UNPRICED_COLUMNS} rowKey={sku} />;
+      return (
+        <OutcomeTable rows={preview.unpriced} columns={UNPRICED_COLUMNS} rowKey={sku} {...paging} />
+      );
     case "differs_from_guide":
       return (
         <OutcomeTable
@@ -428,6 +495,7 @@ function OutcomeRows({
           rows={[...preview.uncovered].sort((a, b) => Number(a.price_rm > 0) - Number(b.price_rm > 0))}
           columns={UNCOVERED_COLUMNS}
           rowKey={laptopId}
+          {...paging}
         />
       );
   }
@@ -926,7 +994,7 @@ export default function AdminPriceGuidesPage() {
                     </span>
                     <div className="ml-auto flex gap-3">
                       <Button size="sm" onClick={() => setConfirmUse(true)} disabled={busy}>
-                        Use guide price
+                        Use guide price ({selected.size})
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
                         Clear
@@ -940,6 +1008,8 @@ export default function AdminPriceGuidesPage() {
                 <OutcomeRows
                   outcome={outcome.value}
                   preview={preview}
+                  page={query.page}
+                  onPageChange={query.setPage}
                   selected={selected}
                   onSelectedChange={setSelected}
                 />
