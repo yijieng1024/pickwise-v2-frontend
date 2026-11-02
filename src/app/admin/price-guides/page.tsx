@@ -132,8 +132,8 @@ const OUTCOMES: Array<{ value: Outcome; label: string; hint: string }> = [
   },
   {
     value: "uncovered",
-    label: "Needs a price by hand",
-    hint: "ASUS laptops no guide row covers. A price has to come from somewhere else.",
+    label: "Not in this guide",
+    hint: "ASUS laptops this guide has no row for. Most already have a price, and another guide may cover them.",
   },
 ];
 
@@ -420,7 +420,14 @@ function OutcomeRows({
         />
       );
     case "uncovered":
-      return <OutcomeTable rows={preview.uncovered} columns={UNCOVERED_COLUMNS} rowKey={laptopId} />;
+      return (
+        <OutcomeTable
+          // The ones with no price are the ones an admin has to act on. 0 is "unknown".
+          rows={[...preview.uncovered].sort((a, b) => Number(a.price_rm > 0) - Number(b.price_rm > 0))}
+          columns={UNCOVERED_COLUMNS}
+          rowKey={laptopId}
+        />
+      );
   }
 }
 
@@ -597,6 +604,11 @@ export default function AdminPriceGuidesPage() {
   const busy = applying || writing || job.isRunning;
   const fillCount = preview?.matched.filter((m) => m.action === "fill").length ?? 0;
   const keepCount = (preview?.matched.length ?? 0) - fillCount;
+  const noPriceCount = preview?.uncovered.filter((l) => !l.price_rm).length ?? 0;
+  const hint =
+    outcome.value === "uncovered"
+      ? `${outcome.hint} ${noPriceCount} ${noPriceCount === 1 ? "has" : "have"} no price.`
+      : outcome.hint;
   const selectedRows = [
     ...(preview?.differs_from_guide ?? []),
     ...(preview?.matched_by_suffix_rule ?? []),
@@ -850,7 +862,7 @@ export default function AdminPriceGuidesPage() {
                 })}
               </div>
 
-              <p className="text-muted-foreground text-[12.5px]">{outcome.hint}</p>
+              <p className="text-muted-foreground text-[12.5px]">{hint}</p>
 
               {selected.size > 0 && (
                 <Card className="bg-brand-tint gap-0 border-transparent p-3">
