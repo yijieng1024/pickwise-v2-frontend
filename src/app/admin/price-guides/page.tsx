@@ -37,6 +37,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  type BaseCodeLaptop,
   type GuideLaptop,
   type GuideRow,
   type MatchedLaptop,
@@ -80,6 +81,7 @@ const EXTRACT_WAIT_MS = 35 * 60_000;
 type Outcome =
   | "matched"
   | "matched_by_suffix_rule"
+  | "matched_by_base_code"
   | "ambiguous"
   | "conflict"
   | "unmatched_guide"
@@ -97,6 +99,11 @@ const OUTCOMES: Array<{ value: Outcome; label: string; hint: string }> = [
     value: "matched_by_suffix_rule",
     label: "Suffix rule (confirm)",
     hint: "These match only if -W and -WP are the same SKU, so an apply skips them. Check the two SKUs, then select the ones that are right.",
+  },
+  {
+    value: "matched_by_base_code",
+    label: "Base code (confirm)",
+    hint: "The catalog name lacks this SKU's full model code, so these match on the base code and specs only, and an apply skips them. Check each one is this machine, then select the ones that are right. Adding the full code to the laptop's name makes it a direct match.",
   },
   {
     value: "ambiguous",
@@ -180,11 +187,11 @@ const statusColumn: Column<GuideLaptop> = {
   cell: (l) => <AdminStatusPill kind="laptopStatus" value={l.status} />,
 };
 
-const matchedSkuColumn: Column<MatchedLaptop> = {
+const matchedSkuColumn: Column<{ rows: GuideRow[] }> = {
   head: "SKU",
   cell: (l) => <span className="font-mono text-[12px]">{rowsText(l.rows, (r) => r.sku)}</span>,
 };
-const newPriceColumn: Column<MatchedLaptop | SuffixRuleLaptop> = {
+const newPriceColumn: Column<MatchedLaptop | SuffixRuleLaptop | BaseCodeLaptop> = {
   head: "Guide price",
   cell: (l) => <span className="tabular-nums">{rm(l.guide_price_rm)}</span>,
 };
@@ -214,6 +221,14 @@ const SUFFIX_COLUMNS: Array<Column<SuffixRuleLaptop>> = [
     cell: (l) => <span className="font-mono text-[12px]">{l.catalog_sku}</span>,
   },
   { head: "Guide SKU", cell: (l) => <span className="font-mono text-[12px]">{l.guide_sku}</span> },
+  currentPriceColumn,
+  newPriceColumn,
+  statusColumn,
+];
+
+const BASE_CODE_COLUMNS: Array<Column<BaseCodeLaptop>> = [
+  laptopColumn,
+  matchedSkuColumn,
   currentPriceColumn,
   newPriceColumn,
   statusColumn,
@@ -355,6 +370,15 @@ function OutcomeRows({
         <OutcomeTable
           rows={preview.matched_by_suffix_rule}
           columns={SUFFIX_COLUMNS}
+          rowKey={laptopId}
+          {...selection}
+        />
+      );
+    case "matched_by_base_code":
+      return (
+        <OutcomeTable
+          rows={preview.matched_by_base_code}
+          columns={BASE_CODE_COLUMNS}
           rowKey={laptopId}
           {...selection}
         />
@@ -559,6 +583,7 @@ export default function AdminPriceGuidesPage() {
   const selectedRows = [
     ...(preview?.differs_from_guide ?? []),
     ...(preview?.matched_by_suffix_rule ?? []),
+    ...(preview?.matched_by_base_code ?? []),
   ].filter((row) => selected.has(row.id));
 
   return (
@@ -817,7 +842,7 @@ export default function AdminPriceGuidesPage() {
                       {selected.size} selected
                     </span>
                     <span className="text-brand-text text-[12.5px]">
-                      Across both selectable groups.
+                      Across the selectable groups.
                     </span>
                     <div className="ml-auto flex gap-3">
                       <Button size="sm" onClick={() => setConfirmUse(true)} disabled={busy}>

@@ -45,6 +45,13 @@ export interface SuffixRuleLaptop extends GuideLaptop {
   rows: GuideRow[];
 }
 
+/** Found through the base model code only, so an apply leaves it for an admin. */
+export interface BaseCodeLaptop extends GuideLaptop {
+  guide_sku: string;
+  guide_price_rm: number;
+  rows: GuideRow[];
+}
+
 export interface AmbiguousRow extends GuideRow {
   candidates: GuideLaptop[];
 }
@@ -59,6 +66,7 @@ export interface PriceGuidePreview {
   matched: MatchedLaptop[];
   differs_from_guide: MatchedLaptop[];
   matched_by_suffix_rule: SuffixRuleLaptop[];
+  matched_by_base_code: BaseCodeLaptop[];
   ambiguous: AmbiguousRow[];
   conflict: ConflictLaptop[];
   unmatched_guide: GuideRow[];
