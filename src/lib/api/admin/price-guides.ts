@@ -102,6 +102,15 @@ export function applyPriceGuide(token: string, guideId: string): Promise<JobAcce
   });
 }
 
+/** Permanent. 409 if a laptop price came from this guide, or while an apply runs. */
+export function deletePriceGuide(token: string, guideId: string): Promise<void> {
+  return apiFetch<void>(`/admin/price-guides/${guideId}`, {
+    method: "DELETE",
+    token,
+    next: { revalidate: 0 },
+  });
+}
+
 /**
  * "Use guide price" for a selection. All or nothing: 409 if any laptop has left
  * the lists since the preview, or while an apply runs.

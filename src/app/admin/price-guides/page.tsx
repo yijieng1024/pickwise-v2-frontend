@@ -2,7 +2,7 @@
 
 import { type FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { ExternalLink, FileText, Loader2, RefreshCw } from "lucide-react";
+import { ExternalLink, FileText, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -47,6 +47,7 @@ import {
   type ConflictLaptop,
   type SuffixRuleLaptop,
   applyPriceGuide,
+  deletePriceGuide,
   getPriceGuidePreview,
   listPriceGuides,
   startPriceGuideExtraction,
@@ -128,6 +129,10 @@ const OUTCOMES: Array<{ value: Outcome; label: string; hint: string }> = [
     hint: "ASUS laptops no guide row covers. A price has to come from somewhere else.",
   },
 ];
+
+function kindLabel(kind: PriceGuideKind): string {
+  return KINDS.find((k) => k.value === kind)?.label ?? kind;
+}
 
 function rm(price: number | null): string {
   return price ? `RM ${price.toLocaleString()}` : "No price";
@@ -402,6 +407,8 @@ export default function AdminPriceGuidesPage() {
   const [confirmUse, setConfirmUse] = useState(false);
   const [applying, setApplying] = useState(false);
   const [writing, setWriting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<PriceGuide | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const job = useJob(token, () => setReloadTick((t) => t + 1));
 
   // A hand-edited ?guide= falls back to the newest rather than a dead page.
@@ -525,6 +532,24 @@ export default function AdminPriceGuidesPage() {
       }
     } finally {
       setWriting(false);
+    }
+  }
+
+  async function deleteGuide() {
+    if (!token || !deleteTarget) return;
+    setDeleting(true);
+    try {
+      await deletePriceGuide(token, deleteTarget.id);
+      // A viewed guide leaves the list, so `guide` falls back to the newest and
+      // the preview resets on its own.
+      setGuides((list) => list?.filter((g) => g.id !== deleteTarget.id) ?? null);
+      if (arrived?.id === deleteTarget.id) setArrived(null);
+      toast.success(`${deleteTarget.filename} deleted.`);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Couldn't delete the guide.");
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
     }
   }
 
@@ -677,7 +702,7 @@ export default function AdminPriceGuidesPage() {
                 <TableHead>Edition</TableHead>
                 <TableHead>Stored</TableHead>
                 <TableHead>Rows</TableHead>
-                <TableHead className="w-20" />
+                <TableHead className="w-44" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -687,7 +712,7 @@ export default function AdminPriceGuidesPage() {
                     {g.filename}
                   </TableCell>
                   <TableCell className="text-[13px]">
-                    {KINDS.find((k) => k.value === g.kind)?.label ?? g.kind}
+                    {kindLabel(g.kind)}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-[12.5px] whitespace-normal">
                     {g.edition_text ?? "Not stated"}
@@ -699,14 +724,28 @@ export default function AdminPriceGuidesPage() {
                     {g.row_count.toLocaleString()}
                   </TableCell>
                   <TableCell>
-                    <Button
-                      size="sm"
-                      variant={g.id === guideId ? "secondary" : "outline"}
-                      aria-pressed={g.id === guideId}
-                      onClick={() => query.set({ guide: g.id })}
-                    >
-                      {g.id === guideId ? "Viewing" : "View"}
-                    </Button>
+                    <div className="flex justify-end gap-1.5">
+                      <Button
+                        size="sm"
+                        variant={g.id === guideId ? "secondary" : "outline"}
+                        aria-pressed={g.id === guideId}
+                        onClick={() => query.set({ guide: g.id })}
+                      >
+                        {g.id === guideId ? "Viewing" : "View"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        aria-label={`Delete ${g.filename}`}
+                        // An extraction reports nothing to the server, so only this
+                        // page knows one is running.
+                        disabled={busy || waiting !== null}
+                        onClick={() => setDeleteTarget(g)}
+                      >
+                        <Trash2 data-icon="inline-start" />
+                        Delete
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -858,6 +897,33 @@ export default function AdminPriceGuidesPage() {
               }}
             >
               Use guide price
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this guide permanently?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget &&
+                `${deleteTarget.filename} (${kindLabel(deleteTarget.kind)} guide, ${deleteTarget.row_count.toLocaleString()} ${deleteTarget.row_count === 1 ? "row" : "rows"}) is removed and this can't be undone. The PDF stays in Drive, so you can extract it again. A guide that set a laptop's price can't be deleted.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => void deleteGuide()}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Deleting…" : "Delete guide"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
