@@ -191,6 +191,12 @@ const matchedSkuColumn: Column<{ rows: GuideRow[] }> = {
   head: "SKU",
   cell: (l) => <span className="font-mono text-[12px]">{rowsText(l.rows, (r) => r.sku)}</span>,
 };
+const matchedPageColumn: Column<{ rows: GuideRow[] }> = {
+  head: "Page",
+  cell: (l) => (
+    <span className="tabular-nums">{[...new Set(l.rows.map((r) => r.page))].join(", ")}</span>
+  ),
+};
 const newPriceColumn: Column<MatchedLaptop | SuffixRuleLaptop | BaseCodeLaptop> = {
   head: "Guide price",
   cell: (l) => <span className="tabular-nums">{rm(l.guide_price_rm)}</span>,
@@ -199,6 +205,7 @@ const newPriceColumn: Column<MatchedLaptop | SuffixRuleLaptop | BaseCodeLaptop> 
 const MATCHED_COLUMNS: Array<Column<MatchedLaptop>> = [
   laptopColumn,
   matchedSkuColumn,
+  matchedPageColumn,
   currentPriceColumn,
   newPriceColumn,
   { head: "Apply will", cell: (l) => (l.action === "fill" ? "Write the price" : "Keep the price") },
@@ -208,6 +215,7 @@ const MATCHED_COLUMNS: Array<Column<MatchedLaptop>> = [
 const DIFFERS_COLUMNS: Array<Column<MatchedLaptop>> = [
   laptopColumn,
   matchedSkuColumn,
+  matchedPageColumn,
   currentPriceColumn,
   newPriceColumn,
   { head: "Price came from", cell: (l) => l.price_source ?? "Not recorded" },
@@ -221,6 +229,7 @@ const SUFFIX_COLUMNS: Array<Column<SuffixRuleLaptop>> = [
     cell: (l) => <span className="font-mono text-[12px]">{l.catalog_sku}</span>,
   },
   { head: "Guide SKU", cell: (l) => <span className="font-mono text-[12px]">{l.guide_sku}</span> },
+  matchedPageColumn,
   currentPriceColumn,
   newPriceColumn,
   statusColumn,
@@ -229,6 +238,7 @@ const SUFFIX_COLUMNS: Array<Column<SuffixRuleLaptop>> = [
 const BASE_CODE_COLUMNS: Array<Column<BaseCodeLaptop>> = [
   laptopColumn,
   matchedSkuColumn,
+  matchedPageColumn,
   currentPriceColumn,
   newPriceColumn,
   statusColumn,
