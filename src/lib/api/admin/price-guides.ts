@@ -19,6 +19,8 @@ export interface GuideRow {
   sku: string;
   price_rm: number | null;
   page: number;
+  /** The printed cell. Null on a row stored before panels were kept. */
+  panel: string | null;
 }
 
 export interface GuideLaptop {
@@ -57,6 +59,9 @@ export interface AmbiguousRow extends GuideRow {
 }
 
 export interface ConflictLaptop extends GuideLaptop {
+  reason: "price" | "panel";
+  /** The laptop's `display_type`. */
+  catalog_panel: string | null;
   rows: GuideRow[];
 }
 

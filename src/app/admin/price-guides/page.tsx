@@ -113,7 +113,7 @@ const OUTCOMES: Array<{ value: Outcome; label: string; hint: string }> = [
   {
     value: "conflict",
     label: "Conflict",
-    hint: "Several guide rows claim this laptop at different prices, so nothing is written.",
+    hint: "Guide rows claim this laptop at different prices, or the guide and the catalog state different panels, so nothing is written. Prices already on the site stay as they are.",
   },
   {
     value: "unmatched_guide",
@@ -253,6 +253,13 @@ const AMBIGUOUS_COLUMNS: Array<Column<AmbiguousRow>> = [
 const CONFLICT_COLUMNS: Array<Column<ConflictLaptop>> = [
   laptopColumn,
   currentPriceColumn,
+  {
+    head: "Why",
+    cell: (l) =>
+      l.reason === "panel"
+        ? `Panel: catalog says ${l.catalog_panel}, guide says ${l.rows.find((r) => r.panel)?.panel}`
+        : "Different prices",
+  },
   {
     head: "Guide rows",
     cell: (l) => (
