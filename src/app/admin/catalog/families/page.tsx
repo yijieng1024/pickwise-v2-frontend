@@ -8,6 +8,7 @@ import {
   MoreHorizontal,
   Pencil,
   Plus,
+  Search,
   Shuffle,
   Trash2,
 } from "lucide-react";
@@ -73,7 +74,7 @@ import { apiFetch, ApiError } from "@/lib/api/client";
 import type { BackendBrand } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth-context";
 
-import { useAdminQuery } from "../../admin-query-state";
+import { useAdminQuery, useSearchDraft } from "../../admin-query-state";
 import { OutcomeAlert } from "../../admin-outcome-alert";
 import { AdminPagination } from "../../admin-pagination";
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
@@ -106,8 +107,9 @@ export default function AdminCatalogFamiliesPage() {
   const [regroupResult, setRegroupResult] = useState<RegroupResult | null>(null);
   const [verifyPending, setVerifyPending] = useState<string | null>(null);
 
-  const query = useAdminQuery({ filters: { brand: "all", verified: "all" } });
-  const { brand: brandId, verified } = query.values;
+  const query = useAdminQuery({ filters: { q: "", brand: "all", verified: "all" } });
+  const { q, brand: brandId, verified } = query.values;
+  const [search, setSearch] = useSearchDraft(q, (value) => query.set({ q: value }));
 
   const brandOptions = useMemo(
     () => [
@@ -128,9 +130,9 @@ export default function AdminCatalogFamiliesPage() {
   // Drop stale rows the moment the filters change, so the table shows a
   // spinner rather than the previous filter's results — "adjust state during
   // render", since the set-state-in-effect lint forbids the effect version.
-  // filterSignature, not signature: paging is client-side over rows already
-  // loaded, so a page change must not blank the table and refetch.
-  const paramsSig = `${query.filterSignature}:${reloadTick}`;
+  // Only the fetched filters, not filterSignature: paging and search are
+  // client-side over rows already loaded, so neither must blank and refetch.
+  const paramsSig = `${brandId}:${verified}:${reloadTick}`;
   const [prevParamsSig, setPrevParamsSig] = useState(paramsSig);
   if (paramsSig !== prevParamsSig) {
     setPrevParamsSig(paramsSig);
@@ -219,11 +221,19 @@ export default function AdminCatalogFamiliesPage() {
 
   const unverifiedCount = families?.filter((f) => !f.is_verified).length ?? 0;
 
+  // Search is client-side: GET /families is the whole list already.
+  const needle = q.trim().toLowerCase();
+  const shown = needle
+    ? families?.filter((f) =>
+        [f.name, f.family_key, f.brand_name].some((s) => s?.toLowerCase().includes(needle)),
+      )
+    : families;
+
   // Clamped so deleting the last row of the last page lands on the new last
   // page instead of an empty table.
-  const lastPage = Math.max(1, Math.ceil((families?.length ?? 0) / PAGE_SIZE));
+  const lastPage = Math.max(1, Math.ceil((shown?.length ?? 0) / PAGE_SIZE));
   const page = Math.min(query.page, lastPage);
-  const pageRows = families?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE) ?? [];
+  const pageRows = shown?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE) ?? [];
 
   return (
     <div className="flex flex-col gap-4">
@@ -281,6 +291,17 @@ export default function AdminCatalogFamiliesPage() {
       )}
 
       <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-full max-w-xs">
+          <Search className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search families, seed key or brand…"
+            aria-label="Search families by name, seed key or brand"
+            autoComplete="off"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-8 pl-8"
+          />
+        </div>
         {/* `items` is not optional: SelectValue renders the *label* for the
             current value by looking it up here, so without it the trigger
             shows the raw value — "all", or a bare brand UUID once one is
@@ -334,6 +355,8 @@ export default function AdminCatalogFamiliesPage() {
             description="Run “Regroup unassigned” to seed families from product names, then merge them up to product lines."
             icon={Layers}
           />
+        ) : pageRows.length === 0 ? (
+          <AdminEmptyState title="No families match" description={`Nothing matches “${q.trim()}”.`} icon={Layers} />
         ) : (
           <Table>
             <TableHeader>
@@ -408,11 +431,11 @@ export default function AdminCatalogFamiliesPage() {
         )}
       </Card>
 
-      {families && (
+      {shown && (
         <AdminPagination
           page={page}
           pageSize={PAGE_SIZE}
-          total={families.length}
+          total={shown.length}
           onPageChange={query.setPage}
         />
       )}
