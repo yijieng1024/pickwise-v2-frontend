@@ -12,6 +12,8 @@ import {
   ChevronDown,
   MessageSquare,
   MoreHorizontal,
+  PanelLeftClose,
+  PanelLeftOpen,
   Pencil,
   Plus,
   Search,
@@ -445,6 +447,7 @@ export default function ChatPage() {
   const { user, token, isLoading, hasPreferences } = useAuth();
 
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [historyCollapsed, setHistoryCollapsed] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [laptops, setLaptops] = useState<AgentLaptopCard[]>([]);
@@ -758,17 +761,55 @@ export default function ChatPage() {
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-10 pb-5 sm:px-6">
       {/* Bento workspace: conversations | thread | Pico + shortlist rail */}
-      <div className="grid h-[calc(100vh-154px)] grid-cols-1 gap-5 md:grid-cols-[250px_minmax(0,1fr)] lg:grid-cols-[250px_minmax(0,1fr)_300px]">
+      <div
+        className={cn(
+          "grid h-[calc(100vh-154px)] grid-cols-1 gap-5",
+          historyCollapsed
+            ? "md:grid-cols-[68px_minmax(0,1fr)] lg:grid-cols-[68px_minmax(0,1fr)_300px]"
+            : "md:grid-cols-[250px_minmax(0,1fr)] lg:grid-cols-[250px_minmax(0,1fr)_300px]",
+        )}
+      >
         {/* Tile: conversations */}
         <aside className="border-line bg-surface hidden min-h-0 flex-col rounded-3xl border p-4 motion-safe:animate-fade-in-up md:flex">
-          <button
-            type="button"
-            onClick={startNewConversation}
-            className="border-line bg-canvas mb-4 flex items-center justify-center gap-2 rounded-full border py-2.5 text-[13px] font-semibold transition-colors hover:border-brand hover:text-brand-text"
+          {/* New Conversation takes 2/3 of the row, collapse 1/3; collapsed, they stack as icons */}
+          <div className={cn("mb-4 flex gap-2", historyCollapsed ? "flex-col" : "flex-row")}>
+            <button
+              type="button"
+              onClick={startNewConversation}
+              aria-label="New Conversation"
+              title="New Conversation"
+              className={cn(
+                "border-line bg-canvas flex items-center justify-center gap-2 rounded-full border py-2.5 text-[13px] font-semibold transition-colors hover:border-brand hover:text-brand-text",
+                !historyCollapsed && "basis-2/3",
+              )}
+            >
+              <Plus className="size-3.5" />
+              {!historyCollapsed && "New Conversation"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryCollapsed((c) => !c)}
+              aria-label={historyCollapsed ? "Expand conversations" : "Collapse conversations"}
+              aria-expanded={!historyCollapsed}
+              title={historyCollapsed ? "Expand" : "Collapse"}
+              className={cn(
+                "border-line bg-canvas flex items-center justify-center rounded-full border py-2.5 transition-colors hover:border-brand hover:text-brand-text",
+                !historyCollapsed && "basis-1/3",
+              )}
+            >
+              {historyCollapsed ? (
+                <PanelLeftOpen className="size-3.5" />
+              ) : (
+                <PanelLeftClose className="size-3.5" />
+              )}
+            </button>
+          </div>
+          <div
+            className={cn(
+              "flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto",
+              historyCollapsed && "hidden",
+            )}
           >
-            <Plus className="size-3.5" /> New Conversation
-          </button>
-          <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto">
             {groupConversations(conversations).map((group) => (
               <div key={group.label} className="flex flex-col gap-1">
                 <span className="px-2.5 pb-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
