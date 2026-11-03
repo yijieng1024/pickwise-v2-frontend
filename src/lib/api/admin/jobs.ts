@@ -183,6 +183,10 @@ export function jobTypeLabel(jobType: string): string {
  */
 export function jobResultSummary(job: Pick<Job, "job_type" | "result">): string | null {
   const r = job.result;
+  if (r && job.job_type === "processor.process_pending") {
+    const n = Array.isArray(r.identity_conflicts) ? r.identity_conflicts.length : 0;
+    return n > 0 ? `${n} identity conflict${n === 1 ? "" : "s"}: not updated, open the job to see them.` : null;
+  }
   if (r && job.job_type === "price_guide.apply") {
     return `Written: ${r.filled}. Confirmed: ${r.confirmed}. Differs: ${r.differs_from_guide}. Awaiting confirmation: ${r.awaiting_confirmation}. Unclear: ${r.skipped_unclear}.`;
   }

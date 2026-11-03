@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { RefreshCw, Square } from "lucide-react";
 import { toast } from "sonner";
@@ -23,6 +24,17 @@ import { useAuth } from "@/lib/auth-context";
 import { AdminErrorState, AdminLoadingState } from "../../admin-states";
 import { AdminPageHeader } from "../../admin-page-header";
 import { AdminStatusPill } from "../../admin-status-pill";
+
+/** One entry of a processor job's `result.identity_conflicts` (Apple rows not updated). */
+interface IdentityConflict {
+  laptop_id: string | null;
+  model_code: string | null;
+  existing: Record<string, unknown> | null;
+  incoming: Record<string, unknown> | null;
+  raw_id: string;
+  source_url: string;
+  reason?: string;
+}
 
 /** How often a running job is re-read. Finished jobs are read once. */
 const POLL_MS = 5000;
@@ -118,6 +130,7 @@ export default function AdminJobDetailPage() {
   if (!job) return <AdminLoadingState />;
 
   const summary = jobResultSummary(job);
+  const conflicts = (Array.isArray(job.result?.identity_conflicts) ? job.result.identity_conflicts : []) as IdentityConflict[];
   const unrecorded = job.failed_count - job.errors.length;
 
   return (
@@ -196,6 +209,41 @@ export default function AdminJobDetailPage() {
           </p>
         )}
       </Card>
+
+      {conflicts.length > 0 && (
+        <Card className="gap-3 p-5">
+          <h2 className="text-sm font-bold tracking-tight">
+            Identity conflicts{" "}
+            <span className="text-muted-foreground font-normal tabular-nums">({conflicts.length})</span>
+          </h2>
+          <p className="text-muted-foreground text-[12.5px]">
+            Not updated: the code matched a different machine, or the page&apos;s line is unknown.
+          </p>
+          <ul className="divide-line border-line divide-y rounded-xl border">
+            {conflicts.map((c, i) => (
+              <li key={`${c.raw_id}-${i}`} className="flex flex-col gap-0.5 px-4 py-2 text-[12.5px]">
+                <span className="font-medium break-all">
+                  {c.laptop_id ? (
+                    <Link href={`/admin/catalog/laptops/${c.laptop_id}/edit`} className="hover:underline">
+                      {c.model_code}
+                    </Link>
+                  ) : (
+                    (c.reason ?? "Unknown line")
+                  )}
+                </span>
+                {c.existing && c.incoming && (
+                  <span className="text-muted-foreground font-mono text-[11.5px]">
+                    stored {JSON.stringify(c.existing)} · incoming {JSON.stringify(c.incoming)}
+                  </span>
+                )}
+                <span className="text-muted-foreground break-all text-[11.5px]">
+                  {c.source_url} · raw {c.raw_id.slice(0, 8)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       <Card className="gap-3 p-5">
         <h2 className="text-sm font-bold tracking-tight">Result</h2>
