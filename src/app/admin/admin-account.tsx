@@ -40,7 +40,7 @@ export function AccountItem() {
   if (!user) return null;
 
   return (
-    <SidebarMenuItem>
+    <SidebarMenuItem className="mt-2">
       <SidebarMenuButton size="lg" render={<Link href="/profile" />} tooltip="Profile">
         <UserAvatar userId={user.id} username={user.username} className="size-8 shrink-0 text-xs" />
         <span className="min-w-0 flex-1 truncate text-left text-[13px] font-semibold">
