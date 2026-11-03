@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ExternalLink, ListOrdered, PlayCircle, RefreshCw, Search, Spline } from "lucide-react";
+import { ExternalLink, FileText, ListOrdered, PlayCircle, RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -294,7 +294,7 @@ export default function AdminQueuePage() {
 
           <div className="ml-auto flex flex-wrap gap-3">
             <Button variant="outline" size="sm" onClick={runCrawler} disabled={!brandChosen || busy}>
-              <Spline data-icon="inline-start" />
+              <FileText data-icon="inline-start" />
               Find new pages
             </Button>
             <Button size="sm" onClick={runBulk} disabled={!brandChosen || busy}>
