@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -38,6 +39,8 @@ const MAX_BATCH = 1500;
  * (not a fixed delay), which works out at ~13s per record.
  */
 const SECONDS_PER_RECORD = 13;
+/** One-click batch sizes; anything else goes in the custom box. */
+const PRESETS = [10, 25, 50, 100];
 
 function formatDuration(seconds: number): string {
   if (seconds < 60) return `${Math.round(seconds)} seconds`;
@@ -53,6 +56,8 @@ function formatDuration(seconds: number): string {
 export default function AdminProcessingPage() {
   const { token } = useAuth();
   const [limit, setLimit] = useState(100);
+  // What the custom box shows while typing, so clearing it doesn't snap to 1.
+  const [draft, setDraft] = useState<string | null>(null);
   const [pendingCount, setPendingCount] = useState<number | null>(null);
   const [failedCount, setFailedCount] = useState<number | null>(null);
   const [startingProcess, setStartingProcess] = useState(false);
@@ -102,6 +107,11 @@ export default function AdminProcessingPage() {
   // The run only ever covers what is actually pending, however large the
   // slider goes — so the estimate is based on the smaller of the two.
   const effective = pendingCount === null ? limit : Math.min(limit, pendingCount);
+  const allPending = Math.min(pendingCount ?? 0, MAX_BATCH);
+  const setBatch = (n: number) => {
+    setLimit(n);
+    setDraft(null);
+  };
   const dailyCap =
     model?.options.find((o) => o.model === model.model)?.rpd ?? null;
   const estimate = effective * SECONDS_PER_RECORD;
@@ -186,23 +196,52 @@ export default function AdminProcessingPage() {
             <span className="text-muted-foreground text-[13px]">records requested</span>
           </div>
 
-          <label className="mt-3 block">
-            <span className="sr-only">Batch size</span>
-            <input
-              type="range"
+          <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Batch size presets">
+            {PRESETS.map((n) => (
+              <Button
+                key={n}
+                size="sm"
+                variant={limit === n ? "default" : "outline"}
+                aria-pressed={limit === n}
+                onClick={() => setBatch(n)}
+                disabled={busy}
+                className="tabular-nums"
+              >
+                {n}
+              </Button>
+            ))}
+            {pendingCount !== null && pendingCount > 0 && (
+              <Button
+                size="sm"
+                variant={limit === allPending ? "default" : "outline"}
+                aria-pressed={limit === allPending}
+                onClick={() => setBatch(allPending)}
+                disabled={busy}
+                className="tabular-nums"
+              >
+                All pending {allPending.toLocaleString()}
+              </Button>
+            )}
+          </div>
+          <label className="text-muted-foreground mt-3 flex items-center gap-2 text-[12.5px]">
+            Custom
+            <Input
+              type="number"
+              inputMode="numeric"
               min={1}
               max={MAX_BATCH}
-              step={1}
-              value={limit}
-              onChange={(e) => setLimit(Number(e.target.value))}
+              value={draft ?? String(limit)}
+              onChange={(e) => {
+                setDraft(e.target.value);
+                const n = Number.parseInt(e.target.value, 10);
+                if (n >= 1) setLimit(Math.min(n, MAX_BATCH));
+              }}
+              onBlur={() => setDraft(null)}
               disabled={busy}
-              className="accent-brand h-1.5 w-full cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-24 tabular-nums"
             />
+            <span className="tabular-nums">of {MAX_BATCH.toLocaleString()} per run</span>
           </label>
-          <div className="text-muted-foreground flex justify-between text-[11.5px] tabular-nums">
-            <span>1</span>
-            <span>{MAX_BATCH.toLocaleString()} per run</span>
-          </div>
 
           {model && (
             <label className="mt-4 block">
