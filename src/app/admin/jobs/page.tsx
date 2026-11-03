@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useState } from "react";
+import Link from "next/link";
 import { ChevronRight, History, RefreshCw, Square } from "lucide-react";
 import { toast } from "sonner";
 
@@ -243,35 +244,33 @@ export default function AdminJobsPage() {
                 <Fragment key={job.id}>
                 <TableRow>
                   <TableCell>
-                    {job.errors.length > 0 ? (
-                      <button
-                        type="button"
-                        onClick={() => setExpanded((id) => (id === job.id ? null : job.id))}
-                        aria-expanded={expanded === job.id}
-                        className="flex items-start gap-1.5 text-left"
-                      >
-                        <ChevronRight
-                          className={`text-muted-foreground mt-0.5 size-3.5 shrink-0 transition-transform ${
-                            expanded === job.id ? "rotate-90" : ""
-                          }`}
-                        />
-                        <span>
-                          <span className="block font-medium hover:underline">
-                            {jobTypeLabel(job.job_type)}
-                          </span>
-                          <span className="text-muted-foreground block font-mono text-[11.5px]">
-                            {job.id.slice(0, 8)}
-                          </span>
+                    <div className="flex items-start gap-1.5">
+                      {job.errors.length > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => setExpanded((id) => (id === job.id ? null : job.id))}
+                          aria-expanded={expanded === job.id}
+                          aria-label={expanded === job.id ? "Hide errors" : "Show errors"}
+                          className="mt-0.5 shrink-0"
+                        >
+                          <ChevronRight
+                            className={`text-muted-foreground size-3.5 transition-transform ${
+                              expanded === job.id ? "rotate-90" : ""
+                            }`}
+                          />
+                        </button>
+                      ) : (
+                        <span className="w-3.5 shrink-0" aria-hidden />
+                      )}
+                      <Link href={`/admin/jobs/${job.id}`} className="group">
+                        <span className="block font-medium group-hover:underline">
+                          {jobTypeLabel(job.job_type)}
                         </span>
-                      </button>
-                    ) : (
-                      <>
-                        <div className="font-medium">{jobTypeLabel(job.job_type)}</div>
-                        <div className="text-muted-foreground font-mono text-[11.5px]">
+                        <span className="text-muted-foreground block font-mono text-[11.5px]">
                           {job.id.slice(0, 8)}
-                        </div>
-                      </>
-                    )}
+                        </span>
+                      </Link>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <AdminStatusPill kind="job" value={job.status} />
