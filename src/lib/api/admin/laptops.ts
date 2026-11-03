@@ -16,6 +16,9 @@ export interface ListLaptopsParams {
   status?: LaptopStatus;
   priceMin?: number;
   priceMax?: number;
+  /** `created_at` bounds, inclusive. Sent as naive UTC, the column's own form. */
+  addedFrom?: Date;
+  addedTo?: Date;
   sortBy?: "product_name" | "price_rm" | "created_at";
   sortDir?: "asc" | "desc";
   skip?: number;
@@ -35,6 +38,8 @@ export function listLaptops(
   if (params.status) query.set("status", params.status);
   if (params.priceMin !== undefined) query.set("price_min", String(params.priceMin));
   if (params.priceMax !== undefined) query.set("price_max", String(params.priceMax));
+  if (params.addedFrom) query.set("added_from", params.addedFrom.toISOString().slice(0, 19));
+  if (params.addedTo) query.set("added_to", params.addedTo.toISOString().slice(0, 19));
   if (params.sortBy) query.set("sort_by", params.sortBy);
   if (params.sortDir) query.set("sort_dir", params.sortDir);
   if (params.skip !== undefined) query.set("skip", String(params.skip));

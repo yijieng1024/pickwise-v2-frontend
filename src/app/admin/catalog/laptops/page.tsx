@@ -46,6 +46,7 @@ import { deleteLaptop, listLaptops, updateLaptop } from "@/lib/api/admin/laptops
 import { apiFetch, ApiError } from "@/lib/api/client";
 import type { BackendBrand, BackendLaptop, LaptopStatus } from "@/lib/api/types";
 import { useAuth } from "@/lib/auth-context";
+import { formatDate } from "@/lib/utils";
 
 import { useAdminQuery, useSearchDraft } from "../../admin-query-state";
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
@@ -56,7 +57,22 @@ import { SortableTableHead } from "../../admin-sortable-head";
 
 const PAGE_SIZE = 25;
 
-const SORT_KEYS = ["product_name", "price_rm"] as const;
+const SORT_KEYS = ["product_name", "price_rm", "created_at"] as const;
+
+/** Rolling windows on `created_at`, in days; "any" sends no bound. */
+const ADDED_OPTIONS = [
+  { value: "any", label: "Added any time" },
+  { value: "1", label: "Added in last 24 hours" },
+  { value: "7", label: "Added in last 7 days" },
+  { value: "30", label: "Added in last 30 days" },
+  { value: "90", label: "Added in last 90 days" },
+];
+
+/** `created_at` arrives as naive UTC ("2026-09-29T07:36:12"); without a zone
+ * the browser would read it as local time. */
+function formatAdded(iso: string): string {
+  return formatDate(/[zZ]|[+-]\d\d:\d\d$/.test(iso) ? iso : `${iso}Z`);
+}
 
 /** "all" is the default because GET /laptops/ is unfiltered by default — the
  * admin catalog is the one view that should show retired rows. */
@@ -110,10 +126,10 @@ export default function AdminCatalogLaptopsPage() {
   const [reloadTick, setReloadTick] = useState(0);
 
   const query = useAdminQuery({
-    filters: { q: "", brand: "all", status: "all" },
+    filters: { q: "", brand: "all", status: "all", added: "any" },
     sortKeys: SORT_KEYS,
   });
-  const { q: debouncedSearch, brand: brandId, status } = query.values;
+  const { q: debouncedSearch, brand: brandId, status, added } = query.values;
   const { page, sort } = query;
   const [search, setSearch] = useSearchDraft(debouncedSearch, (value) =>
     query.set({ q: value }),
@@ -169,6 +185,8 @@ export default function AdminCatalogLaptopsPage() {
       // 25 rows already on the page would silently mis-count.
       brandId: brandId === "all" ? undefined : brandId,
       status: status === "all" ? undefined : (status as LaptopStatus),
+      addedFrom:
+        added === "any" ? undefined : new Date(Date.now() - Number(added) * 86_400_000),
       sortBy: sort?.key,
       sortDir: sort?.direction,
       skip: (page - 1) * PAGE_SIZE,
@@ -186,7 +204,7 @@ export default function AdminCatalogLaptopsPage() {
     return () => {
       cancelled = true;
     };
-  }, [debouncedSearch, brandId, status, sort, page, reloadTick]);
+  }, [debouncedSearch, brandId, status, added, sort, page, reloadTick]);
 
   async function confirmDelete() {
     if (!target || !token) return;
@@ -310,6 +328,24 @@ export default function AdminCatalogLaptopsPage() {
               </SelectGroup>
             </SelectContent>
           </Select>
+          <Select
+            items={ADDED_OPTIONS}
+            value={added}
+            onValueChange={(v) => query.set({ added: v as string })}
+          >
+            <SelectTrigger className="w-52" aria-label="Filter by date added">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {ADDED_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
       </Card>
 
@@ -327,6 +363,7 @@ export default function AdminCatalogLaptopsPage() {
                 <SortableTableHead label="Model" sortKey="product_name" sort={sort} onSort={query.sortBy} />
                 <TableHead>Brand</TableHead>
                 <SortableTableHead label="Price" sortKey="price_rm" sort={sort} onSort={query.sortBy} />
+                <SortableTableHead label="Added" sortKey="created_at" sort={sort} onSort={query.sortBy} />
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -351,6 +388,9 @@ export default function AdminCatalogLaptopsPage() {
                   <TableCell>{brands.get(l.brand_id)?.name ?? "Unknown"}</TableCell>
                   <TableCell className="tabular-nums">
                     {l.price_rm > 0 ? `RM ${l.price_rm.toLocaleString()}` : "—"}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
+                    {formatAdded(l.created_at)}
                   </TableCell>
                   <TableCell>
                     {/* Changed inline, like the account status on /admin/users:
