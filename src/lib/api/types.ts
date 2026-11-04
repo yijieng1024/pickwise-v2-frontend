@@ -43,7 +43,7 @@ export interface BackendLaptop {
   display_brightness_nits: number | null;
   touchscreen: boolean;
   external_display_support: string | null;
-  weight_kg: number;
+  weight_kg: number | null; // null = unknown (backend 10a)
   dimensions_cm: string | null;
   battery_wh: number;
   power_supply_details: string | null;
@@ -56,7 +56,7 @@ export interface BackendLaptop {
   audio_details: string | null;
   camera_details: string | null;
   facial_recognition: boolean;
-  fingerprint_reader: boolean;
+  fingerprint_reader: boolean | null; // null = unknown (backend 10a)
   security_features: string | null;
   materials_and_certifications: string | null;
   microsoft_office_included: boolean;

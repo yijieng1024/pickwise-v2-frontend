@@ -99,7 +99,7 @@ export const LAPTOP_FORM_GROUPS: FieldGroup[] = [
   {
     title: "Build, battery & connectivity",
     fields: [
-      { key: "weight_kg", label: "Weight (kg)", type: "number", required: true },
+      { key: "weight_kg", label: "Weight (kg)", type: "number" },
       { key: "dimensions_cm", label: "Dimensions (cm)", type: "text" },
       { key: "battery_wh", label: "Battery (Wh)", type: "number", required: true },
       { key: "power_supply_details", label: "Power supply details", type: "text" },

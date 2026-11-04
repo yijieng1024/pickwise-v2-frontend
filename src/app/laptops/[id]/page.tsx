@@ -135,7 +135,7 @@ export default async function LaptopDetailsPage({
     },
     {
       label: "Weight · Battery",
-      value: `${raw.weight_kg}kg · ${raw.battery_wh}Wh`,
+      value: `${raw.weight_kg != null ? `${raw.weight_kg}kg` : "Weight unknown"} · ${raw.battery_wh}Wh`,
       icon: Feather,
     },
   ].filter((f) => f.value && f.value.trim() !== "");

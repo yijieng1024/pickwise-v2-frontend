@@ -99,7 +99,7 @@ export interface LaptopInput {
   external_display_support?: string | null;
 
   // Part 6: Build, Battery & Connectivity
-  weight_kg: number;
+  weight_kg: number | null;
   dimensions_cm?: string | null;
   battery_wh: number;
   power_supply_details?: string | null;
@@ -114,7 +114,7 @@ export interface LaptopInput {
   audio_details?: string | null;
   camera_details?: string | null;
   facial_recognition?: boolean;
-  fingerprint_reader?: boolean;
+  fingerprint_reader?: boolean | null;
 
   // Part 8: Security, Certifications & Extras
   security_features?: string | null;
