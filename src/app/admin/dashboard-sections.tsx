@@ -117,6 +117,7 @@ const DOT: Record<Tone, string> = {
   neutral: "bg-muted-foreground",
   good: "bg-positive",
   active: "bg-brand",
+  retired: "bg-foreground",
 };
 
 export function NeedsAttention({ summary }: { summary: DashboardSummary }) {
@@ -442,9 +443,10 @@ export function CatalogCard({ summary }: { summary: DashboardSummary }) {
   const c = summary.catalog;
   return (
     <SummaryCard id="catalog" title="Catalog" link={{ href: "/admin/catalog/laptops", label: "Laptops" }}>
-      <div className="mt-3 grid grid-cols-3 gap-2.5">
+      <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
         <StatTile label="Active" value={c.active.toLocaleString()} />
         <StatTile label="Inactive" value={c.inactive.toLocaleString()} />
+        <StatTile label="Discontinued" value={c.discontinued.toLocaleString()} />
         <StatTile label="Suspended" value={c.suspended.toLocaleString()} />
       </div>
       <div className="text-muted-foreground mt-4 text-xs font-semibold tracking-wide uppercase">Active laptops with…</div>

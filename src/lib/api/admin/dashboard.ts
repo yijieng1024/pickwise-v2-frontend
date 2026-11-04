@@ -40,6 +40,7 @@ export interface DashboardSummary {
   catalog: {
     active: number;
     inactive: number;
+    discontinued: number;
     suspended: number;
     active_with_pickscore: number;
     active_with_embedding: number;
