@@ -1,10 +1,12 @@
 /**
- * Catalog listing state (backend `LaptopStatus`). Same three values as
- * `UserStatus`, deliberately — but a different vocabulary: only `active`
- * laptops are returned by the agent's search, restored into a conversation
- * shortlist, or shown on the public `/laptops` browse.
+ * Catalog listing state (backend `LaptopStatus`, ADR-0009 Amendment II). Only
+ * `active` laptops are returned by the agent's search, restored into a
+ * conversation shortlist, or shown on the public `/laptops` browse.
+ * `discontinued` is a real machine no longer sold: hidden from lists, still
+ * found by name and shown on its details page with its last official price.
+ * `suspended` is hidden everywhere (duplicates, bad rows).
  */
-export type LaptopStatus = "active" | "inactive" | "suspended";
+export type LaptopStatus = "active" | "inactive" | "discontinued" | "suspended";
 
 /** Mirrors the backend's `LaptopRead` schema (GET /laptops/, GET /laptops/{id}). */
 export interface BackendLaptop {
@@ -72,6 +74,9 @@ export interface BackendLaptop {
 export interface BackendLaptopDetail extends BackendLaptop {
   shopee_search_url?: string | null;
   lazada_search_url?: string | null;
+  /** Discontinued only; null otherwise, and null when there is no recorded price. */
+  last_official_price_rm?: number | null;
+  last_official_price_at?: string | null;
 }
 
 /** Mirrors the backend's `BrandRead` schema (GET /brands). */

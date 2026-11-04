@@ -80,10 +80,11 @@ const STATUS_OPTIONS = [
   { value: "all", label: "All statuses" },
   { value: "active", label: "Active" },
   { value: "inactive", label: "Inactive" },
+  { value: "discontinued", label: "Discontinued" },
   { value: "suspended", label: "Suspended" },
 ];
 
-const STATUS_VALUES: LaptopStatus[] = ["active", "inactive", "suspended"];
+const STATUS_VALUES: LaptopStatus[] = ["active", "inactive", "discontinued", "suspended"];
 
 /**
  * First scraped photo, beside the model name — the same row rhythm as the user
@@ -410,6 +411,7 @@ export default function AdminCatalogLaptopsPage() {
                         <SelectGroup>
                           <SelectItem value="active">Active</SelectItem>
                           <SelectItem value="inactive">Inactive</SelectItem>
+                          <SelectItem value="discontinued">Discontinued</SelectItem>
                           <SelectItem value="suspended">Suspended</SelectItem>
                         </SelectGroup>
                       </SelectContent>
@@ -479,18 +481,22 @@ export default function AdminCatalogLaptopsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
             {deleteBlocked && target ? (
-              <AlertDialogAction
-                onClick={async () => {
-                  const laptop = target;
-                  setTarget(null);
-                  setDeleteBlocked(null);
-                  // Suspended, not inactive: inactive is the awaiting-a-price
-                  // queue, suspended the retired archive (ADR-0009).
-                  await changeStatus(laptop, "suspended");
-                }}
-              >
-                Set to Suspended
-              </AlertDialogAction>
+              // Never inactive: that is the awaiting-a-price queue. Discontinued
+              // for a real machine no longer sold, suspended for a duplicate or
+              // a bad row (ADR-0009 Amendment II, the 409's own wording).
+              (["discontinued", "suspended"] as const).map((next) => (
+                <AlertDialogAction
+                  key={next}
+                  onClick={async () => {
+                    const laptop = target;
+                    setTarget(null);
+                    setDeleteBlocked(null);
+                    await changeStatus(laptop, next);
+                  }}
+                >
+                  {next === "discontinued" ? "Set to Discontinued" : "Set to Suspended"}
+                </AlertDialogAction>
+              ))
             ) : (
               <AlertDialogAction
                 onClick={confirmDelete}

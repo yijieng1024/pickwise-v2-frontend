@@ -44,6 +44,7 @@ export const LAPTOP_FORM_GROUPS: FieldGroup[] = [
         options: [
           { value: "active", label: "Active" },
           { value: "inactive", label: "Inactive" },
+          { value: "discontinued", label: "Discontinued" },
           { value: "suspended", label: "Suspended" },
         ],
         hint: "Only Active laptops appear in public browse, agent search, and conversation shortlists.",

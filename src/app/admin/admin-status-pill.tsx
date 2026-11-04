@@ -15,8 +15,9 @@ import { cn } from "@/lib/utils";
  *   good     finished successfully
  *   warn     needs a look, but is not broken and often self-heals
  *   bad      genuinely failed and will not recover on its own
+ *   retired  finished for good, deliberately (a discontinued laptop)
  */
-export type Tone = "neutral" | "active" | "good" | "warn" | "bad";
+export type Tone = "neutral" | "active" | "good" | "warn" | "bad" | "retired";
 
 /**
  * The tone's own colour as the label, on a 15% wash of itself.
@@ -47,6 +48,7 @@ const TONE_CLASS: Record<Tone, string> = {
   good: "bg-positive/15 text-positive",
   warn: "bg-warning/15 text-warning",
   bad: "bg-negative/15 text-negative",
+  retired: "bg-foreground/10 text-foreground",
 };
 
 interface Entry {
@@ -123,6 +125,8 @@ const USER_STATUS: Record<string, Entry> = {
 const LAPTOP_STATUS: Record<string, Entry> = {
   active: { label: "Active", tone: "good" },
   inactive: { label: "Inactive", tone: "neutral" },
+  // Not `bad`: nothing failed, the machine is simply no longer sold.
+  discontinued: { label: "Discontinued", tone: "retired" },
   suspended: { label: "Suspended", tone: "bad" },
 };
 
