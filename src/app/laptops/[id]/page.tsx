@@ -91,6 +91,14 @@ export default async function LaptopDetailsPage({
   const images = raw.image_urls.length > 0 ? raw.image_urls : [laptop.image];
 
   const priceCheckedLabel = raw.price_checked_at ? formatDate(raw.price_checked_at) : null;
+  // ADR-0009 Amendment II: no longer sold, so no current price; RM 0 is never shown.
+  const discontinued = raw.status === "discontinued";
+  const lastOfficial =
+    raw.last_official_price_rm && raw.last_official_price_rm > 0
+      ? `Last official price: RM ${raw.last_official_price_rm.toLocaleString()}${
+          raw.last_official_price_at ? ` (${formatDate(raw.last_official_price_at)})` : ""
+        }`
+      : "No recorded price";
   // Colours sampled from each site's own logo files (2026-10-25): Shopee's
   // favicon #EE4D2D, Lazada's wordmark #0F146D. White on Lazada navy is
   // 15.66:1. White on Shopee orange is 3.66:1, below WCAG AA's 4.5:1 for
@@ -229,6 +237,15 @@ export default async function LaptopDetailsPage({
 
           {/* Price + CTAs as one bottom block */}
           <div className="flex flex-col gap-4">
+            {discontinued ? (
+              <div className="flex flex-col gap-2">
+                <span className="bg-foreground/10 text-foreground w-fit rounded-md px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase">
+                  Discontinued
+                </span>
+                <span className="text-base font-medium">{lastOfficial}</span>
+                <p className="text-xs text-muted-foreground">No longer sold by the maker.</p>
+              </div>
+            ) : (
             <div className="flex flex-wrap items-center gap-3">
               <span
                 className={cn(
@@ -247,10 +264,11 @@ export default async function LaptopDetailsPage({
                 </span>
               )}
             </div>
+            )}
 
-            {(laptop.priceValue > 0 || marketplaceLinks.length > 0) && (
+            {((!discontinued && laptop.priceValue > 0) || marketplaceLinks.length > 0) && (
               <div className="-mt-2 flex flex-col gap-2.5">
-                {laptop.priceValue > 0 && (
+                {!discontinued && laptop.priceValue > 0 && (
                   <p className="text-xs text-muted-foreground">
                     {priceCheckedLabel && (
                       <span className="block">Last checked: {priceCheckedLabel}</span>
