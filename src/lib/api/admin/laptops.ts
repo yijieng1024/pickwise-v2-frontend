@@ -137,6 +137,12 @@ export function createLaptop(token: string, input: LaptopInput): Promise<Backend
   });
 }
 
+/** GET /admin/laptops/{id}: any status, suspended included. The public
+ * GET /laptops/{id} is a 404 for suspended (ADR-0009 Amendment II). */
+export function getAdminLaptop(token: string, id: string): Promise<BackendLaptop> {
+  return apiFetch<BackendLaptop>(`/admin/laptops/${id}`, { token, next: { revalidate: 0 } });
+}
+
 export function updateLaptop(
   token: string,
   id: string,
