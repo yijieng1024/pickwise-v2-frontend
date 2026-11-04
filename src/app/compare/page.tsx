@@ -71,7 +71,9 @@ export default async function ComparePage({
   );
 
   const laptops: CompareLaptop[] = fetched.flatMap(([raw, scores]) => {
-    if (!raw) return [];
+    // Suspended is hidden everywhere (ADR-0009 Amendment II): dropped like a
+    // deleted laptop.
+    if (!raw || raw.status === "suspended") return [];
     return [
       {
         id: raw.id,
