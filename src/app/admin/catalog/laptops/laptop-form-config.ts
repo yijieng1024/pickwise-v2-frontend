@@ -6,7 +6,9 @@ export type FieldType =
   | "boolean"
   | "stringlist"
   | "textarea"
-  | "select";
+  | "select"
+  /** Yes / No / Unknown: true, false, null. A checkbox would turn null into false. */
+  | "tristate";
 
 export interface FieldDef {
   key: Exclude<keyof LaptopInput, "brand_id">;
@@ -117,7 +119,16 @@ export const LAPTOP_FORM_GROUPS: FieldGroup[] = [
       { key: "audio_details", label: "Audio details", type: "text" },
       { key: "camera_details", label: "Camera details", type: "text" },
       { key: "facial_recognition", label: "Facial recognition", type: "boolean" },
-      { key: "fingerprint_reader", label: "Fingerprint reader", type: "boolean" },
+      {
+        key: "fingerprint_reader",
+        label: "Fingerprint reader",
+        type: "tristate",
+        options: [
+          { value: "yes", label: "Yes" },
+          { value: "no", label: "No" },
+          { value: "unknown", label: "Unknown" },
+        ],
+      },
     ],
   },
   {

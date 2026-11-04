@@ -40,6 +40,8 @@ function seedValues(laptop?: BackendLaptop): Values {
       const raw = laptop?.[field.key as keyof BackendLaptop];
       if (field.type === "boolean") {
         values[field.key] = Boolean(raw);
+      } else if (field.type === "tristate") {
+        values[field.key] = raw === true ? "yes" : raw === false ? "no" : "unknown";
       } else if (field.type === "select") {
         // A create form must seed a real option, never "" — the backend
         // rejects an unknown status, and a blank Select reads as "unset"
@@ -73,6 +75,9 @@ function buildPayload(values: Values, brandId: string): LaptopInput {
           break;
         case "boolean":
           payload[field.key] = Boolean(raw);
+          break;
+        case "tristate":
+          payload[field.key] = raw === "yes" ? true : raw === "no" ? false : null;
           break;
         case "select":
           // Never send null: the default `String(raw).trim() || null` branch
@@ -322,7 +327,7 @@ function FieldControl({
     );
   }
 
-  if (field.type === "select") {
+  if (field.type === "select" || field.type === "tristate") {
     const options = field.options ?? [];
     return (
       <label className="flex flex-col gap-1 text-xs font-semibold">
