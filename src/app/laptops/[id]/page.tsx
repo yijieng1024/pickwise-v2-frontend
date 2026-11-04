@@ -25,7 +25,8 @@ import { SaveButton } from "@/components/save-button";
 import { ShareButton } from "@/components/share-button";
 import { compareHref } from "@/lib/compare";
 import { apiFetch, ApiError } from "@/lib/api/client";
-import { mapBackendLaptop } from "@/lib/api/adapters";
+import { mapBackendLaptop, priceLabel } from "@/lib/api/adapters";
+import { DiscontinuedLabel } from "@/components/discontinued-label";
 import { bestFit, getLaptopPickScores, labelForUseCase } from "@/lib/api/pickscore";
 import { getLaptopReviews } from "@/lib/api/reviews";
 import type {
@@ -93,12 +94,7 @@ export default async function LaptopDetailsPage({
   const priceCheckedLabel = raw.price_checked_at ? formatDate(raw.price_checked_at) : null;
   // ADR-0009 Amendment II: no longer sold, so no current price; RM 0 is never shown.
   const discontinued = raw.status === "discontinued";
-  const lastOfficial =
-    raw.last_official_price_rm && raw.last_official_price_rm > 0
-      ? `Last official price: RM ${raw.last_official_price_rm.toLocaleString()}${
-          raw.last_official_price_at ? ` (${formatDate(raw.last_official_price_at)})` : ""
-        }`
-      : "No recorded price";
+  const lastOfficial = priceLabel(raw);
   // Colours sampled from each site's own logo files (2026-10-25): Shopee's
   // favicon #EE4D2D, Lazada's wordmark #0F146D. White on Lazada navy is
   // 15.66:1. White on Shopee orange is 3.66:1, below WCAG AA's 4.5:1 for
@@ -239,9 +235,7 @@ export default async function LaptopDetailsPage({
           <div className="flex flex-col gap-4">
             {discontinued ? (
               <div className="flex flex-col gap-2">
-                <span className="bg-foreground/10 text-foreground w-fit rounded-md px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase">
-                  Discontinued
-                </span>
+                <DiscontinuedLabel />
                 <span className="text-base font-medium">{lastOfficial}</span>
                 <p className="text-xs text-muted-foreground">No longer sold by the maker.</p>
               </div>

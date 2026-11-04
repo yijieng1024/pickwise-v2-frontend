@@ -43,6 +43,7 @@ import {
   factorSeries,
 } from "@/lib/compare";
 import { cn } from "@/lib/utils";
+import { DiscontinuedLabel } from "@/components/discontinued-label";
 
 const SECTION_ICONS = {
   performance: Cpu,
@@ -56,6 +57,8 @@ export interface CompareColumn {
   name: string;
   brand: string;
   price: string;
+  /** No longer sold: `price` is the last official one. */
+  discontinued: boolean;
   image: string | null;
   color: string;
   removeIds: string[];
@@ -241,6 +244,7 @@ export function CompareView({
                     >
                       {column.name}
                     </Link>
+                    {column.discontinued && <DiscontinuedLabel className="mt-0.5" />}
                     <div className="text-[12px] font-semibold text-muted-foreground tabular-nums">
                       {column.price}
                     </div>

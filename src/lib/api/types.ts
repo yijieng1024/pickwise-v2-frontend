@@ -68,15 +68,16 @@ export interface BackendLaptop {
   created_at: string;
   /** Last time the official price was confirmed; null = no trustworthy date. */
   price_checked_at: string | null;
+  /** GET /laptops/{id} and GET /saved/ only. Discontinued only; null otherwise,
+   * and null when there is no recorded price. */
+  last_official_price_rm?: number | null;
+  last_official_price_at?: string | null;
 }
 
 /** Mirrors the backend's `LaptopDetailRead` (GET /laptops/{id} only). */
 export interface BackendLaptopDetail extends BackendLaptop {
   shopee_search_url?: string | null;
   lazada_search_url?: string | null;
-  /** Discontinued only; null otherwise, and null when there is no recorded price. */
-  last_official_price_rm?: number | null;
-  last_official_price_at?: string | null;
 }
 
 /** Mirrors the backend's `BrandRead` schema (GET /brands). */

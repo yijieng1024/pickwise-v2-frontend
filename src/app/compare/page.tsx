@@ -14,6 +14,7 @@ import { apiFetch } from "@/lib/api/client";
 import { hiResImageUrl } from "@/lib/api/image-urls";
 import { getLaptopPickScores } from "@/lib/api/pickscore";
 import type { BackendBrand, BackendLaptop } from "@/lib/api/types";
+import { priceLabel } from "@/lib/api/adapters";
 import {
   type CompareLaptop,
   bestFitSnapshot,
@@ -76,7 +77,7 @@ export default async function ComparePage({
         id: raw.id,
         name: raw.product_name,
         brand: brands.get(raw.brand_id)?.name ?? "Unknown",
-        price: raw.price_rm > 0 ? `RM ${raw.price_rm.toLocaleString()}` : "Price not available",
+        price: priceLabel(raw),
         image: raw.image_urls[0] ? hiResImageUrl(raw.image_urls[0]) : null,
         raw,
         // Best-fit use case, the same baseline the details page's hero ring
@@ -119,6 +120,7 @@ export default async function ComparePage({
         name: laptop.name,
         brand: laptop.brand,
         price: laptop.price,
+        discontinued: laptop.raw.status === "discontinued",
         image: laptop.image,
         color: SERIES_COLORS[i],
         // Link that drops this column, so a comparison can be narrowed in place.

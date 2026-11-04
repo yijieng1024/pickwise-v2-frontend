@@ -2,6 +2,23 @@ import type { Laptop } from "@/lib/laptops";
 import { hiResImageUrl, hiResImageUrls } from "@/lib/api/image-urls";
 import type { RankedLaptopPickScore } from "@/lib/api/pickscore";
 import type { BackendBrand, BackendLaptop } from "@/lib/api/types";
+import { formatDate } from "@/lib/utils";
+
+/**
+ * The price text for a laptop as the public pages show it (ADR-0009 Amendment
+ * II). A discontinued laptop is no longer sold, so never its stored price as if
+ * for sale: its last official price and date, or "No recorded price" (RM 0 is
+ * never shown).
+ */
+export function priceLabel(raw: BackendLaptop): string {
+  if (raw.status === "discontinued") {
+    const rm = raw.last_official_price_rm;
+    if (!rm || rm <= 0) return "No recorded price";
+    const at = raw.last_official_price_at ? ` (${formatDate(raw.last_official_price_at)})` : "";
+    return `Last official price: RM ${rm.toLocaleString()}${at}`;
+  }
+  return raw.price_rm > 0 ? `RM ${raw.price_rm.toLocaleString()}` : "Price not available";
+}
 
 /** Used only when a laptop has no image_urls — doesn't happen in current live data, but the field isn't guaranteed. */
 const FALLBACK_IMAGE =
@@ -24,8 +41,10 @@ export function mapBackendLaptop(
     slug: raw.model_code,
     name: raw.product_name,
     brand: brand?.name ?? "Unknown",
-    price: raw.price_rm > 0 ? `RM ${raw.price_rm.toLocaleString()}` : "Price not available",
-    priceValue: raw.price_rm,
+    price: priceLabel(raw),
+    // 0 = no price for sale, so a discontinued card is styled as unpriced.
+    priceValue: raw.status === "discontinued" ? 0 : raw.price_rm,
+    discontinued: raw.status === "discontinued",
     score: 0,
     image: raw.image_urls[0] ? hiResImageUrl(raw.image_urls[0]) : FALLBACK_IMAGE,
     images: raw.image_urls.length > 0 ? hiResImageUrls(raw.image_urls) : [FALLBACK_IMAGE],

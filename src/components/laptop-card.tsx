@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import type { UseCaseSlug } from "@/lib/api/pickscore";
 import type { Laptop } from "@/lib/laptops";
 import { cn } from "@/lib/utils";
+import { DiscontinuedLabel } from "@/components/discontinued-label";
 import { Carousel, CarouselContent, CarouselDots, CarouselItem } from "./ui/carousel";
 
 const specIcons: Record<string, typeof Cpu> = {
@@ -151,6 +152,7 @@ export function LaptopCard({
           })}
         </div>
 
+        {laptop.discontinued && <DiscontinuedLabel className="mt-1" />}
         <div className="mt-1 flex items-center justify-between gap-3">
           <span
             className={cn(

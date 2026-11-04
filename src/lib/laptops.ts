@@ -13,6 +13,8 @@ export interface Laptop {
   brand: string;
   price: string;
   priceValue: number;
+  /** No longer sold: show the Discontinued label; `price` is the last official one. */
+  discontinued?: boolean;
   score: number;
   image: string;
   /** All product photos (first one = `image`); fall back to `[image]` when absent. */
