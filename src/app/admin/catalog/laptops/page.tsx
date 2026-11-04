@@ -427,10 +427,13 @@ export default function AdminCatalogLaptopsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuGroup>
-                          <DropdownMenuItem render={<Link href={`/laptops/${l.id}`} target="_blank" />}>
-                            <ExternalLink />
-                            View
-                          </DropdownMenuItem>
+                          {/* The public page is a 404 for suspended (ADR-0009 Amendment II). */}
+                          {l.status !== "suspended" && (
+                            <DropdownMenuItem render={<Link href={`/laptops/${l.id}`} target="_blank" />}>
+                              <ExternalLink />
+                              View
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem render={<Link href={`/admin/catalog/laptops/${l.id}/edit`} />}>
                             <Pencil />
                             Edit
