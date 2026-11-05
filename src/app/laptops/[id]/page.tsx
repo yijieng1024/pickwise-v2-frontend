@@ -216,9 +216,8 @@ export default async function LaptopDetailsPage({
                 {laptop.name}
               </h1>
             </div>
-            {best && (
-              <ConfiguredRing laptopId={laptop.id} fallbackScore={best.score} os={raw.os} />
-            )}
+            {/* Rendered without stored scores too: a configuration scores live. */}
+            <ConfiguredRing laptopId={laptop.id} fallbackScore={best?.score ?? null} os={raw.os} />
           </div>
 
           {/* Quick facts */}
@@ -326,15 +325,14 @@ export default async function LaptopDetailsPage({
 
       {/* Bento grid */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-6">
-        {/* PickScore per use case (hidden until scores are generated) */}
-        {pickScores && pickScores.scores.length > 0 && (
-          <ConfiguredPickScoreCard
-            laptopId={laptop.id}
-            scores={pickScores.scores}
-            benchmarksRefreshedAt={pickScores.benchmarks_refreshed_at}
-            os={raw.os}
-          />
-        )}
+        {/* PickScore per use case (the original hides until scores are generated;
+            a configuration's live scores show either way) */}
+        <ConfiguredPickScoreCard
+          laptopId={laptop.id}
+          scores={pickScores?.scores ?? []}
+          benchmarksRefreshedAt={pickScores?.benchmarks_refreshed_at}
+          os={raw.os}
+        />
 
         {/* Full specs */}
         <FullSpecs raw={raw} />

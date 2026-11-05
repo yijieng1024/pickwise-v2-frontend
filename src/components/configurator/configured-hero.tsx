@@ -71,9 +71,10 @@ export function ConfiguredPrice({ original }: { original: ReactNode }) {
 }
 
 /** The hero ring: personalized when it can be, for whichever view is on. */
-export function ConfiguredRing({ laptopId, fallbackScore, os }: { laptopId: string; fallbackScore: number; os: string | null }) {
+export function ConfiguredRing({ laptopId, fallbackScore, os }: { laptopId: string; fallbackScore: number | null; os: string | null }) {
   const configured = useConfiguredView();
   if (!configured) {
+    if (fallbackScore == null) return null; // no stored scores yet: no ring, as before
     return <PersonalPickScoreRing laptopId={laptopId} fallbackScore={fallbackScore} size={64} caption="below" className="flex-none" />;
   }
   const best = bestFit(configured.scores ?? undefined, os);
@@ -105,6 +106,7 @@ export function ConfiguredPickScoreCard({
 }) {
   const configured = useConfiguredView();
   if (!configured) {
+    if (scores.length === 0) return null; // hidden until scores are generated
     return <PickScoreCard laptopId={laptopId} scores={scores} benchmarksRefreshedAt={benchmarksRefreshedAt} os={os} />;
   }
   if (!configured.scores) {
