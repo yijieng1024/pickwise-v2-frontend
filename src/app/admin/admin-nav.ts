@@ -89,7 +89,7 @@ export const navGroups: NavGroup[] = [
     links: [
       { href: "/admin/catalog/laptops", label: "Laptops", icon: Laptop },
       { href: "/admin/catalog/families", label: "Families", icon: Layers },
-      { href: "/admin/catalog/customizations", label: "Upgrade Options", icon: SlidersHorizontal },
+      { href: "/admin/catalog/apple-options", label: "Apple Options", icon: SlidersHorizontal },
       { href: "/admin/taxonomy", label: "Types & Categories", icon: FolderTree },
     ],
   },

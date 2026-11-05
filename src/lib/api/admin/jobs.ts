@@ -18,7 +18,8 @@ export type JobType =
   | "reviews.rematch"
   | "benchmarks.refresh_cpu"
   | "benchmarks.refresh_gpu"
-  | "price_guide.apply";
+  | "price_guide.apply"
+  | "apple.options_fetch";
 
 /**
  * `cancelling` is a REQUEST, not an outcome — the worker has been asked to
@@ -171,6 +172,7 @@ const JOB_TYPE_LABELS: Record<string, string> = {
   "benchmarks.refresh_cpu": "Refresh PassMark CPU marks",
   "benchmarks.refresh_gpu": "Refresh PassMark GPU marks",
   "price_guide.apply": "Apply price guide",
+  "apple.options_fetch": "Fetch Apple options",
 };
 
 export function jobTypeLabel(jobType: string): string {
