@@ -85,10 +85,10 @@ const capabilities = [
     chip: "Checking Malaysian market prices",
   },
   {
-    tool: "calculate_custom_apple_price",
+    tool: "get_configuration_options",
     icon: Calculator,
     label: "Apple configurator",
-    chip: "Calculating configuration price",
+    chip: "Checking build-to-order options",
   },
 ];
 
