@@ -15,6 +15,9 @@ interface PersonalPickScoreRingProps {
   size?: number;
   caption?: "below" | "inside" | "none";
   className?: string;
+  /** A personalized score the caller already has (a configuration's); null for none.
+   *  Undefined (the default) fetches the laptop's own. */
+  personalScore?: number | null;
 }
 
 /**
@@ -29,9 +32,12 @@ export function PersonalPickScoreRing({
   size = 64,
   caption = "below",
   className,
+  personalScore,
 }: PersonalPickScoreRingProps) {
   const { user, token, hasPreferences } = useAuth();
-  const [personal, setPersonal] = useState<number | null>(null);
+  const given = personalScore !== undefined;
+  const [fetched, setPersonal] = useState<number | null>(null);
+  const personal = given ? personalScore : fetched;
 
   // Reset on sign-out (state-adjust-during-render — the set-state-in-effect
   // lint forbids the effect version).
@@ -42,7 +48,7 @@ export function PersonalPickScoreRing({
   }
 
   useEffect(() => {
-    if (!user || !token || hasPreferences !== true) return;
+    if (given || !user || !token || hasPreferences !== true) return;
     let cancelled = false;
     calculatePersonalScore(laptopId, user.id, token)
       .then((res) => {
@@ -54,7 +60,7 @@ export function PersonalPickScoreRing({
     return () => {
       cancelled = true;
     };
-  }, [user, token, hasPreferences, laptopId]);
+  }, [given, user, token, hasPreferences, laptopId]);
 
   return (
     <span

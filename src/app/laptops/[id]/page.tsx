@@ -18,8 +18,15 @@ import {
 import { PriceHistory } from "@/components/charts/price-history";
 import { FullSpecs } from "@/components/full-specs";
 import { LaptopGallery } from "@/components/laptop-gallery";
-import { PersonalPickScoreRing } from "@/components/personal-pick-score-ring";
-import { PickScoreCard } from "@/components/pick-score-card";
+import { ConfiguratorProvider } from "@/components/configurator/configurator-context";
+import { ConfiguratorDialog } from "@/components/configurator/configurator-dialog";
+import {
+  ConfiguratorControls,
+  ConfiguredPickScoreCard,
+  ConfiguredPrice,
+  ConfiguredRing,
+  OriginalOnly,
+} from "@/components/configurator/configured-hero";
 import { ReviewSentiment } from "@/components/review-sentiment";
 import { SaveButton } from "@/components/save-button";
 import { ShareButton } from "@/components/share-button";
@@ -28,6 +35,7 @@ import { apiFetch, ApiError } from "@/lib/api/client";
 import { mapBackendLaptop, priceLabel } from "@/lib/api/adapters";
 import { DiscontinuedLabel } from "@/components/discontinued-label";
 import { bestFit, getLaptopPickScores, labelForUseCase } from "@/lib/api/pickscore";
+import { getLaptopOptions } from "@/lib/api/options";
 import { getLaptopReviews } from "@/lib/api/reviews";
 import type {
   BackendBrand,
@@ -63,7 +71,7 @@ export default async function LaptopDetailsPage({
     throw err;
   }
 
-  const [brand, rawHistory, pickScores, reviews] = await Promise.all([
+  const [brand, rawHistory, pickScores, reviews, options] = await Promise.all([
     apiFetch<BackendBrand>(`/brands/${raw.brand_id}`),
     apiFetch<BackendPriceHistoryEntry[]>(`/laptops/${id}/price-history`, {
       next: { revalidate: 0 },
@@ -73,6 +81,11 @@ export default async function LaptopDetailsPage({
     // A failure must not take the page down; null renders an honest error
     // state in the reviews section (never placeholder points).
     getLaptopReviews(id).catch(() => null),
+    // Apple build-to-order options (10c): only MacBook standard configs have them,
+    // and a failure only hides the Configure button.
+    raw.model_code?.startsWith("apple-macbook-")
+      ? getLaptopOptions(id).catch(() => null)
+      : Promise.resolve(null),
   ]);
 
   const laptop = mapBackendLaptop(raw, brand);
@@ -145,7 +158,9 @@ export default async function LaptopDetailsPage({
   ].filter((f) => f.value && f.value.trim() !== "");
 
   return (
+    <ConfiguratorProvider laptopId={laptop.id} options={options}>
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-12 pb-24 sm:px-6">
+      <ConfiguratorDialog productName={laptop.name} />
       <div className="mb-8 flex items-center justify-between">
         <Link
           href="/laptops"
@@ -202,13 +217,7 @@ export default async function LaptopDetailsPage({
               </h1>
             </div>
             {best && (
-              <PersonalPickScoreRing
-                laptopId={laptop.id}
-                fallbackScore={best.score}
-                size={64}
-                caption="below"
-                className="flex-none"
-              />
+              <ConfiguredRing laptopId={laptop.id} fallbackScore={best.score} os={raw.os} />
             )}
           </div>
 
@@ -233,7 +242,8 @@ export default async function LaptopDetailsPage({
 
           {/* Price + CTAs as one bottom block */}
           <div className="flex flex-col gap-4">
-            {discontinued ? (
+            <ConfiguratorControls />
+            <ConfiguredPrice original={discontinued ? (
               <div className="flex flex-col gap-2">
                 <DiscontinuedLabel />
                 <span className="text-base font-medium">{lastOfficial}</span>
@@ -258,17 +268,19 @@ export default async function LaptopDetailsPage({
                 </span>
               )}
             </div>
-            )}
+            )} />
 
             {((!discontinued && laptop.priceValue > 0) || marketplaceLinks.length > 0) && (
               <div className="-mt-2 flex flex-col gap-2.5">
                 {!discontinued && laptop.priceValue > 0 && (
+                  <OriginalOnly>
                   <p className="text-xs text-muted-foreground">
                     {priceCheckedLabel && (
                       <span className="block">Last checked: {priceCheckedLabel}</span>
                     )}
                     Official price. Marketplaces may be cheaper.
                   </p>
+                  </OriginalOnly>
                 )}
                 {marketplaceLinks.length > 0 && (
                   <>
@@ -316,7 +328,7 @@ export default async function LaptopDetailsPage({
       <div className="grid grid-cols-1 gap-6 md:grid-cols-6">
         {/* PickScore per use case (hidden until scores are generated) */}
         {pickScores && pickScores.scores.length > 0 && (
-          <PickScoreCard
+          <ConfiguredPickScoreCard
             laptopId={laptop.id}
             scores={pickScores.scores}
             benchmarksRefreshedAt={pickScores.benchmarks_refreshed_at}
@@ -384,5 +396,6 @@ export default async function LaptopDetailsPage({
         </section>
       </div>
     </main>
+    </ConfiguratorProvider>
   );
 }

@@ -37,12 +37,21 @@ export function PickScoreCard({
   scores,
   benchmarksRefreshedAt,
   os,
+  personal: personalGiven,
+  note,
 }: {
   laptopId: string;
   scores: UseCasePickScore[];
   benchmarksRefreshedAt?: BenchmarksRefreshedAt;
   /** The laptop's OS: a macOS laptop is never a Gaming best fit. */
   os: string | null;
+  /**
+   * The "For you" score when the caller already has it (a configuration's, from
+   * /configure); null for none. Undefined (the default) fetches the laptop's own.
+   */
+  personal?: UseCasePickScore | null;
+  /** Replaces the subtitle, e.g. for a configuration's live scores. */
+  note?: string;
 }) {
   const { user, token, hasPreferences } = useAuth();
   // Keep the backend's known display order; unknown slugs go last.
@@ -54,8 +63,10 @@ export function PickScoreCard({
   });
   const generalBest = bestFit(ordered, os);
   const initialTab = generalBest?.use_case ?? ordered[0]?.use_case ?? "";
-  const [selected, setSelected] = useState(initialTab);
-  const [personal, setPersonal] = useState<UseCasePickScore | null>(null);
+  const given = personalGiven !== undefined;
+  const [selected, setSelected] = useState(personalGiven?.score != null ? PERSONAL : initialTab);
+  const [fetched, setPersonal] = useState<UseCasePickScore | null>(null);
+  const personal = given ? personalGiven : fetched;
   const [personalFailed, setPersonalFailed] = useState(false);
 
   // Drop the personal tab on sign-out (state-adjust-during-render — the
@@ -70,7 +81,7 @@ export function PickScoreCard({
   }
 
   useEffect(() => {
-    if (!user || !token || hasPreferences !== true) return;
+    if (given || !user || !token || hasPreferences !== true) return;
     let cancelled = false;
     calculatePersonalScore(laptopId, user.id, token)
       .then((res) => {
@@ -92,11 +103,11 @@ export function PickScoreCard({
     return () => {
       cancelled = true;
     };
-  }, [user, token, hasPreferences, laptopId]);
+  }, [given, user, token, hasPreferences, laptopId]);
 
   // Derived, not effect-set: the personal fetch is in flight while the
   // conditions to run it hold and it has neither resolved nor failed.
-  const calculating = Boolean(
+  const calculating = !given && Boolean(
     user && token && hasPreferences === true && !personal && !personalFailed,
   );
 
@@ -132,8 +143,7 @@ export function PickScoreCard({
         </span>
       </div>
       <p className="mb-5 text-[12.5px] text-muted-foreground">
-        How this laptop scores when the weighting matches what you&apos;ll use
-        it for.
+        {note ?? "How this laptop scores when the weighting matches what you’ll use it for."}
       </p>
 
       {/* Screen-reader summary of the selected breakdown */}
