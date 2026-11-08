@@ -211,9 +211,9 @@ function Editor({ options, initial, onDone }: { options: LaptopOptions; initial:
           fullWidth
           className="pointer-events-auto px-4 py-3 sm:px-5"
           style={{
-            background: "color-mix(in oklch, var(--glass) 70%, transparent)",
-            backdropFilter: "blur(24px) saturate(190%)",
-            WebkitBackdropFilter: "blur(24px) saturate(190%)",
+            background: "color-mix(in oklch, var(--glass) 25%, transparent)",
+            backdropFilter: "blur(8px) saturate(170%)",
+            WebkitBackdropFilter: "blur(8px) saturate(170%)",
             boxShadow: "0 16px 48px var(--shadow), inset 0 1px 0 var(--glass-edge), inset 0 -1px 0 rgba(255,255,255,0.08)",
           }}
         >
