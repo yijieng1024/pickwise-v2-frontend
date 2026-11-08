@@ -328,9 +328,11 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    /* Continuous curvature (squircle) on every rounded corner, from the one place
-       every radius already goes through. Browsers without corner-shape keep round. */
-    corner-shape: squircle;
+    /* Continuous curvature on every rounded corner, from the one place
+       every radius already goes through. superellipse(1.5) sits between round (1) and
+       a full squircle (2): continuous, but rounder than squircle. Browsers without
+       corner-shape keep round. */
+    corner-shape: superellipse(1.5);
   }
   /* Pills and circles stay round: a squircle flattens a pill's ends. */
   [class~="rounded-full"],
