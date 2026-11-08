@@ -270,7 +270,7 @@
   /* Top Pick amber (DESIGN.md): fills, borders and icons only, never text;
      3.2:1 on white clears non-text contrast but not text. */
   --spark: #d97706;
-  --dot: rgb(15 23 42 / 0.07);
+  --dot: rgb(15 23 42 / 0.14);
 }
 
 .dark {
@@ -329,7 +329,7 @@
   --negative: #f97066;
   --warning: #fbbf24;
   --spark: #d97706;
-  --dot: rgb(255 255 255 / 0.06);
+  --dot: rgb(255 255 255 / 0.12);
 }
 
 @layer base {
@@ -354,8 +354,8 @@
      scrolls with the page. Cards are opaque, so text never sits on it; the
      glass surfaces only blur it. */
   body {
-    background-image: radial-gradient(var(--dot) 1px, transparent 1.5px);
-    background-size: 22px 22px;
+    background-image: radial-gradient(var(--dot) 1.5px, transparent 2px);
+    background-size: 24px 24px;
   }
   html {
     @apply font-sans;
@@ -371,7 +371,7 @@
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
-  background: radial-gradient(var(--dot) 1px, transparent 1.5px) 0 0 / 22px 22px, var(--bg);
+  background: radial-gradient(var(--dot) 1.5px, transparent 2px) 0 0 / 24px 24px, var(--bg);
 }
 /* The admin sidebar as a floating island of frosted glass over that
    background: a semi-transparent surface, an 18px backdrop blur, a thin

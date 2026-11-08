@@ -34,7 +34,7 @@ Two token families coexist. The **shadcn set** (`background`, `foreground`, `pri
 | `--glass` | `rgba(255,255,255,0.62)` | `rgba(21,26,33,0.58)` | Glass surface fill variable |
 | `--glass-edge` | `rgba(255,255,255,0.55)` | `rgba(255,255,255,0.12)` | Glass edge highlight & inner border |
 | `--shadow` | `rgba(4,46,97,0.08)` | `rgba(0,0,0,0.4)` | Soft ambient drop shadows |
-| `--dot` | `rgb(15 23 42 / 0.07)` | `rgb(255 255 255 / 0.06)` | The page's faint dot grid: a 1px radial gradient on a 22px grid, on `body` (public, scrolls) and `.admin-backdrop` (admin, fixed). CSS only, never an image or canvas; it sits only under the canvas, never under text |
+| `--dot` | `rgb(15 23 42 / 0.14)` | `rgb(255 255 255 / 0.12)` | The page's faint dot grid: a 1.5px radial gradient on a 24px grid, on `body` (public, scrolls) and `.admin-backdrop` (admin, fixed). CSS only, never an image or canvas; it sits only under the canvas, never under text |
 
 > **Note:** Status colors are used at low alpha for backgrounds (e.g., `bg-positive/10`, `bg-negative/10`).
 
