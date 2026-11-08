@@ -64,6 +64,8 @@ export function LaptopCard({
   const router = useRouter();
   const specEntries = Object.entries(laptop.specs);
   const images = laptop.images?.length ? laptop.images : [laptop.image];
+  // Apple shoots the MacBook Pro on black, so a white tile would frame each photo.
+  const darkPhoto = /macbook pro/i.test(laptop.name);
 
   return (
     <div
@@ -87,7 +89,8 @@ export function LaptopCard({
           the whole-card link keeps its original behaviour. */}
       <div
         className={cn(
-          "relative z-10 overflow-hidden bg-white md:z-auto",
+          "relative z-10 overflow-hidden md:z-auto",
+          darkPhoto ? "bg-black" : "bg-white",
           layout === "list"
             ? "w-40 shrink-0 rounded-l-3xl sm:w-64"
             : "h-75 w-full rounded-t-3xl",
@@ -106,7 +109,10 @@ export function LaptopCard({
                   width={600}
                   height={400}
                   sizes={IMAGE_SIZES[layout]}
-                  className="h-full w-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105 dark:mix-blend-normal"
+                  className={cn(
+                    "h-full w-full object-contain transition-transform duration-500 group-hover:scale-105",
+                    !darkPhoto && "mix-blend-multiply dark:mix-blend-normal",
+                  )}
                 />
               </CarouselItem>
             ))}
