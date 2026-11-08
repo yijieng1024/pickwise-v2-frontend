@@ -197,6 +197,7 @@
   --color-positive: var(--positive);
   --color-negative: var(--negative);
   --color-warning: var(--warning);
+  --color-spark: var(--spark);
   --color-line: var(--line);
 }
 
@@ -266,6 +267,9 @@
   --positive: #1a7f4f;
   --negative: #b42318;
   --warning: #b45309;
+  /* Top Pick amber (DESIGN.md): fills, borders and icons only, never text;
+     3.2:1 on white clears non-text contrast but not text. */
+  --spark: #d97706;
 }
 
 .dark {
@@ -323,6 +327,7 @@
   --positive: #4ade80;
   --negative: #f97066;
   --warning: #fbbf24;
+  --spark: #d97706;
 }
 
 @layer base {

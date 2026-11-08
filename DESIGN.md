@@ -29,6 +29,7 @@ Two token families coexist. The **shadcn set** (`background`, `foreground`, `pri
 | `bg-brand-tint` (`--brand-tint`) | `#eaf1fa` | `#0d2038` | Selected pills, soft badges, focus rings |
 | `text-positive` (`--positive`) | `#1a7f4f` | `#4ade80` | Positive deltas, success state, "Verified" badges |
 | `text-negative` (`--negative`) | `#b42318` | `#f97066` | Errors, warnings, destructive triggers |
+| `text-spark` / `border-spark` (`--spark`) | `#d97706` | `#d97706` | Top Pick amber, reserved for exactly two places: the "Top Pick" badge on Pico's first shortlist card and the sparkle in the details page's "Best fit" badge. Fills, borders and icons only, never text (3.2:1 on white), and always beside an icon plus text, never colour alone, since it shares a family with `--warning`. Never on the Pick Score ring (a measurement, not an award) or anywhere in admin |
 | `border-line` (`--line`) | `rgba(29,29,31,0.07)` | `rgba(242,244,247,0.08)` | Hairline borders, table dividers |
 | `--glass` | `rgba(255,255,255,0.62)` | `rgba(21,26,33,0.58)` | Glass surface fill variable |
 | `--glass-edge` | `rgba(255,255,255,0.55)` | `rgba(255,255,255,0.12)` | Glass edge highlight & inner border |
