@@ -16,6 +16,7 @@ import {
   configureLaptop,
   formatDelta,
   picksOn,
+  sizeOf,
   standardPicks,
   totalOf,
   type ChipKit,
@@ -30,13 +31,6 @@ import { cn } from "@/lib/utils";
 import { useConfigurator } from "./configurator-context";
 
 const chipName = (kit: ChipKit | undefined) => kit?.label ?? kit?.chip ?? "";
-
-/** "48gb" → 48, "2tb" → 2048, "70w" → 70; a value with no number sorts first. */
-function sizeOf(value: string): number {
-  const m = /(\d+(?:\.\d+)?)\s*(tb)?/i.exec(value);
-  if (!m) return 0;
-  return Number(m[1]) * (m[2] ? 1024 : 1);
-}
 
 /** The design recipe (DESIGN.md: glass for floating controls only), for the floating close. */
 const GLASS = {

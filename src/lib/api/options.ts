@@ -1,5 +1,6 @@
 import { apiFetch, ApiError } from "./client";
 import type { PickScoreFactor } from "./pickscore";
+import type { BackendLaptop } from "./types";
 
 /**
  * Apple build-to-order options (backend step 10c): GET /laptops/{id}/options and
@@ -131,6 +132,39 @@ export const chipAllows = (options: LaptopOptions, chip: string, group: OptionGr
 
 export function standardPicks(options: LaptopOptions): Picks {
   return picksOn(options, options.standard_chip, { chip: options.standard_chip, ...options.standard });
+}
+
+/** "48gb" → 48, "2tb" → 2048, "70w" → 70; a value with no number is 0. */
+export function sizeOf(value: string): number {
+  const m = /(\d+(?:\.\d+)?)\s*(tb)?/i.exec(value);
+  if (!m) return 0;
+  return Number(m[1]) * (m[2] ? 1024 : 1);
+}
+
+/**
+ * The catalog row as the applied configuration would be: CPU, GPU, memory, storage,
+ * display finish and adapter swapped in, and the name's bracket rebuilt from them in
+ * the catalog's own shape, "(M5 Pro, 18-core CPU, 20-core GPU, 48GB RAM, 2TB SSD)".
+ */
+export function configuredLaptop(raw: BackendLaptop, options: LaptopOptions, c: Configured, picks: Picks): BackendLaptop {
+  const kit = options.kits.find((k) => k.chip === c.chip);
+  const label = (g: OptionGroup) => kit?.options[g]?.find((o) => o.value === picks[g])?.label ?? null;
+  const changed = (g: OptionGroup) => Boolean(picks[g] && picks[g] !== options.standard[g] && label(g));
+  const out: BackendLaptop = {
+    ...raw,
+    processor_model: c.cpu_model ?? raw.processor_model,
+    gpu_model: c.gpu_model ?? raw.gpu_model,
+    ram_gb: picks.memory ? sizeOf(picks.memory) : raw.ram_gb,
+    ssd_gb: picks.storage ? sizeOf(picks.storage) : raw.ssd_gb,
+  };
+  if (changed("display")) out.display_type = `${raw.display_type ?? ""} (${label("display")!.toLowerCase()})`.trim();
+  if (changed("adapter"))
+    out.power_supply_details = raw.power_supply_details?.replace(/\d+\s*W\b/, label("adapter")!) ?? label("adapter");
+  const family = (c.cpu_model ?? "").replace(/^Apple\s+/, "").replace(/\s*\(.*\)$/, "");
+  const ssd = out.ssd_gb >= 1024 ? `${out.ssd_gb / 1024}TB` : `${out.ssd_gb}GB`;
+  const bracket = [family, c.chip_label, `${out.ram_gb}GB RAM`, `${ssd} SSD`].filter(Boolean).join(", ");
+  out.product_name = `${raw.product_name.split("(")[0].trim()} (${bracket})`;
+  return out;
 }
 
 /** "+RM 1,800", "−RM 900", or "No extra cost". */

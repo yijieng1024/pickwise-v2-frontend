@@ -4,19 +4,13 @@ import {
   Bot,
   ChevronLeft,
   Columns2,
-  Cpu,
   ExternalLink,
-  Feather,
-  HardDrive,
-  Monitor,
-  RectangleEllipsis,
   Sparkles,
   TrendingDown,
-  Zap,
 } from "lucide-react";
 
 import { PriceHistory } from "@/components/charts/price-history";
-import { FullSpecs } from "@/components/full-specs";
+import { ConfiguredFullSpecs, ConfiguredQuickFacts, ConfiguredTitle } from "@/components/configurator/configured-specs";
 import { LaptopGallery } from "@/components/laptop-gallery";
 import { ConfiguratorProvider } from "@/components/configurator/configurator-context";
 import { ConfiguratorDialog } from "@/components/configurator/configurator-dialog";
@@ -119,40 +113,6 @@ export default async function LaptopDetailsPage({
   // resolves) and the quick-facts grid built from the raw spec sheet.
   const best = bestFit(pickScores?.scores, raw.os);
 
-  const storageLabel =
-    raw.ssd_gb >= 1024
-      ? `${(raw.ssd_gb / 1024).toLocaleString()}TB`
-      : `${raw.ssd_gb}GB`;
-  const quickFacts = [
-    { label: "Processor", value: raw.processor_model, icon: Cpu },
-    { label: "Graphics", value: raw.gpu_model, icon: Zap },
-    {
-      label: "Memory",
-      value: `${raw.ram_gb}GB${raw.ram_type ? ` ${raw.ram_type}` : ""}`,
-      icon: RectangleEllipsis,
-    },
-    {
-      label: "Storage",
-      value: `${storageLabel} ${raw.storage_type ?? "SSD"}`,
-      icon: HardDrive,
-    },
-    {
-      label: "Display",
-      value: [
-        `${raw.display_size_inch}"`,
-        raw.display_resolution,
-        raw.display_refresh_rate_hz ? `${raw.display_refresh_rate_hz}Hz` : null,
-      ]
-        .filter(Boolean)
-        .join(" · "),
-      icon: Monitor,
-    },
-    {
-      label: "Weight · Battery",
-      value: `${raw.weight_kg != null ? `${raw.weight_kg}kg` : "Weight unknown"} · ${raw.battery_wh}Wh`,
-      icon: Feather,
-    },
-  ].filter((f) => f.value && f.value.trim() !== "");
 
   return (
     <ConfiguratorProvider laptopId={laptop.id} options={options}>
@@ -210,7 +170,7 @@ export default async function LaptopDetailsPage({
                 )}
               </div>
               <h1 className="mt-3 text-2xl leading-tight font-bold tracking-tight">
-                {laptop.name}
+                <ConfiguredTitle raw={raw} name={laptop.name} />
               </h1>
             </div>
             {/* Rendered without stored scores too: a configuration scores live. */}
@@ -218,23 +178,7 @@ export default async function LaptopDetailsPage({
           </div>
 
           {/* Quick facts */}
-          <div className="grid grid-cols-1 gap-x-2.5 gap-y-3.5 min-[420px]:grid-cols-2">
-            {quickFacts.map(({ label, value, icon: Icon }) => (
-              <div key={label} className="flex items-start gap-2.5">
-                <span className="bg-surface-2 flex size-8 flex-none items-center justify-center rounded-[10px] text-muted-foreground">
-                  <Icon className="size-3.5" />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
-                    {label}
-                  </span>
-                  <span className="block text-[12.5px] leading-snug font-medium">
-                    {value}
-                  </span>
-                </span>
-              </div>
-            ))}
-          </div>
+          <ConfiguredQuickFacts raw={raw} />
 
           {/* Price + CTAs as one bottom block */}
           <div className="flex flex-col gap-4">
@@ -332,7 +276,7 @@ export default async function LaptopDetailsPage({
         />
 
         {/* Full specs */}
-        <FullSpecs raw={raw} />
+        <ConfiguredFullSpecs raw={raw} />
 
         {/* YouTube reviewer strengths / weaknesses (always shown: "No reviews yet" when empty) */}
         <ReviewSentiment reviews={reviews} />
