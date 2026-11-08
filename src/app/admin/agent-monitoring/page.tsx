@@ -492,18 +492,21 @@ export default function AdminAgentMonitoringPage() {
                 <SortableTableHead
                   label="Latency"
                   sortKey="latency_ms"
+                  className="text-right"
                   sort={sort}
                   onSort={query.sortBy}
                 />
                 <SortableTableHead
                   label="Tokens in"
                   sortKey="input_tokens"
+                  className="text-right"
                   sort={sort}
                   onSort={query.sortBy}
                 />
                 <SortableTableHead
                   label="Tokens out"
                   sortKey="output_tokens"
+                  className="text-right"
                   sort={sort}
                   onSort={query.sortBy}
                 />
@@ -530,9 +533,9 @@ export default function AdminAgentMonitoringPage() {
                   <TableCell>
                     <ModelCell model={r.model} position={r.model_position} fallback={r.fallback_triggered} />
                   </TableCell>
-                  <TableCell className="tabular-nums">{r.latency_ms.toLocaleString()} ms</TableCell>
-                  <TableCell className="tabular-nums">{r.input_tokens?.toLocaleString() ?? "—"}</TableCell>
-                  <TableCell className="tabular-nums">{r.output_tokens?.toLocaleString() ?? "—"}</TableCell>
+                  <TableCell className="text-right tabular-nums">{r.latency_ms.toLocaleString()} ms</TableCell>
+                  <TableCell className="text-right tabular-nums">{r.input_tokens?.toLocaleString() ?? "—"}</TableCell>
+                  <TableCell className="text-right tabular-nums">{r.output_tokens?.toLocaleString() ?? "—"}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {new Date(r.created_at).toLocaleString("en-MY", {
                       month: "short",

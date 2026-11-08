@@ -875,8 +875,10 @@ export default function AdminPriceGuidesPage() {
                 <TableHead>Guide</TableHead>
                 <TableHead>Edition</TableHead>
                 <TableHead>Stored</TableHead>
-                <TableHead>Rows</TableHead>
-                <TableHead className="w-44" />
+                <TableHead className="text-right">Rows</TableHead>
+                <TableHead className="w-44">
+                  <span className="sr-only">Actions</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -894,7 +896,7 @@ export default function AdminPriceGuidesPage() {
                   <TableCell className="text-muted-foreground text-[12.5px] tabular-nums">
                     {new Date(g.uploaded_at).toLocaleDateString("en-MY", { dateStyle: "medium" })}
                   </TableCell>
-                  <TableCell className="text-[13px] tabular-nums">
+                  <TableCell className="text-right text-[13px] tabular-nums">
                     {g.row_count.toLocaleString()}
                   </TableCell>
                   <TableCell>

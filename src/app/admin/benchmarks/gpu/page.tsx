@@ -217,6 +217,7 @@ export default function AdminGpuBenchmarksPage() {
                 <SortableTableHead
                   label="Mark"
                   sortKey="gpu_mark"
+                  className="text-right"
                   sort={sort}
                   onSort={query.sortBy}
                 />
@@ -227,7 +228,7 @@ export default function AdminGpuBenchmarksPage() {
               {items.map((gpu) => (
                 <TableRow key={gpu.id}>
                   <TableCell className="font-medium">{gpu.gpu_name}</TableCell>
-                  <TableCell className="tabular-nums">{gpu.gpu_mark.toLocaleString()}</TableCell>
+                  <TableCell className="text-right tabular-nums">{gpu.gpu_mark.toLocaleString()}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger

@@ -363,7 +363,7 @@ export default function AdminCatalogLaptopsPage() {
               <TableRow>
                 <SortableTableHead label="Model" sortKey="product_name" sort={sort} onSort={query.sortBy} />
                 <TableHead>Brand</TableHead>
-                <SortableTableHead label="Price" sortKey="price_rm" sort={sort} onSort={query.sortBy} />
+                <SortableTableHead label="Price" sortKey="price_rm" className="text-right" sort={sort} onSort={query.sortBy} />
                 <SortableTableHead label="Added" sortKey="created_at" sort={sort} onSort={query.sortBy} />
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -387,7 +387,7 @@ export default function AdminCatalogLaptopsPage() {
                     </div>
                   </TableCell>
                   <TableCell>{brands.get(l.brand_id)?.name ?? "Unknown"}</TableCell>
-                  <TableCell className="tabular-nums">
+                  <TableCell className="text-right tabular-nums">
                     {l.price_rm > 0 ? `RM ${l.price_rm.toLocaleString()}` : "—"}
                   </TableCell>
                   <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">

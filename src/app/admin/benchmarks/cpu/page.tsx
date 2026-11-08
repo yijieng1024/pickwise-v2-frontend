@@ -217,6 +217,7 @@ export default function AdminCpuBenchmarksPage() {
                 <SortableTableHead
                   label="Mark"
                   sortKey="cpu_mark"
+                  className="text-right"
                   sort={sort}
                   onSort={query.sortBy}
                 />
@@ -227,7 +228,7 @@ export default function AdminCpuBenchmarksPage() {
               {items.map((cpu) => (
                 <TableRow key={cpu.id}>
                   <TableCell className="font-medium">{cpu.cpu_name}</TableCell>
-                  <TableCell className="tabular-nums">{cpu.cpu_mark.toLocaleString()}</TableCell>
+                  <TableCell className="text-right tabular-nums">{cpu.cpu_mark.toLocaleString()}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger
