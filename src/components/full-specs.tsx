@@ -85,7 +85,8 @@ function formatMemory(raw: BackendLaptop): SpecRow | null {
 
 function formatStorage(raw: BackendLaptop): SpecRow | null {
   if (!raw.ssd_gb) return null;
-  const value = `${raw.ssd_gb}GB ${raw.storage_type ?? "SSD"}`;
+  const size = raw.ssd_gb >= 1024 ? `${(raw.ssd_gb / 1024).toLocaleString()}TB` : `${raw.ssd_gb}GB`;
+  const value = `${size} ${raw.storage_type ?? "SSD"}`;
   const sub = [raw.storage_upgradable ? "Upgradable" : "Not upgradable", raw.expansion_slots_summary]
     .filter(Boolean)
     .join(" · ");
