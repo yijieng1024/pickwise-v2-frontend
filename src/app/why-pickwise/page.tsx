@@ -5,9 +5,9 @@ import { Check, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
-  title: "PickWise vs a General LLM",
+  title: "PickWise vs a General AI Chatbot",
   description:
-    "What changes when laptop advice comes from an agent grounded in a Malaysian catalog, official prices, benchmarks and reviewer evidence where it exists, instead of a general-purpose LLM answering from memory.",
+    "What changes when laptop advice comes from an agent grounded in a Malaysian catalog, official prices, benchmarks and reviewer evidence where it exists, instead of a general-purpose AI chatbot answering from memory.",
 };
 
 const question =
