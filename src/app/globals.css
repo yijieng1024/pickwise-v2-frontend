@@ -328,6 +328,16 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    /* Continuous curvature (squircle) on every rounded corner, from the one place
+       every radius already goes through. Browsers without corner-shape keep round. */
+    corner-shape: squircle;
+  }
+  /* Pills and circles stay round: a squircle flattens a pill's ends. */
+  [class~="rounded-full"],
+  [style*="border-radius: 999px"],
+  .admin-glass,
+  .admin-backdrop > span {
+    corner-shape: round;
   }
   body {
     @apply bg-background text-foreground;
