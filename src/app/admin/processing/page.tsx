@@ -23,6 +23,8 @@ import {
   setProcessorModel,
 } from "@/lib/api/admin/settings";
 import { listRawScrapLaptops } from "@/lib/api/admin/scraper";
+import { type Job, listJobs } from "@/lib/api/admin/jobs";
+import { timeAgo } from "@/lib/admin/freshness";
 import { ApiError } from "@/lib/api/client";
 import { useJob } from "@/lib/admin/use-job";
 import { useAuth } from "@/lib/auth-context";
@@ -67,10 +69,24 @@ export default function AdminProcessingPage() {
   const [startingTags, setStartingTags] = useState(false);
 
   const [reloadTick, setReloadTick] = useState(0);
+  const [recentRuns, setRecentRuns] = useState<Job[] | null>(null);
 
   // Two trackers, because the backend happily runs both at once. Refresh the
   // pending count once a processing run stops.
   const processJob = useJob(token, () => setReloadTick((t) => t + 1));
+
+  // The idle panel shows the last few runs instead of an explanation; the
+  // page works without them, so a failed fetch just leaves the list out.
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    listJobs(token, { jobType: "processor.process_pending", limit: 5 })
+      .then((res) => !cancelled && setRecentRuns(res.items))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [token, reloadTick]);
   const tagJob = useJob(token);
 
   useEffect(() => {
@@ -359,18 +375,36 @@ export default function AdminProcessingPage() {
             />
           ) : (
             <Card className="gap-0 p-5">
-              <h2 className="text-sm font-bold tracking-tight">Nothing Running</h2>
-              <p className="text-muted-foreground mt-2 text-[13px] leading-relaxed">
-                When you start a batch this panel switches to a live progress view, with
-                failures appearing as they happen rather than only at the end.
+              <h2 className="text-sm font-bold tracking-tight">Recent runs</h2>
+              <p className="text-muted-foreground mt-1 text-[12.5px]">
+                Nothing is running. A batch you start shows its live progress here.
               </p>
-              <p className="text-muted-foreground mt-2.5 text-[12.5px]">
-                Past runs are on the{" "}
-                <Link href="/admin/jobs" className="text-brand-text font-medium hover:underline">
-                  jobs screen
-                </Link>
-                .
-              </p>
+              {recentRuns && recentRuns.length > 0 ? (
+                <ul className="divide-line mt-3 divide-y text-[13px]">
+                  {recentRuns.map((j) => (
+                    <li key={j.id} className="flex items-baseline justify-between gap-3 py-2">
+                      <span className="tabular-nums">
+                        {j.succeeded_count} processed
+                        {j.failed_count > 0 && (
+                          <span className="text-negative"> · {j.failed_count} failed</span>
+                        )}
+                        {j.status === "failed" && <span className="text-negative"> · stopped</span>}
+                      </span>
+                      <span className="text-muted-foreground shrink-0 text-[12px] tabular-nums">
+                        {timeAgo(j.finished_at ?? j.created_at)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : recentRuns ? (
+                <p className="text-muted-foreground mt-3 text-[13px]">No processing runs yet.</p>
+              ) : null}
+              <Link
+                href="/admin/jobs"
+                className="text-brand-text mt-2 text-[12.5px] font-medium hover:underline"
+              >
+                All jobs →
+              </Link>
             </Card>
           )}
 
