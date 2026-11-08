@@ -758,16 +758,16 @@ export default function ChatPage() {
     </>
   );
 
-  // The text column: about 70 characters, widened to about 85 when the sidebar is
+  // The text column: about 75 characters, widened to about 85 when the sidebar is
   // collapsed for reading. Past that, lines get too long to track.
-  const readWidth = historyCollapsed ? "max-w-[820px]" : "max-w-[680px]";
+  const readWidth = historyCollapsed ? "max-w-[820px]" : "max-w-[760px]";
 
   return (
     <main
       className={cn(
-        "mx-auto w-full flex-1 px-4 pt-10 pb-5 sm:px-6",
-        // Collapsed is reading mode: the workspace takes the whole window.
-        historyCollapsed ? "max-w-none lg:px-8" : "max-w-7xl",
+        // One width in both modes (DESIGN.md: chat is the 1600px exception), so
+        // toggling the sidebar moves nothing but the left column.
+        "mx-auto w-full max-w-[1600px] flex-1 px-4 pt-10 pb-5 sm:px-6",
       )}
     >
       {/* Bento workspace: conversations | thread | Pico + shortlist rail */}
@@ -775,16 +775,16 @@ export default function ChatPage() {
         className={cn(
           "grid h-[calc(100vh-154px)] grid-cols-1 gap-5",
           historyCollapsed
-            ? "md:grid-cols-[64px_minmax(0,1fr)] lg:grid-cols-[64px_minmax(0,1fr)_320px]"
+            ? "md:grid-cols-[64px_minmax(0,1fr)] lg:grid-cols-[64px_minmax(0,1fr)_300px]"
             : "md:grid-cols-[250px_minmax(0,1fr)] lg:grid-cols-[250px_minmax(0,1fr)_300px]",
         )}
       >
-        {/* Tile: conversations. Collapsed, it stays as a slim rail (expand + new
-            conversation) so the way back is always where it was. */}
+        {/* Tile: conversations. Collapsed, it stays as a small tile only as tall as its
+            two buttons (expand + new conversation), so the way back is where it was. */}
         <aside
           className={cn(
             "border-line bg-surface hidden min-h-0 flex-col rounded-3xl border motion-safe:animate-fade-in-up md:flex",
-            historyCollapsed ? "items-center px-2 py-4" : "p-4",
+            historyCollapsed ? "items-center self-start px-2 py-3" : "p-4",
           )}
         >
           {historyCollapsed ? (
@@ -811,14 +811,15 @@ export default function ChatPage() {
             </div>
           ) : (
           <>
-          {/* New Conversation takes 2/3 of the row, collapse 1/3 */}
-          <div className="mb-4 flex flex-row gap-2">
+          {/* New Conversation fills the row; collapse is a fixed 40px circle,
+              matching the circle buttons on the collapsed rail */}
+          <div className="mb-4 flex flex-row items-center gap-2">
             <button
               type="button"
               onClick={startNewConversation}
               aria-label="New Conversation"
               title="New Conversation"
-              className="border-line bg-canvas flex basis-2/3 items-center justify-center gap-2 rounded-full border py-2.5 text-[13px] font-semibold transition-colors hover:border-brand hover:text-brand-text"
+              className="border-line bg-canvas flex h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-full border px-4 text-[13px] font-semibold whitespace-nowrap transition-colors hover:border-brand hover:text-brand-text"
             >
               <Plus className="size-3.5" />
               New Conversation
@@ -829,9 +830,9 @@ export default function ChatPage() {
               aria-label="Collapse conversations"
               aria-expanded
               title="Collapse: full-width reading"
-              className="border-line bg-canvas flex basis-1/3 items-center justify-center rounded-full border py-2.5 transition-colors hover:border-brand hover:text-brand-text"
+              className="border-line bg-canvas flex size-10 shrink-0 items-center justify-center rounded-full border transition-colors hover:border-brand hover:text-brand-text"
             >
-              <PanelLeftClose className="size-3.5" />
+              <PanelLeftClose className="size-4" />
             </button>
           </div>
           <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto">

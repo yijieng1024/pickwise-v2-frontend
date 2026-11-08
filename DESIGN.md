@@ -56,7 +56,7 @@ Two token families coexist. The **shadcn set** (`background`, `foreground`, `pri
 ## Layout
 
 - **Navigation:** Floating glass island, sticky `top-4`, max width `max-w-6xl`. Shrinks on scroll (64px → 52px) using spring easing (`cubic-bezier(0.34, 1.56, 0.64, 1)`).
-- **Page Container:** Page layout wraps content in a top padding container (`pt-6`) to clear the floating navigation island. Pages define internal padding (`px-4 sm:px-6`) with widths scaled by density (`max-w-3xl` to `max-w-7xl`). Full viewport pages (e.g., Chat, Wizard) must budget height dynamically with `calc(100vh - …)`.
+- **Page Container:** Page layout wraps content in a top padding container (`pt-6`) to clear the floating navigation island. Pages define internal padding (`px-4 sm:px-6`) with widths scaled by density (`max-w-3xl` to `max-w-7xl`). **Chat is the one exception: `max-w-[1600px]`, the same in both sidebar modes.** It is a three-column workspace (conversations 250px, thread, shortlist 300px); at `max-w-6xl` the thread would be about 510px, too narrow for its 760px reading column. The floating nav stays `max-w-6xl` and centred over it, and the width never changes when the sidebar collapses, so toggling moves only the left column. Full viewport pages (e.g., Chat, Wizard) must budget height dynamically with `calc(100vh - …)`.
 - **Motion & Transitions:**
   - Entrance animations use `animate-fade-in-up` (12px rise, 0.5s duration, ease-out).
   - Card grids stagger entrances using inline `animationDelay` (~60ms increments).
