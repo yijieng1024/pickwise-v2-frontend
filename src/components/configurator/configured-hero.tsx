@@ -5,11 +5,15 @@ import { ChevronRight, SlidersHorizontal } from "lucide-react";
 
 import { PersonalPickScoreRing } from "@/components/personal-pick-score-ring";
 import { PickScoreCard } from "@/components/pick-score-card";
-import { Button } from "@/components/ui/button";
 import { bestFit, type BenchmarksRefreshedAt, type UseCasePickScore } from "@/lib/api/pickscore";
 import { cn } from "@/lib/utils";
 
 import { useConfigurator, useConfiguredView } from "./configurator-context";
+
+/** The hero card's button shape (the marketplace buttons' h-10 pill and type), in a
+ *  brand outline: plainly a button, still second to the solid Ask Pico. */
+const CARD_BUTTON =
+  "border-brand/40 bg-brand-tint text-brand-text hover:border-brand flex h-10 items-center justify-center gap-2 rounded-full border px-5 text-[13px] font-semibold whitespace-nowrap transition";
 
 /** Original / Configured, plus Configure or Edit configuration. Nothing without options. */
 export function ConfiguratorControls() {
@@ -17,18 +21,10 @@ export function ConfiguratorControls() {
   if (!options) return null;
   if (!applied) {
     return (
-      // Quiet on purpose: an invitation beside the price, not a second call to action
-      // competing with Ask Pico.
-      <button
-        type="button"
-        onClick={() => setEditorOpen(true)}
-        className="group text-brand-text hover:bg-brand-tint flex items-center gap-2 self-start rounded-full py-1.5 pr-3.5 pl-1.5 text-[12.5px] font-medium transition"
-      >
-        <span className="bg-brand-tint flex size-6 items-center justify-center rounded-full transition group-hover:bg-transparent">
-          <SlidersHorizontal className="size-3.5" />
-        </span>
+      <button type="button" onClick={() => setEditorOpen(true)} className={cn(CARD_BUTTON, "group w-full")}>
+        <SlidersHorizontal className="size-4" />
         Customise memory, storage and chip
-        <ChevronRight className="size-3.5 opacity-60 transition group-hover:translate-x-0.5" />
+        <ChevronRight className="size-3.5 opacity-70 transition group-hover:translate-x-0.5" />
       </button>
     );
   }
@@ -51,9 +47,10 @@ export function ConfiguratorControls() {
           </button>
         ))}
       </div>
-      <Button variant="ghost" shape="pill" size="sm" onClick={() => setEditorOpen(true)}>
+      <button type="button" onClick={() => setEditorOpen(true)} className={cn(CARD_BUTTON, "flex-1 px-4")}>
+        <SlidersHorizontal className="size-4" />
         Edit configuration
-      </Button>
+      </button>
       {/* 10d: the Education price toggle goes in this row, beside Original / Configured. */}
     </div>
   );
