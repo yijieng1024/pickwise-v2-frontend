@@ -442,6 +442,10 @@ function ResultCard({
   );
 }
 
+/** A short rise-and-fade for things that arrive in the thread; nothing under reduced motion. */
+const ENTER =
+  "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-200";
+
 export default function ChatPage() {
   const router = useRouter();
   const { user, token, isLoading, hasPreferences } = useAuth();
@@ -450,6 +454,9 @@ export default function ChatPage() {
   const [historyCollapsed, setHistoryCollapsed] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // Messages from this index on were added live and fade in; history loaded from a
+  // reopened conversation (everything below it) appears without replaying.
+  const [liveFrom, setLiveFrom] = useState(0);
   const [laptops, setLaptops] = useState<AgentLaptopCard[]>([]);
   // laptop_id -> personalized PickScore (with its breakdown), overlaying the
   // general-mode scores. null = personalization off (guest / no wizard
@@ -538,6 +545,7 @@ export default function ChatPage() {
       setMessages(
         conv.messages.map((m) => ({ role: m.role, content: m.content })),
       );
+      setLiveFrom(conv.messages.length);
       setLaptops(cards);
       personalizeShortlist(cards);
     } catch {
@@ -548,6 +556,7 @@ export default function ChatPage() {
           isError: true,
         },
       ]);
+      setLiveFrom(1);
     } finally {
       setThreadLoading(false);
     }
@@ -557,6 +566,7 @@ export default function ChatPage() {
     if (isStreaming) return;
     setActiveId(null);
     setMessages([]);
+    setLiveFrom(0);
     setLaptops([]);
     setPersonalScores(null);
   };
@@ -971,7 +981,7 @@ export default function ChatPage() {
               {messages.map((m, i) =>
                 m.role === "user" ? (
                   <MessageScrollerItem key={i} messageId={`m-${i}`} scrollAnchor>
-                    <div className="flex justify-end">
+                    <div className={cn("flex justify-end", i >= liveFrom && ENTER)}>
                       <div className="bg-brand max-w-[70%] rounded-[20px] rounded-br-[4px] px-4.5 py-3 text-[14.5px] leading-relaxed text-white">
                         {m.content}
                       </div>
@@ -979,7 +989,9 @@ export default function ChatPage() {
                   </MessageScrollerItem>
                 ) : (
                   <MessageScrollerItem key={i} messageId={`m-${i}`}>
-                    <div className="flex items-start gap-3">
+                    {/* A streamed reply already faded in as the live bubble; only an
+                        error, which never streamed, fades in here. */}
+                    <div className={cn("flex items-start gap-3", m.isError && i >= liveFrom && ENTER)}>
                     <div className="bg-brand mt-0.5 flex size-8 flex-none items-center justify-center rounded-full text-white">
                       <Bot className="size-4" />
                     </div>
@@ -1050,7 +1062,7 @@ export default function ChatPage() {
                   // Hidden from AT while it grows; the finished text is
                   // announced once by the sr-only region above.
                   aria-hidden="true"
-                  className="flex items-start gap-3"
+                  className={cn("flex items-start gap-3", ENTER)}
                 >
                   <div className="bg-brand mt-0.5 flex size-8 flex-none items-center justify-center rounded-full text-white">
                     <Bot className="size-4" />
