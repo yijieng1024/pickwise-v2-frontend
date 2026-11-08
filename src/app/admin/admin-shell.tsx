@@ -83,11 +83,7 @@ export function AdminShell({
             The look, the 12px gap and the collapsed width are all in
             `.admin-island` (globals.css). */}
         {/* The page background the glass island sits over (globals.css). */}
-        <div className="admin-backdrop" aria-hidden>
-          <span />
-          <span />
-          <span />
-        </div>
+        <div className="admin-backdrop" aria-hidden />
         <Sidebar collapsible="icon" variant="floating" className="admin-island">
           <SidebarHeader>
             {/* Toggle lives in the topbar (AdminTopbar) so it stays reachable

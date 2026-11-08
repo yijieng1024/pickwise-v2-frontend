@@ -335,8 +335,7 @@
   /* Pills and circles stay round: a squircle flattens a pill's ends. */
   [class~="rounded-full"],
   [style*="border-radius: 999px"],
-  .admin-glass,
-  .admin-backdrop > span {
+  .admin-glass {
     corner-shape: round;
   }
   body {
@@ -347,11 +346,8 @@
   }
 }
 
-/* The admin page background (AdminBackdrop in admin-shell.tsx): the --bg
-   base with three large, faint, blurred circles, blue top-left, cyan
-   lower-left, violet bottom-right, from docs/admin-redesign. Fixed to the
-   viewport and static. Fainter in dark mode. Cards are opaque, so only the
-   glass below sits over the circles. */
+/* The admin page background (admin-shell.tsx): the plain --bg base, fixed to
+   the viewport, that the glass island sits over. */
 .admin-backdrop {
   position: fixed;
   inset: 0;
@@ -360,43 +356,6 @@
   pointer-events: none;
   background: var(--bg);
 }
-.admin-backdrop > span {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(90px);
-}
-.admin-backdrop > span:nth-child(1) {
-  width: 420px;
-  height: 420px;
-  top: -120px;
-  left: -140px;
-  background: #2a78d6;
-  opacity: 0.22;
-}
-.admin-backdrop > span:nth-child(2) {
-  width: 340px;
-  height: 340px;
-  top: 55%;
-  left: -80px;
-  background: #0e8aa8;
-  opacity: 0.16;
-}
-.admin-backdrop > span:nth-child(3) {
-  width: 380px;
-  height: 380px;
-  bottom: -140px;
-  right: -100px;
-  background: #6250d6;
-  opacity: 0.22;
-}
-.dark .admin-backdrop > span:nth-child(1),
-.dark .admin-backdrop > span:nth-child(3) {
-  opacity: 0.1;
-}
-.dark .admin-backdrop > span:nth-child(2) {
-  opacity: 0.07;
-}
-
 /* The admin sidebar as a floating island of frosted glass over that
    background: a semi-transparent surface, an 18px backdrop blur, a thin
    border and one soft shadow, as in the designs. The topbar pill
