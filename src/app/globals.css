@@ -270,6 +270,7 @@
   /* Top Pick amber (DESIGN.md): fills, borders and icons only, never text;
      3.2:1 on white clears non-text contrast but not text. */
   --spark: #d97706;
+  --dot: rgb(15 23 42 / 0.07);
 }
 
 .dark {
@@ -328,6 +329,7 @@
   --negative: #f97066;
   --warning: #fbbf24;
   --spark: #d97706;
+  --dot: rgb(255 255 255 / 0.06);
 }
 
 @layer base {
@@ -348,20 +350,28 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* The faint dot grid (DESIGN.md): a CSS gradient, no image or canvas, that
+     scrolls with the page. Cards are opaque, so text never sits on it; the
+     glass surfaces only blur it. */
+  body {
+    background-image: radial-gradient(var(--dot) 1px, transparent 1.5px);
+    background-size: 22px 22px;
+  }
   html {
     @apply font-sans;
   }
 }
 
 /* The admin page background (admin-shell.tsx): the plain --bg base, fixed to
-   the viewport, that the glass island sits over. */
+   the viewport, that the glass island sits over, with the same dot grid as the
+   public body. */
 .admin-backdrop {
   position: fixed;
   inset: 0;
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
-  background: var(--bg);
+  background: radial-gradient(var(--dot) 1px, transparent 1.5px) 0 0 / 22px 22px, var(--bg);
 }
 /* The admin sidebar as a floating island of frosted glass over that
    background: a semi-transparent surface, an 18px backdrop blur, a thin
