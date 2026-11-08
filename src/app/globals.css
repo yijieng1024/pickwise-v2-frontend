@@ -362,6 +362,12 @@
   }
 }
 
+/* A thin, quiet native scrollbar for scroll areas inside rounded cards. */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
 /* The admin page background (admin-shell.tsx): the plain --bg base, fixed to
    the viewport, that the glass island sits over, with the same dot grid as the
    public body. */

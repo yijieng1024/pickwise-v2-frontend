@@ -32,6 +32,7 @@ export function PickScorePopover({
   useCase,
   personal,
   ringSize = 44,
+  variant = "ring",
 }: {
   laptopId: string;
   score: number | null;
@@ -39,6 +40,8 @@ export function PickScorePopover({
   /** Set when `score` is the user's personalized one. */
   personal?: Breakdown;
   ringSize?: number;
+  /** "pill": a compact "Pick Score N" label for narrow rows (the chat shortlist). */
+  variant?: "ring" | "pill";
 }) {
   const [general, setGeneral] = useState<Breakdown | null>(null);
   const [failed, setFailed] = useState(false);
@@ -73,14 +76,19 @@ export function PickScorePopover({
         }}
         className="relative flex cursor-pointer flex-col items-center border-none bg-transparent p-0"
       >
-        {score === null ? (
+        {variant === "pill" ? (
+          <span className="bg-brand-tint text-brand-text inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap tabular-nums">
+            {personal && <UserRound aria-hidden className="size-3" />}
+            {score === null ? "No score" : `${personal ? "For you" : "Pick Score"} ${score}`}
+          </span>
+        ) : score === null ? (
           <span className="border-line flex items-center justify-center rounded-full border border-dashed px-2 text-[10px] font-semibold text-muted-foreground" style={{ height: ringSize }}>
             No score
           </span>
         ) : (
           <PickScoreRing score={score} size={ringSize} caption="none" />
         )}
-        {personal && (
+        {personal && variant === "ring" && (
           <span className="bg-brand absolute -right-1 -bottom-1 flex size-4 items-center justify-center rounded-full text-white">
             <UserRound className="size-2.5" />
           </span>

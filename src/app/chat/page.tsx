@@ -10,6 +10,7 @@ import {
   Calculator,
   Check,
   ChevronDown,
+  Laptop as LaptopIcon,
   MessageSquare,
   MoreHorizontal,
   PanelLeftClose,
@@ -391,69 +392,79 @@ function ResultCard({
   personal?: PersonalPickScore;
   index?: number;
 }) {
+  // Apple shoots the MacBook Pro on black (same rule as LaptopCard).
+  const darkPhoto = /macbook pro/i.test(laptop.product_name);
+  const priced = laptop.price_rm != null && laptop.price_rm > 0;
   return (
+    // Thumbnail left, text right, so the name gets the full remaining width
+    // (two lines) instead of sharing a row with the score ring. One score: the
+    // Pick Score pill (personalized when a profile exists); the search's
+    // similarity % is dropped as a second, competing number.
     // Cards arrive one after another, 60ms apart (DESIGN.md's stagger), when a new
     // shortlist mounts; a card already on screen keeps its key and does not replay.
     <div
-      className="group border-line bg-surface-2 relative flex items-center gap-3.5 rounded-2xl border px-4 py-3 transition-all duration-300 hover:shadow-lg motion-safe:animate-fade-in-up motion-safe:hover:scale-[1.02]"
+      className="border-line bg-surface hover:bg-surface-2 relative flex items-start gap-3 rounded-xl border p-3 transition-colors motion-safe:animate-fade-in-up"
       style={{ animationDelay: `${index * 60}ms` }}
     >
       {/* Stretched link, so the score popover can sit above it */}
       <Link
         href={`/laptops/${laptop.laptop_id}`}
         aria-label={`View details for ${laptop.product_name}`}
-        className="absolute inset-0 z-10 rounded-2xl"
+        className="absolute inset-0 z-10 rounded-xl"
       />
-      {laptop.image_url && (
-        <div className="flex h-11 w-14 flex-none items-center justify-center overflow-hidden rounded-lg bg-white">
+      <div
+        className={cn(
+          "flex size-16 flex-none items-center justify-center overflow-hidden rounded-lg",
+          darkPhoto ? "bg-black" : "bg-white",
+        )}
+      >
+        {laptop.image_url ? (
           <Image
             src={laptop.image_url}
-            alt={laptop.product_name}
-            width={112}
-            height={88}
-            className="h-full w-full object-contain mix-blend-multiply dark:mix-blend-normal"
+            alt=""
+            width={128}
+            height={128}
+            className={cn(
+              "h-full w-full object-contain p-1",
+              !darkPhoto && "mix-blend-multiply dark:mix-blend-normal",
+            )}
           />
-        </div>
-      )}
-      <span className="relative z-20 flex-none">
-        <PickScorePopover
-          laptopId={laptop.laptop_id}
-          score={personal ? personal.score : laptop.pick_score}
-          useCase="general_use"
-          personal={personal}
-          ringSize={42}
-        />
-      </span>
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        ) : (
+          <LaptopIcon aria-hidden className="size-6 text-muted-foreground" />
+        )}
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
         {/* Pico's first result. --spark is the reserved Top Pick amber: icon and
             border only, the label stays in the text colour (DESIGN.md). */}
         {index === 0 && (
-          <span className="border-spark/60 bg-spark/10 text-foreground mb-0.5 inline-flex w-fit items-center gap-1 rounded-full border px-2 py-px text-[10.5px] font-semibold whitespace-nowrap">
+          <span className="border-spark/60 bg-spark/10 text-foreground inline-flex w-fit items-center gap-1 rounded-full border px-2 py-px text-[10.5px] font-semibold whitespace-nowrap">
             <Sparkles aria-hidden className="text-spark size-3" />
             Top Pick
           </span>
         )}
-        <span className="truncate text-[13px] font-semibold">
+        <span className="line-clamp-2 text-sm leading-snug font-semibold">
           {laptop.product_name}
         </span>
-        <span className="text-[11.5px] text-muted-foreground">
-          {laptop.similarity_score != null &&
-            `${Math.round(laptop.similarity_score * 100)}% match · `}
+        <div className="mt-0.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+          <span className="relative z-20">
+            <PickScorePopover
+              laptopId={laptop.laptop_id}
+              score={personal ? personal.score : laptop.pick_score}
+              useCase="general_use"
+              personal={personal}
+              variant="pill"
+            />
+          </span>
           <span
             className={cn(
-              "tabular-nums",
-              laptop.price_rm && laptop.price_rm > 0
-                ? "font-semibold text-foreground"
-                : "italic",
+              "tabular-nums whitespace-nowrap",
+              priced ? "text-sm font-bold" : "text-xs text-muted-foreground italic",
             )}
           >
             {formatPrice(laptop.price_rm)}
           </span>
-        </span>
+        </div>
       </div>
-      <span className="text-brand-text text-[11px] font-semibold opacity-0 transition-opacity group-hover:opacity-100">
-        →
-      </span>
     </div>
   );
 }
@@ -1226,7 +1237,7 @@ export default function ChatPage() {
               )}
             </div>
             {laptops.length > 0 ? (
-              <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto">
+              <div className="scrollbar-thin -mr-2 flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto pr-2">
                 {shortlist}
               </div>
             ) : (
