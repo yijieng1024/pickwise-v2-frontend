@@ -384,12 +384,19 @@ function formatPrice(price: number | null) {
 function ResultCard({
   laptop,
   personal,
+  index = 0,
 }: {
   laptop: AgentLaptopCard;
   personal?: PersonalPickScore;
+  index?: number;
 }) {
   return (
-    <div className="group border-line bg-surface-2 relative flex items-center gap-3.5 rounded-2xl border px-4 py-3 transition-all duration-300 hover:shadow-lg motion-safe:hover:scale-[1.02]">
+    // Cards arrive one after another, 60ms apart (DESIGN.md's stagger), when a new
+    // shortlist mounts; a card already on screen keeps its key and does not replay.
+    <div
+      className="group border-line bg-surface-2 relative flex items-center gap-3.5 rounded-2xl border px-4 py-3 transition-all duration-300 hover:shadow-lg motion-safe:animate-fade-in-up motion-safe:hover:scale-[1.02]"
+      style={{ animationDelay: `${index * 60}ms` }}
+    >
       {/* Stretched link, so the score popover can sit above it */}
       <Link
         href={`/laptops/${laptop.laptop_id}`}
@@ -758,9 +765,10 @@ export default function ChatPage() {
           budget, priorities and portability reweight each factor.
         </p>
       )}
-      {laptops.map((l) => (
+      {laptops.map((l, i) => (
         <ResultCard
           key={l.laptop_id}
+          index={i}
           laptop={l}
           personal={personalScores?.[l.laptop_id]}
         />
