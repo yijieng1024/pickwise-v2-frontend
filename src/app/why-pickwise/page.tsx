@@ -5,38 +5,38 @@ import { Check, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
-  title: "PickWise vs a General AI Chatbot — PickWise",
+  title: "PickWise vs a General AI Chatbot",
   description:
-    "What changes when laptop advice comes from an agent grounded in a Malaysian catalog, live prices, benchmarks and real reviews, instead of a general-purpose chatbot answering from memory.",
+    "What changes when laptop advice comes from an agent grounded in a Malaysian catalog, official prices, benchmarks and reviewer evidence where it exists, instead of a general-purpose chatbot answering from memory.",
 };
 
 const question =
   "I'm a uni student in KL, budget around RM 4,000, mostly coding and some light gaming. What laptop should I get?";
 
 const generic = [
-  "Answers from training data that can be a year or more old, so new models are missing and discontinued ones still appear.",
-  "Quotes prices from memory, often in US dollars or from another country.",
-  "Ranks with \"generally considered good\" judgements rather than measured numbers.",
-  "Can't tell you whether that exact configuration is sold in Malaysia.",
+  "Without browsing, answers from training data that may miss new models and still list discontinued ones.",
+  "Prices it finds or recalls can be in another currency or from another country.",
+  "Tends to rank by reputation and reviews in general rather than one consistent measure.",
+  "May not know whether that exact configuration is sold in Malaysia.",
 ];
 
 const pickwise = [
   "Searches a catalog of laptops sold in Malaysia and only recommends ones currently listed with a known price.",
-  "Prices are in Ringgit: the manufacturer's price, its recent price history, and live Malaysian listings when asked.",
-  "Each result carries a Pick Score built from public benchmarks, weighted for coding and gaming.",
-  "Can back a claim with what YouTube reviewers said, with a link to the moment they said it.",
+  "Prices are in Ringgit: the official price, its recent price history, and live Malaysian listings for reference when asked.",
+  "Each result carries a Pick Score: 8 factors from benchmarks and specs, weighted by use case or your own priorities.",
+  "Can back a claim with what YouTube reviewers said, where reviews exist, with a link to the moment they said it.",
 ];
 
 const rows = [
   {
     topic: "Where the answer comes from",
     generic: "Whatever the model remembers from training",
-    pickwise: "PickWise's own laptop catalog, searched for every request",
+    pickwise: "PickWise's own laptop catalog, searched before it recommends",
   },
   {
     topic: "Prices",
     generic: "Recalled from memory; often outdated or in the wrong currency",
-    pickwise: "Ringgit, from manufacturers' sites plus price history and live Malaysian listings",
+    pickwise: "Ringgit: official prices plus price history, with live Malaysian listings for reference",
   },
   {
     topic: "Availability",
@@ -46,22 +46,28 @@ const rows = [
   {
     topic: "Performance claims",
     generic: "Reputation and general impressions",
-    pickwise: "Pick Score from PassMark CPU and GPU benchmarks, weighted by use case",
+    pickwise:
+      "Pick Score: 8 factors (price, CPU, GPU, RAM/storage, portability, battery, screen, brand) from public benchmarks and specs, weighted by use case or by your own priorities",
+  },
+  {
+    topic: "Explains why",
+    generic: "A conclusion with no breakdown",
+    pickwise: "A factor breakdown behind every Pick Score",
   },
   {
     topic: "Real-world opinions",
     generic: "Paraphrased, unsourced",
-    pickwise: "Review evidence from YouTube reviewers, with timestamped links",
+    pickwise: "Where reviews exist, evidence from YouTube reviewers with timestamped links",
   },
   {
     topic: "When it doesn't know",
     generic: "Often fills the gap with a confident guess",
-    pickwise: "Says a value is unavailable, or asks you a clarifying question",
+    pickwise: "Built to say a value is unavailable or ask a clarifying question, and we test for made-up prices",
   },
   {
     topic: "Your preferences",
     generic: "Re-explain them every chat",
-    pickwise: "Saved Needs Wizard answers personalise every score",
+    pickwise: "Saved Needs Wizard answers personalise Pico's recommendations and your For you score",
   },
   {
     topic: "Staying on topic",
@@ -85,7 +91,7 @@ export default function WhyPickWisePage() {
           A general-purpose chatbot is good at sounding right about laptops. Pico,
           the agent behind PickWise, uses the same kind of language model, but it
           has to look things up before it answers: a Malaysian laptop catalog, prices
-          in Ringgit, public benchmarks, and what reviewers actually said.
+          in Ringgit, public benchmarks, and, where they exist, what reviewers said.
         </p>
       </div>
 
@@ -121,7 +127,9 @@ export default function WhyPickWisePage() {
           <table className="w-full min-w-[560px] text-left text-[13px]">
             <thead className="bg-surface">
               <tr>
-                <th className="w-1/4 p-4 font-semibold"></th>
+                <th className="w-1/4 p-4 font-semibold">
+                  <span className="sr-only">Topic</span>
+                </th>
                 <th className="p-4 font-semibold text-muted-foreground">General AI chatbot</th>
                 <th className="text-brand-text p-4 font-semibold">PickWise</th>
               </tr>
@@ -151,7 +159,8 @@ export default function WhyPickWisePage() {
         <h2 className="text-2xl font-semibold tracking-tight">Where a general chatbot still wins</h2>
         <p className="mt-3 max-w-3xl text-[13px] leading-relaxed text-muted-foreground">
           PickWise only knows the laptops in its catalog, and catalog prices can lag
-          behind retailers, so confirm before you buy. For anything that isn&apos;t
+          behind retailers, so confirm before you buy. Review coverage is still small:
+          only a few laptops have reviewer evidence so far. For anything that isn&apos;t
           choosing a laptop, such as setting one up, fixing it, or writing your
           assignment on it, a general chatbot is the better tool. Read more about how
           scores are built in{" "}
