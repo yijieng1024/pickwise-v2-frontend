@@ -16,7 +16,12 @@ import {
   deleteReviewLink,
   listPendingReviews,
 } from "@/lib/api/admin/review-links";
-import { type RawReview, listRawReviews, setReviewIrrelevant } from "@/lib/api/admin/reviews";
+import {
+  type RawReview,
+  type RawReviewPage,
+  listRawReviews,
+  setReviewIrrelevant,
+} from "@/lib/api/admin/reviews";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
@@ -86,6 +91,20 @@ export default function ReviewLinkPage() {
   // the safety net that makes the dismiss control safe to click quickly.
   const [rail, setRail] = useState<"queue" | "dismissed">("queue");
   const [dismissed, setDismissed] = useState<RawReview[] | null>(null);
+  // Shown in the detail panel until a review is picked: the newest linked
+  // reviews and their laptops, so the panel carries real content when idle.
+  const [linked, setLinked] = useState<RawReviewPage | null>(null);
+
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    listRawReviews(token, { status: "matched", limit: 5 })
+      .then((res) => !cancelled && setLinked(res))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [token, reloadTick]);
 
   useEffect(() => {
     if (!token) return;
@@ -389,10 +408,29 @@ export default function ReviewLinkPage() {
 
         <Card className="gap-0 p-4">
           {!selected ? (
-            <AdminEmptyState
-              title="Pick a review to start"
-              description={`${doneCount} of ${reviews.length} pending reviews are linked.`}
-            />
+            <div className="flex flex-col gap-4">
+              <AdminEmptyState
+                title="Pick a review to start"
+                description={`${doneCount} of ${reviews.length} pending reviews are linked.`}
+              />
+              {linked && linked.items.length > 0 && (
+                <div className="border-line border-t pt-4">
+                  <h3 className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+                    Linked reviews · {linked.total} in all, newest found first
+                  </h3>
+                  <ul className="divide-line mt-2 divide-y text-[13px]">
+                    {linked.items.map((r) => (
+                      <li key={r.id} className="flex flex-col gap-0.5 py-2">
+                        <span className="truncate font-medium">{r.video_title}</span>
+                        <span className="text-muted-foreground truncate text-[12px]">
+                          {r.matched_laptop_name ?? "Linked to a family"}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="flex flex-col gap-5">
               {/* Step 1 header — everything needed to identify the machine. */}
