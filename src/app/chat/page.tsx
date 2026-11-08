@@ -19,6 +19,7 @@ import {
   Search,
   Send,
   ShoppingBag,
+  Sparkles,
   Star,
   Trash2,
   UserRound,
@@ -424,6 +425,14 @@ function ResultCard({
         />
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        {/* Pico's first result. --spark is the reserved Top Pick amber: icon and
+            border only, the label stays in the text colour (DESIGN.md). */}
+        {index === 0 && (
+          <span className="border-spark/60 bg-spark/10 text-foreground mb-0.5 inline-flex w-fit items-center gap-1 rounded-full border px-2 py-px text-[10.5px] font-semibold whitespace-nowrap">
+            <Sparkles aria-hidden className="text-spark size-3" />
+            Top Pick
+          </span>
+        )}
         <span className="truncate text-[13px] font-semibold">
           {laptop.product_name}
         </span>

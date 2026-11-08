@@ -204,7 +204,7 @@ export default async function LaptopDetailsPage({
                 )}
                 {best && (
                   <span className="bg-brand-tint text-brand-text flex items-center gap-1 rounded-full px-2.5 py-1 text-[10.5px] font-semibold">
-                    <Sparkles className="size-3" />
+                    <Sparkles className="text-spark size-3" />
                     Best fit: {labelForUseCase(best.use_case)}
                   </span>
                 )}
