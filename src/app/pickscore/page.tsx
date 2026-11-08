@@ -44,7 +44,7 @@ const factors = [
     name: "Battery",
     plain: "How long can you stay away from a power socket?",
     detail:
-      "Based on the battery's capacity in watt-hours, the one number every manufacturer publishes honestly.",
+      "Based on the battery's capacity in watt-hours.",
   },
   {
     name: "Screen size",
@@ -56,10 +56,12 @@ const factors = [
     name: "Brand",
     plain: "Is it a brand you said you liked?",
     detail:
-      "The smallest factor by far, and it only moves if you named brands you prefer.",
+      "The smallest factor in every preset. In For you, it counts as much as you ranked it, and it only moves if you named brands you prefer.",
   },
 ] as const;
 
+// Shares of USE_CASE_PRIORITIES in the backend's app/laptops/pickscore_general.py,
+// rounded. Change both together.
 const useCases = [
   {
     label: "Office & Study",
@@ -126,8 +128,8 @@ export default function PickScorePage() {
           . It answers one question: compared with every other laptop we list,
           how good is this one{" "}
           <em className="text-foreground">for what you want to do with it</em>?
-          No part of it is a guess or an opinion typed in by hand — here is
-          exactly how it is worked out.
+          It is measured from public data, with weights we chose: a reasoned
+          judgment, not a guarantee. Here is exactly how it is worked out.
         </p>
       </div>
 
@@ -149,7 +151,7 @@ export default function PickScorePage() {
             {
               step: "2",
               title: "Compare, don't judge",
-              body: "Each mark is a ranking against the rest of the catalog. 70 for battery means it outlasts 70% of the laptops we list. That way \"good battery\" means something real, not a number we invented.",
+              body: "Six of the marks rank a laptop against the rest of the catalog. 70 for battery means it outlasts 70% of the laptops we list. That way \"good battery\" means something real, not a number we invented. Screen size and brand aren't rankings: they check against what you asked for.",
             },
             {
               step: "3",
@@ -308,7 +310,7 @@ export default function PickScorePage() {
             Needs Wizard
           </Link>{" "}
           and the five profiles above are replaced by one built from your own
-          answers. Four things change:
+          answers. Five things change:
         </p>
         <dl className="mt-6 grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
           {[
@@ -318,7 +320,11 @@ export default function PickScorePage() {
             },
             {
               title: "Your purpose nudges them further",
-              body: "Telling us you game or study gives the relevant factors an extra boost of up to 30% — enough to tip close calls, never enough to override what you said you cared about.",
+              body: "Your purpose (study, coding, gaming, creative work or general use) boosts the factors it needs by up to 30%, enough to tip close calls.",
+            },
+            {
+              title: "Portability follows how often you carry it",
+              body: "If you said you carry it often, portability counts up to 40% more; if you don't, half as much.",
             },
             {
               title: "Your budget starts to bite",
@@ -366,8 +372,8 @@ export default function PickScorePage() {
           ))}
         </dl>
         <p className="mt-6 max-w-2xl text-[13px] leading-relaxed text-muted-foreground">
-          Pick Score is an opinion expressed as a number — a well-reasoned one,
-          built from public benchmarks and published specifications, but not a
+          Pick Score is measured from public benchmarks and published
+          specifications, with weights we chose: a reasoned judgment, not a
           guarantee of how a laptop will feel to use. Every score on PickWise
           can show its full breakdown, factor by factor, so you can disagree
           with it on the evidence.

@@ -76,9 +76,9 @@ const groups: { title: string; faqs: Faq[] }[] = [
             Pick Score is our own rating methodology. It condenses public
             benchmark data and product specifications into a single score
             built from eight weighted factors, and every score comes with a
-            breakdown showing how each factor contributed. It&apos;s an
-            opinion expressed as a number — a well-reasoned one, but not a
-            guarantee of real-world performance.{" "}
+            breakdown showing how each factor contributed. It&apos;s
+            measured from public data, with weights we chose: a reasoned
+            judgment, not a guarantee of real-world performance.{" "}
             <Link
               href="/pickscore"
               className="text-brand-text underline underline-offset-2"
@@ -163,7 +163,7 @@ const groups: { title: string; faqs: Faq[] }[] = [
         a: (
           <p>
             Prices are shown in <strong>Malaysian Ringgit (RM)</strong> and
-            collected from manufacturers&apos; websites and public sources.
+            come from official prices, with live listings for reference.
             They can lag behind or differ from what a retailer charges, so
             confirm the price before you commit to a purchase.
           </p>
@@ -214,12 +214,15 @@ const groups: { title: string; faqs: Faq[] }[] = [
         q: "Can I delete my account?",
         a: (
           <p>
-            Yes — you can request deletion of your account and its data at any
-            time. See the{" "}
+            Yes. There is no self-service deletion yet: email{" "}
+            <a href="mailto:admin-pickwise@ngyijie.com" className="text-brand-text underline underline-offset-2">
+              admin-pickwise@ngyijie.com
+            </a>{" "}
+            and we&apos;ll delete your account and everything linked to it. See the{" "}
             <Link href="/privacy" className="text-brand-text">
               Privacy Policy
             </Link>{" "}
-            for how.
+            for details.
           </p>
         ),
       },

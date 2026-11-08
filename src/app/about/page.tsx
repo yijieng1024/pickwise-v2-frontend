@@ -19,7 +19,7 @@ const pillars = [
   {
     icon: MessageCircleQuestion,
     title: "Pico asks first",
-    body: "Pico is the agent at the heart of PickWise. Instead of handing you a filter grid, it asks about your budget, what you'll actually do with the laptop, and what you refuse to compromise on — then recommends. A good salesperson asks questions; so does Pico.",
+    body: "Pico is the agent at the heart of PickWise. Instead of handing you a filter grid, it asks about your budget, what you'll actually do with the laptop, and what you refuse to compromise on — then recommends. Like a good advisor, Pico asks before it recommends.",
   },
   {
     icon: CircleGauge,
@@ -58,11 +58,11 @@ const commitments = [
   },
   {
     title: "Prices are honest about their limits",
-    body: "Prices are in Malaysian Ringgit, collected from manufacturers' sites and public sources. They can lag — always confirm with the retailer before buying.",
+    body: "Prices are in Malaysian Ringgit: official prices, plus live listings for reference. They can lag — always confirm with the retailer before buying.",
   },
   {
     title: "AI that admits it can be wrong",
-    body: "Pico's replies are AI-generated and Pick Score is an opinion expressed as a number, not a guarantee. Verify specifications before you commit.",
+    body: "Pico's replies are AI-generated and Pick Score is a reasoned judgment from public data and weights we chose, not a guarantee. Verify specifications before you commit.",
   },
   {
     title: "Your data stays yours",

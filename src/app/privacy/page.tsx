@@ -13,7 +13,7 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       title="Privacy Policy"
-      updated="16 July 2026"
+      updated="8 November 2026"
       intro="This policy explains what personal data PickWise collects, why we collect it, who processes it on our behalf, and the choices you have. We collect only what the service needs to work — there is no advertising and we never sell your data."
     >
       <LegalSection title="1. Data we collect">
@@ -45,9 +45,13 @@ export default function PrivacyPage() {
           left off.
         </p>
         <p>
-          <strong>Service logs.</strong> We log technical details of each
-          recommendation request (for example, whether a search found confident
-          results) to monitor and improve search quality.
+          <strong>Saved laptops.</strong> Your saved list is stored with your
+          account.
+        </p>
+        <p>
+          <strong>Service logs.</strong> We keep monitoring logs of each Pico
+          turn, including your message and Pico&apos;s reply, and a search log
+          with the search text. Deleting a conversation deletes both.
         </p>
       </LegalSection>
 
@@ -67,8 +71,7 @@ export default function PrivacyPage() {
         <p>
           Pico is powered by third-party AI models. When you chat, your
           messages, saved preferences, and relevant catalog data are sent to
-          AI providers (Google&apos;s Gemini models and model providers via
-          OpenRouter) to generate a reply. These providers process the data on
+          AI providers (Google&apos;s Gemini and Gemma models) to generate a reply. These providers process the data on
           our behalf.{" "}
           <strong>
             Please don&apos;t include sensitive personal information in chat
@@ -90,12 +93,12 @@ export default function PrivacyPage() {
               Supabase and our servers run on Render.
             </>,
             <>
-              <strong>AI providers</strong> — Google (Gemini) and OpenRouter
+              <strong>AI providers</strong> — Google (Gemini, Gemma)
               process chat and recommendation requests (see section 3).
             </>,
             <>
               <strong>Price search</strong> — live market-price lookups query
-              Serper.dev with the laptop&apos;s name only, never your personal
+              SerpApi (Google Shopping) with the laptop&apos;s name only, never your personal
               data.
             </>,
             <>
@@ -121,10 +124,6 @@ export default function PrivacyPage() {
             <>
               <strong>Theme choice</strong> — your light/dark mode preference.
             </>,
-            <>
-              <strong>Saved laptops</strong> — your saved list currently lives
-              only in your browser, not on our servers.
-            </>,
           ]}
         />
         <p>We don&apos;t use advertising or cross-site tracking cookies.</p>
@@ -134,8 +133,13 @@ export default function PrivacyPage() {
         <p>
           We keep your account data, preferences, and conversation history for
           as long as your account exists. Service logs are kept only as long as
-          needed for quality monitoring. When your account is deleted, the
-          personal data linked to it is deleted too.
+          needed for quality monitoring. There is no self-service account
+          deletion yet. Email us at{" "}
+          <a href="mailto:admin-pickwise@ngyijie.com" className="text-brand-text underline underline-offset-2">
+            admin-pickwise@ngyijie.com
+          </a>{" "}
+          and we&apos;ll delete your account and everything linked to it:
+          conversations, logs, preferences, saved laptops and photo.
         </p>
       </LegalSection>
 
@@ -158,8 +162,12 @@ export default function PrivacyPage() {
               from the profile page at any time.
             </>,
             <>
-              <strong>Delete your account</strong> — you may request deletion
-              of your account and associated data.
+              <strong>Delete your account</strong> — email{" "}
+              <a href="mailto:admin-pickwise@ngyijie.com" className="text-brand-text underline underline-offset-2">
+                admin-pickwise@ngyijie.com
+              </a>{" "}
+              and we&apos;ll delete your account and everything linked to it
+              (see section 6).
             </>,
           ]}
         />
