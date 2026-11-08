@@ -85,7 +85,7 @@ export default function WhyPickWisePage() {
           PickWise vs a general AI chatbot
         </p>
         <h1 className="mt-2 text-4xl font-bold tracking-tighter text-balance sm:text-5xl">
-          Same question. Very different footing.
+          Same Question. Very Different Footing.
         </h1>
         <p className="mt-5 text-[15px] leading-relaxed text-muted-foreground">
           A general-purpose chatbot is good at sounding right about laptops. Pico,
@@ -108,7 +108,7 @@ export default function WhyPickWisePage() {
         </div>
 
         <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <AnswerCard title="A general AI chatbot" points={generic} tone="muted" />
+          <AnswerCard title="A General AI Chatbot" points={generic} tone="muted" />
           <AnswerCard title="PickWise (Pico)" points={pickwise} tone="brand" />
         </div>
         <p className="mt-3 text-[12px] text-muted-foreground">
@@ -122,7 +122,7 @@ export default function WhyPickWisePage() {
         className="mt-16 motion-safe:animate-fade-in-up"
         style={{ animationDelay: "160ms" }}
       >
-        <h2 className="text-2xl font-semibold tracking-tight">Side by side</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">Side by Side</h2>
         <div className="border-line mt-6 overflow-x-auto rounded-2xl border">
           <table className="w-full min-w-[560px] text-left text-[13px]">
             <thead className="bg-surface">
@@ -156,7 +156,7 @@ export default function WhyPickWisePage() {
         className="border-line bg-surface mt-16 rounded-2xl border p-6 motion-safe:animate-fade-in-up sm:p-8"
         style={{ animationDelay: "240ms" }}
       >
-        <h2 className="text-2xl font-semibold tracking-tight">Where a general chatbot still wins</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">Where a General Chatbot Still Wins</h2>
         <p className="mt-3 max-w-3xl text-[13px] leading-relaxed text-muted-foreground">
           PickWise only knows the laptops in its catalog, and catalog prices can lag
           behind retailers, so confirm before you buy. Review coverage is still small:
@@ -177,7 +177,7 @@ export default function WhyPickWisePage() {
         style={{ animationDelay: "320ms" }}
       >
         <h2 className="max-w-md text-2xl font-semibold tracking-tight text-balance">
-          Ask Pico the same question.
+          Ask Pico the Same Question.
         </h2>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Button
