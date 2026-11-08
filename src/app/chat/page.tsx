@@ -758,58 +758,59 @@ export default function ChatPage() {
     </>
   );
 
+  // The text column: about 70 characters, widened to about 85 when the sidebar is
+  // collapsed for reading. Past that, lines get too long to track.
+  const readWidth = historyCollapsed ? "max-w-[820px]" : "max-w-[680px]";
+
   return (
-    <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-10 pb-5 sm:px-6">
+    <main
+      className={cn(
+        "mx-auto w-full flex-1 px-4 pt-10 pb-5 sm:px-6",
+        // Collapsed is reading mode: the workspace takes the whole window.
+        historyCollapsed ? "max-w-none lg:px-8" : "max-w-7xl",
+      )}
+    >
       {/* Bento workspace: conversations | thread | Pico + shortlist rail */}
       <div
         className={cn(
           "grid h-[calc(100vh-154px)] grid-cols-1 gap-5",
           historyCollapsed
-            ? "md:grid-cols-[68px_minmax(0,1fr)] lg:grid-cols-[68px_minmax(0,1fr)_300px]"
+            ? "lg:grid-cols-[minmax(0,1fr)_320px]"
             : "md:grid-cols-[250px_minmax(0,1fr)] lg:grid-cols-[250px_minmax(0,1fr)_300px]",
         )}
       >
-        {/* Tile: conversations */}
-        <aside className="border-line bg-surface hidden min-h-0 flex-col rounded-3xl border p-4 motion-safe:animate-fade-in-up md:flex">
+        {/* Tile: conversations. Collapsed, the tile goes away and its two buttons move
+            into the thread header, instead of a full-height strip holding two icons. */}
+        <aside
+          className={cn(
+            "border-line bg-surface hidden min-h-0 flex-col rounded-3xl border p-4 motion-safe:animate-fade-in-up",
+            !historyCollapsed && "md:flex",
+          )}
+        >
           {/* New Conversation takes 2/3 of the row, collapse 1/3; collapsed, they stack as icons */}
-          <div className={cn("mb-4 flex gap-2", historyCollapsed ? "flex-col" : "flex-row")}>
+          <div className="mb-4 flex flex-row gap-2">
             <button
               type="button"
               onClick={startNewConversation}
               aria-label="New Conversation"
               title="New Conversation"
-              className={cn(
-                "border-line bg-canvas flex items-center justify-center gap-2 rounded-full border py-2.5 text-[13px] font-semibold transition-colors hover:border-brand hover:text-brand-text",
-                !historyCollapsed && "basis-2/3",
-              )}
+              className="border-line bg-canvas flex basis-2/3 items-center justify-center gap-2 rounded-full border py-2.5 text-[13px] font-semibold transition-colors hover:border-brand hover:text-brand-text"
             >
               <Plus className="size-3.5" />
-              {!historyCollapsed && "New Conversation"}
+              New Conversation
             </button>
             <button
               type="button"
-              onClick={() => setHistoryCollapsed((c) => !c)}
-              aria-label={historyCollapsed ? "Expand conversations" : "Collapse conversations"}
-              aria-expanded={!historyCollapsed}
-              title={historyCollapsed ? "Expand" : "Collapse"}
-              className={cn(
-                "border-line bg-canvas flex items-center justify-center rounded-full border py-2.5 transition-colors hover:border-brand hover:text-brand-text",
-                !historyCollapsed && "basis-1/3",
-              )}
+              onClick={() => setHistoryCollapsed(true)}
+              aria-label="Collapse conversations"
+              aria-expanded
+              title="Collapse: full-width reading"
+              className="border-line bg-canvas flex basis-1/3 items-center justify-center rounded-full border py-2.5 transition-colors hover:border-brand hover:text-brand-text"
             >
-              {historyCollapsed ? (
-                <PanelLeftOpen className="size-3.5" />
-              ) : (
-                <PanelLeftClose className="size-3.5" />
-              )}
+              <PanelLeftClose className="size-3.5" />
             </button>
           </div>
-          <div
-            className={cn(
-              "flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto",
-              historyCollapsed && "hidden",
-            )}
-          >
+          <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto">
             {groupConversations(conversations).map((group) => (
               <div key={group.label} className="flex flex-col gap-1">
                 <span className="px-2.5 pb-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
@@ -879,6 +880,29 @@ export default function ChatPage() {
         >
           {/* Tile header */}
           <div className="border-line flex items-center gap-3 border-b px-5 py-3.5">
+            {historyCollapsed && (
+              <div className="border-line hidden items-center gap-1 border-r pr-3 md:flex">
+                <button
+                  type="button"
+                  onClick={() => setHistoryCollapsed(false)}
+                  aria-label="Expand conversations"
+                  aria-expanded={false}
+                  title="Show conversations"
+                  className="hover:bg-surface-2 hover:text-brand-text flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors"
+                >
+                  <PanelLeftOpen className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={startNewConversation}
+                  aria-label="New Conversation"
+                  title="New Conversation"
+                  className="hover:bg-surface-2 hover:text-brand-text flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors"
+                >
+                  <Plus className="size-4" />
+                </button>
+              </div>
+            )}
             <div className="bg-brand flex size-9 items-center justify-center rounded-full text-white">
               <Bot className="size-4.5" />
             </div>
@@ -904,7 +928,7 @@ export default function ChatPage() {
           <MessageScrollerProvider autoScroll defaultScrollPosition="end">
             <MessageScroller className="flex-1">
               <MessageScrollerViewport className="px-4 pt-6 pb-4 sm:px-6">
-                <MessageScrollerContent className="mx-auto w-full max-w-[680px] gap-5">
+                <MessageScrollerContent className={cn("mx-auto w-full gap-5", readWidth)}>
               {showEmptyState && (
                 <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
                   <div className="bg-brand flex size-12 items-center justify-center rounded-full text-white">
@@ -1053,7 +1077,7 @@ export default function ChatPage() {
 
           {/* Composer */}
           <div className="px-4 pt-2 pb-4 sm:px-6">
-            <div className="mx-auto max-w-[680px]">
+            <div className={cn("mx-auto", readWidth)}>
               <GlassSurface cornerRadius={999} fullWidth>
                 <form
                   className="relative"
