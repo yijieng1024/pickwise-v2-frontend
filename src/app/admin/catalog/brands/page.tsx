@@ -50,6 +50,8 @@ import {
   updateBrand,
 } from "@/lib/api/admin/brands";
 import { ApiError } from "@/lib/api/client";
+import { type DashboardSummary, getDashboardSummary } from "@/lib/api/admin/dashboard";
+import { timeAgo } from "@/lib/admin/freshness";
 import { useAuth } from "@/lib/auth-context";
 
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../../admin-states";
@@ -65,6 +67,28 @@ export default function AdminCatalogBrandsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Brand | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [reloadTick, setReloadTick] = useState(0);
+  // Per-brand laptop counts and last-data dates come from the dashboard's
+  // summary; the table renders without them, so a failure only leaves "—".
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    getDashboardSummary(token)
+      .then((res) => !cancelled && setSummary(res))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [token, reloadTick]);
+  const activeCount = (id: string) =>
+    summary ? (summary.trends.laptops_by_brand.find((b) => b.brand_id === id)?.active ?? 0) : null;
+  const lastData = (id: string) => {
+    const f = summary?.freshness.scrape_by_brand.find((b) => b.brand_id === id);
+    if (!f) return "—";
+    const source = !f.has_scraper ? "No scraper" : f.source === "upload" ? "Upload" : "Scrape";
+    return f.last_at ? `${source} · ${timeAgo(f.last_at)}` : source;
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -123,6 +147,8 @@ export default function AdminCatalogBrandsPage() {
               <TableRow>
                 <TableHead className="w-[200px]">Name</TableHead>
                 <TableHead>Scrape URL</TableHead>
+                <TableHead className="w-[130px] text-right">Active laptops</TableHead>
+                <TableHead className="w-[180px]">Last data</TableHead>
                 <TableHead className="w-[120px]">Status</TableHead>
                 <TableHead className="w-[70px] text-right">Actions</TableHead>
               </TableRow>
@@ -134,6 +160,8 @@ export default function AdminCatalogBrandsPage() {
                   <TableCell className="max-w-md truncate text-muted-foreground">
                     {b.base_scrape_url}
                   </TableCell>
+                  <TableCell className="text-right tabular-nums">{activeCount(b.id) ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground tabular-nums">{lastData(b.id)}</TableCell>
                   <TableCell>
                     <AdminStatusPill kind="enabled" value={b.is_active} />
                   </TableCell>
