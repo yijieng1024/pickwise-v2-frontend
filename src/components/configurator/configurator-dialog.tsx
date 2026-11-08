@@ -31,6 +31,13 @@ import { useConfigurator } from "./configurator-context";
 
 const chipName = (kit: ChipKit | undefined) => kit?.label ?? kit?.chip ?? "";
 
+/** "48gb" → 48, "2tb" → 2048, "70w" → 70; a value with no number sorts first. */
+function sizeOf(value: string): number {
+  const m = /(\d+(?:\.\d+)?)\s*(tb)?/i.exec(value);
+  if (!m) return 0;
+  return Number(m[1]) * (m[2] ? 1024 : 1);
+}
+
 /** The design recipe (DESIGN.md: glass for floating controls only), for the floating close. */
 const GLASS = {
   background: "var(--glass)",
@@ -170,11 +177,16 @@ function Editor({ options, initial, onDone }: { options: LaptopOptions; initial:
           for (const kit of options.kits)
             for (const o of kit.options[group] ?? []) if (!values.has(o.value)) values.set(o.value, o.label ?? o.value);
           if (values.size < 2) return null;
-          const sorted = [...values].sort(([a], [b]) => {
-            const ka = chipsOffering(options, group, a)[0], kb = chipsOffering(options, group, b)[0];
-            return totalOf(options, picksOn(options, ka.chip, { ...picks, [group]: a })) -
-              totalOf(options, picksOn(options, kb.chip, { ...picks, [group]: b }));
-          });
+          // What the chosen chip allows comes first, by size; values that need another
+          // chip follow, also by size. Recomputed on every render, so it re-sorts when
+          // the chip changes.
+          // Values with no size (display finishes) fall back to their cheapest add-on.
+          const allowedHere = (v: string) => (chipAllows(options, picks.chip, group, v) ? 0 : 1);
+          const addOnOf = (v: string) =>
+            Math.min(...options.kits.flatMap((k) => (k.options[group] ?? []).filter((o) => o.value === v).map((o) => o.add_on_rm ?? 0)));
+          const sorted = [...values].sort(
+            ([a], [b]) => allowedHere(a) - allowedHere(b) || sizeOf(a) - sizeOf(b) || addOnOf(a) - addOnOf(b),
+          );
           return (
             <Group key={group} title={GROUP_LABELS[group]}>
               {sorted.map(([value, label]) => {
