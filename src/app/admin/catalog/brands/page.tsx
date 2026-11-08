@@ -121,17 +121,17 @@ export default function AdminCatalogBrandsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
+                <TableHead className="w-[200px]">Name</TableHead>
                 <TableHead>Scrape URL</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="w-[120px]">Status</TableHead>
+                <TableHead className="w-[70px] text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {brands.map((b) => (
                 <TableRow key={b.id}>
                   <TableCell className="font-medium">{b.name}</TableCell>
-                  <TableCell className="max-w-xs truncate text-muted-foreground">
+                  <TableCell className="max-w-md truncate text-muted-foreground">
                     {b.base_scrape_url}
                   </TableCell>
                   <TableCell>

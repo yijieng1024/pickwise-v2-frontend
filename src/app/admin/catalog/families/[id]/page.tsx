@@ -362,8 +362,8 @@ export default function AdminFamilyDetailPage({
                     <TableHead>Configuration</TableHead>
                     <TableHead>Model code</TableHead>
                     <TableHead className="text-right">Price</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="w-[120px]">Status</TableHead>
+                    <TableHead className="w-[70px] text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

@@ -222,7 +222,7 @@ export default function AdminUsersPage() {
               <TableRow>
                 <TableHead>User</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="w-[120px]">Status</TableHead>
                 <TableHead>Verified</TableHead>
                 <TableHead>Joined</TableHead>
               </TableRow>

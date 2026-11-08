@@ -221,7 +221,7 @@ export default function AdminGpuBenchmarksPage() {
                   sort={sort}
                   onSort={query.sortBy}
                 />
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="w-[70px] text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

@@ -390,7 +390,7 @@ export default function AdminQueuePage() {
                 </TableHead>
                 <TableHead>Product page</TableHead>
                 <TableHead>Brand</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="w-[120px]">Status</TableHead>
                 <TableHead>Last attempt</TableHead>
               </TableRow>
             </TableHeader>

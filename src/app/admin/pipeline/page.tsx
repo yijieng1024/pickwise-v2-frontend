@@ -221,7 +221,7 @@ export default function AdminRawRecordsPage() {
               <TableRow>
                 <TableHead>Product</TableHead>
                 <TableHead>Brand</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="w-[120px]">Status</TableHead>
                 <TableHead>Prices</TableHead>
                 <TableHead className="text-right">Specs</TableHead>
                 <TableHead className="text-right">Images</TableHead>

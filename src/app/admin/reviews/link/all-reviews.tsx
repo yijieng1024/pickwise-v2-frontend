@@ -246,9 +246,9 @@ export function AllReviews() {
             <TableHeader>
               <TableRow>
                 <TableHead>Video</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="w-[120px]">Status</TableHead>
                 <TableHead>Match</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="w-[70px] text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

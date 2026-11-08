@@ -486,7 +486,7 @@ export default function AdminAgentMonitoringPage() {
               <TableRow>
                 <TableHead>Message</TableHead>
                 <TableHead>User</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="w-[120px]">Status</TableHead>
                 <TableHead>Tools</TableHead>
                 <TableHead>Model</TableHead>
                 <SortableTableHead
@@ -516,7 +516,7 @@ export default function AdminAgentMonitoringPage() {
                   sort={sort}
                   onSort={query.sortBy}
                 />
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="w-[70px] text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -767,7 +767,7 @@ function ModelCalls({ calls }: { calls: AgentModelCall[] }) {
               <TableHead>Step</TableHead>
               <TableHead>Started</TableHead>
               <TableHead>Model</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead className="w-[120px]">Status</TableHead>
               <TableHead className="text-right">Duration</TableHead>
               <TableHead className="text-right">Tokens in / out</TableHead>
               <TableHead>Tools</TableHead>

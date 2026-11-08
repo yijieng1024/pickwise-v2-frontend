@@ -365,7 +365,7 @@ export default function AdminCatalogFamiliesPage() {
                 <TableHead>Brand</TableHead>
                 <TableHead className="text-right">Members</TableHead>
                 <TableHead>Verified</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="w-[70px] text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

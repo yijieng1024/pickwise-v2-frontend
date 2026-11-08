@@ -233,7 +233,7 @@ export default function AdminJobsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Job</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="w-[120px]">Status</TableHead>
                 <TableHead>Outcome</TableHead>
                 <TableHead>Started</TableHead>
                 <TableHead className="w-24 text-right">Actions</TableHead>

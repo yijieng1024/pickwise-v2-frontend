@@ -365,8 +365,8 @@ export default function AdminCatalogLaptopsPage() {
                 <TableHead>Brand</TableHead>
                 <SortableTableHead label="Price" sortKey="price_rm" className="text-right" sort={sort} onSort={query.sortBy} />
                 <SortableTableHead label="Added" sortKey="created_at" sort={sort} onSort={query.sortBy} />
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="w-[120px]">Status</TableHead>
+                <TableHead className="w-[70px] text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

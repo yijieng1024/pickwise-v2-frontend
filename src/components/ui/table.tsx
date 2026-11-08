@@ -70,7 +70,9 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0",
+        // Admin tables (the only users): 20px between columns, 24px at the
+        // card's edges, so content never presses against the border.
+        "h-11 px-5 text-left align-middle font-medium whitespace-nowrap text-foreground first:pl-6 last:pr-6 [&:has([role=checkbox])]:pr-0",
         className
       )}
       {...props}
@@ -83,7 +85,8 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
     <td
       data-slot="table-cell"
       className={cn(
-        "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0",
+        // h-14 is a minimum row height (a table cell's height grows to fit).
+        "h-14 px-5 py-2 align-middle whitespace-nowrap first:pl-6 last:pr-6 [&:has([role=checkbox])]:pr-0",
         className
       )}
       {...props}
