@@ -5,7 +5,7 @@ import { Check, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
-  title: "PickWise vs a General AI Chatbot",
+  title: "PickWise vs a General LLM",
   description:
     "What changes when laptop advice comes from an agent grounded in a Malaysian catalog, official prices, benchmarks and reviewer evidence where it exists, instead of a general-purpose chatbot answering from memory.",
 };
@@ -82,7 +82,7 @@ export default function WhyPickWisePage() {
       {/* Hero */}
       <div className="max-w-2xl motion-safe:animate-fade-in-up">
         <p className="text-brand-text text-[11px] font-semibold tracking-wide uppercase">
-          PickWise vs a general AI chatbot
+          PickWise vs a General LLM
         </p>
         <h1 className="mt-2 text-4xl font-bold tracking-tighter text-balance sm:text-5xl">
           Same Question. Very Different Footing.
@@ -108,7 +108,7 @@ export default function WhyPickWisePage() {
         </div>
 
         <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <AnswerCard title="A General AI Chatbot" points={generic} tone="muted" />
+          <AnswerCard title="A General LLM" points={generic} tone="muted" />
           <AnswerCard title="PickWise (Pico)" points={pickwise} tone="brand" />
         </div>
         <p className="mt-3 text-[12px] text-muted-foreground">
@@ -130,7 +130,7 @@ export default function WhyPickWisePage() {
                 <th className="w-1/4 p-4 font-semibold">
                   <span className="sr-only">Topic</span>
                 </th>
-                <th className="p-4 font-semibold text-muted-foreground">General AI chatbot</th>
+                <th className="p-4 font-semibold text-muted-foreground">General LLM</th>
                 <th className="text-brand-text p-4 font-semibold">PickWise</th>
               </tr>
             </thead>
