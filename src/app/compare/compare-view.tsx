@@ -170,7 +170,7 @@ export function CompareView({
   const trackStyle = { minWidth: LABEL_MIN + columns.length * COLUMN_MIN };
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-8 pb-24 sm:px-6">
+    <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-10 pb-24 sm:px-6">
       <Link
         href="/laptops"
         className="text-brand-text mb-8 flex items-center gap-2 font-medium hover:underline"

@@ -17,12 +17,12 @@ export function LegalPage({
   children: ReactNode;
 }) {
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-14 sm:px-6">
+    <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-10 pb-14 sm:px-6">
       <div className="motion-safe:animate-fade-in-up">
         <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
           Last updated: {updated}
         </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+        <h1 className="mt-2 text-4xl font-bold tracking-tight">
           {title}
         </h1>
         <p className="mt-4 text-[14px] leading-relaxed text-muted-foreground">

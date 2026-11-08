@@ -92,7 +92,7 @@ export default async function ComparePage({
 
   if (laptops.length === 0) {
     return (
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-8 pb-24 sm:px-6">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-10 pb-24 sm:px-6">
         <Empty className="border-line bg-surface rounded-3xl border py-20">
           <EmptyHeader>
             <EmptyMedia variant="icon">

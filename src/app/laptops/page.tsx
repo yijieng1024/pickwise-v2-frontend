@@ -70,7 +70,7 @@ export default async function LaptopsPage({
   const laptops = items.map((raw) => mapBackendLaptop(raw, brandsById.get(raw.brand_id)));
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 pb-24 sm:px-6 lg:px-8">
+    <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-10 pb-24 sm:px-6 lg:px-8">
       <LaptopsBrowse
         laptops={laptops}
         brands={activeBrands.map((b) => b.name)}

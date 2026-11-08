@@ -32,7 +32,7 @@ function EmptyState({
       <div className="bg-brand-tint text-brand-text mb-6 flex size-16 items-center justify-center rounded-full">
         <Heart className="size-8" />
       </div>
-      <h1 className="mb-2 text-3xl font-bold tracking-tight">{title}</h1>
+      <h1 className="mb-2 text-4xl font-bold tracking-tight">{title}</h1>
       <p className="mb-8 max-w-md text-muted-foreground">{body}</p>
       {/* Rendering as an anchor, so Base UI must not assume a native <button>. */}
       <Button size="2xl" shape="pill" render={<Link href={cta.href} />} nativeButton={false}>
@@ -128,7 +128,7 @@ export default function SavedPage() {
   );
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 pb-24 sm:px-6 lg:px-8">
+    <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-10 pb-24 sm:px-6 lg:px-8">
       {isLoading || (user && laptops === null && !failed) ? (
         <div className="flex justify-center py-24">
           <Spinner className="text-brand-text size-6" />

@@ -109,7 +109,7 @@ const honesty = [
 
 export default function PickScorePage() {
   return (
-    <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-14 sm:px-6">
+    <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-10 pb-14 sm:px-6">
       {/* Hero */}
       <div className="max-w-2xl motion-safe:animate-fade-in-up">
         <p className="text-brand-text text-[11px] font-semibold tracking-wide uppercase">

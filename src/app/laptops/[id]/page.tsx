@@ -159,7 +159,7 @@ export default async function LaptopDetailsPage({
 
   return (
     <ConfiguratorProvider laptopId={laptop.id} options={options}>
-    <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-12 pb-24 sm:px-6">
+    <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-10 pb-24 sm:px-6">
       <ConfiguratorDialog productName={laptop.name} />
       <div className="mb-8 flex items-center justify-between">
         <Link
