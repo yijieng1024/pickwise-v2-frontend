@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 
 import { GlassSurface } from "@/components/glass-surface";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -30,6 +30,15 @@ import { cn } from "@/lib/utils";
 import { useConfigurator } from "./configurator-context";
 
 const chipName = (kit: ChipKit | undefined) => kit?.label ?? kit?.chip ?? "";
+
+/** The design recipe (DESIGN.md: glass for floating controls only), for the floating close. */
+const GLASS = {
+  background: "var(--glass)",
+  borderColor: "var(--glass-edge)",
+  backdropFilter: "blur(20px) saturate(180%)",
+  WebkitBackdropFilter: "blur(20px) saturate(180%)",
+  boxShadow: "0 12px 40px var(--shadow), inset 0 1px 0 var(--glass-edge)",
+} as const;
 
 /** One choice card: Apple's configurator pattern, label on top, price change below. */
 function ChoiceCard({
@@ -139,7 +148,7 @@ function Editor({ options, initial, onDone }: { options: LaptopOptions; initial:
 
   return (
     <>
-      <div className="flex flex-col gap-6 pb-28">
+      <div className="flex flex-col gap-6 pb-24">
         <Group title={GROUP_LABELS.chip}>
           {options.kits.map((kit) => {
             const next = picksOn(options, kit.chip, picks);
@@ -195,9 +204,19 @@ function Editor({ options, initial, onDone }: { options: LaptopOptions; initial:
         })}
       </div>
 
-      {/* Floating total bar: the one glass surface in the modal. */}
-      <div className="pointer-events-none sticky bottom-0 -mx-1 pb-1">
-        <GlassSurface cornerRadius={20} fullWidth className="pointer-events-auto px-4 py-3">
+      {/* Floating total bar: the cards scroll under it, so the blur has something to show. */}
+      <div className="pointer-events-none sticky bottom-3 z-10 sm:bottom-4">
+        <GlassSurface
+          cornerRadius={24}
+          fullWidth
+          className="pointer-events-auto px-4 py-3 sm:px-5"
+          style={{
+            background: "color-mix(in oklch, var(--glass) 70%, transparent)",
+            backdropFilter: "blur(24px) saturate(190%)",
+            WebkitBackdropFilter: "blur(24px) saturate(190%)",
+            boxShadow: "0 16px 48px var(--shadow), inset 0 1px 0 var(--glass-edge), inset 0 -1px 0 rgba(255,255,255,0.08)",
+          }}
+        >
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
@@ -218,7 +237,7 @@ function Editor({ options, initial, onDone }: { options: LaptopOptions; initial:
                         : " "}
               </div>
             </div>
-            <Button shape="pill" size="lg" className="bg-brand" disabled={!live} onClick={() => live && onDone(picks, live)}>
+            <Button shape="pill" size="lg" className="bg-brand px-6 shadow-md" disabled={!live} onClick={() => live && onDone(picks, live)}>
               Done
             </Button>
           </div>
@@ -234,7 +253,19 @@ export function ConfiguratorDialog({ productName }: { productName: string }) {
   if (!options) return null;
   return (
     <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
-      <DialogContent className="flex max-h-[90vh] w-[calc(100vw-1rem)] flex-col gap-4 overflow-y-auto rounded-3xl p-5 sm:max-w-3xl sm:p-7">
+      <DialogContent
+        showCloseButton={false}
+        className="block w-[calc(100vw-1rem)] overflow-visible rounded-3xl p-0 sm:max-w-3xl"
+      >
+        {/* Floating close, outside the panel: never scrolls away with the cards. */}
+        <DialogClose
+          aria-label="Close"
+          className="text-foreground absolute -top-12 right-0 flex size-10 items-center justify-center rounded-full border transition hover:scale-105 sm:-top-1 sm:-right-14"
+          style={GLASS}
+        >
+          <X className="size-4.5" />
+        </DialogClose>
+        <div className="flex max-h-[min(85vh,52rem)] flex-col gap-4 overflow-y-auto rounded-3xl p-5 sm:p-7">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold tracking-tight">Configure</DialogTitle>
           <DialogDescription className="text-[12.5px]">
@@ -244,6 +275,7 @@ export function ConfiguratorDialog({ productName }: { productName: string }) {
         {editorOpen && (
           <Editor options={options} initial={applied?.picks ?? standardPicks(options)} onDone={apply} />
         )}
+        </div>
       </DialogContent>
     </Dialog>
   );

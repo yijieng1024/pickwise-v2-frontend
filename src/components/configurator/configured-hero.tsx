@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { SlidersHorizontal } from "lucide-react";
+import { ChevronRight, SlidersHorizontal } from "lucide-react";
 
 import { PersonalPickScoreRing } from "@/components/personal-pick-score-ring";
 import { PickScoreCard } from "@/components/pick-score-card";
@@ -17,10 +17,19 @@ export function ConfiguratorControls() {
   if (!options) return null;
   if (!applied) {
     return (
-      <Button variant="soft" shape="pill" size="lg" className="self-start" onClick={() => setEditorOpen(true)}>
-        <SlidersHorizontal data-icon="inline-start" />
-        Configure
-      </Button>
+      // Quiet on purpose: an invitation beside the price, not a second call to action
+      // competing with Ask Pico.
+      <button
+        type="button"
+        onClick={() => setEditorOpen(true)}
+        className="group text-brand-text hover:bg-brand-tint flex items-center gap-2 self-start rounded-full py-1.5 pr-3.5 pl-1.5 text-[12.5px] font-medium transition"
+      >
+        <span className="bg-brand-tint flex size-6 items-center justify-center rounded-full transition group-hover:bg-transparent">
+          <SlidersHorizontal className="size-3.5" />
+        </span>
+        Customise memory, storage and chip
+        <ChevronRight className="size-3.5 opacity-60 transition group-hover:translate-x-0.5" />
+      </button>
     );
   }
   return (
