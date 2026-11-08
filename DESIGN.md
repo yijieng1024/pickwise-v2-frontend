@@ -101,21 +101,19 @@ Three strict elevation levels:
 ### Product Media & Visualizations
 
 - **Product Photos:** Image containers utilize `bg-white` in BOTH light and dark themes for clear transparent PNG display. CSS classes `mix-blend-multiply dark:mix-blend-normal` must be preserved. Images must use `object-contain` (never `object-cover`).
-- **Data Visualization, admin** (`components/charts/*`): one palette for every admin chart, defined once in `components/charts/chart-palette.ts` and resolved per theme with `useChartPalette()`. Series name a slot (0–6), never a hex value. Each mode has its own steps, validated against its chart surface (light against `#ffffff`, dark against `#151a21`):
+- **Data Visualization** (`components/charts/*`): one palette for every chart, admin and public, defined once in `components/charts/chart-palette.ts` and resolved per theme with `useChartPalette()` (admin slots) or `usePublicChartPalette()` (public series). Charts name a slot, never a hex value. Every step is ≥ 4.5:1 on its surface (light on `#ffffff` and `#f8fafc`, dark on `#151a21`), muted, and never a functional colour: not the AI mint, the Top Pick amber, the interactive azure, or a status tone.
 
-  | Slot | 0 blue | 1 orange | 2 cyan | 3 yellow | 4 magenta | 5 green | 6 violet |
+  | Slot | 0 steel blue | 1 slate cyan | 2 amethyst | 3 coral | 4 sage | 5 plum | 6 slate |
   | --- | --- | --- | --- | --- | --- | --- | --- |
-  | Light | `#2a78d6` | `#d9622b` | `#0e8aa8` | `#b07800` | `#cf5a8a` | `#2f8a2f` | `#6250d6` |
-  | Dark | `#3987e5` | `#d95926` | `#1a9fbf` | `#c98500` | `#d55181` | `#008300` | `#9085e9` |
+  | Brand | Asus | Lenovo | HP | Acer | MSI | Apple | Dell |
+  | Light | `#3b64a8` | `#1f6f86` | `#7a55a8` | `#a85a5e` | `#62735a` | `#9c4477` | `#5c6675` |
+  | Dark | `#7da2e0` | `#5fb3c9` | `#b293dd` | `#e09398` | `#a3b496` | `#dc84b8` | `#9aa4b2` |
 
-  - Every step passes 3:1 against its surface, so there is no visible "View as table". Bar charts keep their value labels, and every chart component carries its numbers as a visually hidden table for screen readers (`ChartDataTable`).
+  - Public series (compare columns, price history) use slots 0, 3, 2, 1 in that order: steel blue and coral first, the colour-blind-safe pair.
+  - There is no visible "View as table". Bar charts keep their value labels, and every chart component carries its numbers as a visually hidden table for screen readers (`ChartDataTable`).
   - Lines are straight segments between points (`type="linear"`), never smoothed: a curve draws values that don't exist, such as a rise before a spike day. This applies to the public price history too.
   - A category keeps a fixed colour by identity, never by rank (`brandSlot()` for brands), so colours don't jump when the order changes.
   - A legend for more than one series, a tooltip with the exact number, one y-axis only, a recessive `var(--border)` grid. A second line series is dashed as the non-colour channel.
-- **Data Visualization, public pages** (compare, laptop details): CVD-safe pairings, unchanged:
-  - Radar comparison: `#3b6db4` vs `#9333ea`
-  - Price history: `#3b6db4` vs `#c2571b` (second series dashed)
-  - Single series: `#3b6db4`
 - **PickScore Visuals:** Score rings and plain-English factor breakdowns. PickScores represent diagnostic measurement, not awards.
 
 ---

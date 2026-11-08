@@ -12,9 +12,10 @@ import {
 
 import { formatDate } from "@/lib/utils";
 
+import { usePublicChartPalette } from "./chart-palette";
+
 export interface PriceSeries {
   name: string;
-  color: string;
   dashed?: boolean;
   /** One price per label (parallel to `months`). */
   prices: number[];
@@ -50,6 +51,7 @@ export function PriceHistory({
     for (const s of series) row[s.name] = s.prices[i];
     return row;
   });
+  const palette = usePublicChartPalette();
   const monthByX = new Map(data.map((r) => [r.x as string, r.month as string]));
 
   return (
@@ -90,23 +92,23 @@ export function PriceHistory({
             fontSize: 12,
           }}
         />
-        {series.map((s) => (
+        {series.map((s, i) => (
           <Line
             key={s.name}
             type="linear"
             name={s.name}
             dataKey={s.name}
-            stroke={s.color}
+            stroke={palette[i]}
             strokeWidth={2}
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeDasharray={s.dashed ? "5 5" : undefined}
             // Marker spec: filled with the series color + a 2px surface-color
             // ring so it stays legible where it crosses the line.
-            dot={{ r: 4, fill: s.color, stroke: "var(--background)", strokeWidth: 2 }}
+            dot={{ r: 4, fill: palette[i], stroke: "var(--background)", strokeWidth: 2 }}
             // Grows and re-rings on hover so the inspected point is obvious
             // while its details show in the tooltip.
-            activeDot={{ r: 6, fill: s.color, stroke: "var(--background)", strokeWidth: 2 }}
+            activeDot={{ r: 6, fill: palette[i], stroke: "var(--background)", strokeWidth: 2 }}
           />
         ))}
       </LineChart>

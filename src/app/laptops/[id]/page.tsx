@@ -44,9 +44,6 @@ import type {
 } from "@/lib/api/types";
 import { cn, formatDate } from "@/lib/utils";
 
-/** Validated single-series dataviz color (radar/price-history pair primary). */
-const CHART_COLOR = "#3b6db4";
-
 export default async function LaptopDetailsPage({
   params,
 }: {
@@ -374,7 +371,7 @@ export default async function LaptopDetailsPage({
               months={priceHistoryLabels}
               dates={priceHistoryDates}
               series={[
-                { name: `${laptop.brand} (RM)`, color: CHART_COLOR, prices: priceHistoryPrices },
+                { name: `${laptop.brand} (RM)`, prices: priceHistoryPrices },
               ]}
             />
           ) : priceHistoryPrices.length === 1 ? (

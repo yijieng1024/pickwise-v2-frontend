@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { CompareRadar } from "@/components/charts/compare-radar";
+import { usePublicChartPalette } from "@/components/charts/chart-palette";
 import { GlassSurface } from "@/components/glass-surface";
 import { PickScoreRing } from "@/components/pick-score-ring";
 import { Button } from "@/components/ui/button";
@@ -60,7 +61,6 @@ export interface CompareColumn {
   /** No longer sold: `price` is the last official one. */
   discontinued: boolean;
   image: string | null;
-  color: string;
   removeIds: string[];
 }
 
@@ -135,6 +135,7 @@ export function CompareView({
   const visibleSections = sections.filter((s) => !s.tech || techOpen);
 
   const personal = usePersonalScores(columns.map((c) => c.id));
+  const palette = usePublicChartPalette();
   const personalized = personal !== null;
 
   // One derivation for both modes: the overlay replaces the snapshots and
@@ -149,13 +150,13 @@ export function CompareView({
       factorRows: buildFactorRows(list),
       series: list.map((laptop, i) => ({
         name: laptop.name,
-        color: columns[i].color,
+        color: palette[i],
         values: factorSeries(laptop),
       })),
       leads: buildLeads(list),
       bestName: bestOverall(list)?.name ?? null,
     };
-  }, [scored, personal, columns]);
+  }, [scored, personal, palette]);
 
   const hasScores = effective.some((laptop) => laptop.score !== null);
 

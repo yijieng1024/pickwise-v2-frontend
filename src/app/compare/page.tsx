@@ -24,16 +24,6 @@ import {
 
 import { CompareView } from "./compare-view";
 
-/**
- * Four categorical series. The first two are the documented radar pair and the
- * third the trend pair's second colour; the fourth is new and was checked with
- * the dataviz validator — all four pass the lightness, chroma, CVD and
- * normal-vision gates in both themes. Green sits at 2.8:1 on the light
- * surface, which is legal only because the chart carries a direct-labelled
- * legend rather than relying on colour alone.
- */
-const SERIES_COLORS = ["#3b6db4", "#9333ea", "#c2571b", "#1baf7a"];
-
 export default async function ComparePage({
   searchParams,
 }: {
@@ -117,14 +107,13 @@ export default async function ComparePage({
 
   return (
     <CompareView
-      columns={laptops.map((laptop, i) => ({
+      columns={laptops.map((laptop) => ({
         id: laptop.id,
         name: laptop.name,
         brand: laptop.brand,
         price: laptop.price,
         discontinued: laptop.raw.status === "discontinued",
         image: laptop.image,
-        color: SERIES_COLORS[i],
         // Link that drops this column, so a comparison can be narrowed in place.
         removeIds: laptops.filter((other) => other.id !== laptop.id).map((other) => other.id),
       }))}

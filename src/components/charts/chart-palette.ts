@@ -3,32 +3,58 @@
 import { useTheme } from "next-themes";
 
 /**
- * The one chart palette for the admin (DESIGN.md, Data Visualization). Each
- * mode has its own steps, validated against its chart surface: light against
- * #ffffff, dark against #151a21. Order is the series order.
+ * Every chart colour in the app, admin and public (DESIGN.md, Data
+ * Visualization). Charts name a slot, never a hex value.
  *
- * Every step passes 3:1 against its surface, so no chart needs a visible
- * table. The brand bars keep their value labels, and every chart carries a
- * hidden data table for screen readers (ChartDataTable).
+ * The steps were picked against these rules:
+ * - Contrast ≥ 4.5:1: light steps on #ffffff and the #f8fafc canvas, dark
+ *   steps on the #151a21 surface.
+ * - No functional colour impersonated: not the AI mint (#10b981), the Top Pick
+ *   amber (#f59e0b / #d97706), the interactive azure (#2563eb), or the status
+ *   warning, negative and positive tones. Coral and sage are kept at low
+ *   chroma for that reason, so neither reads as an alert or a "good" state.
+ * - Muted chroma throughout: data-vis tones, not UI accents.
  */
-export const CHART_PALETTE = {
-  light: ["#2a78d6", "#d9622b", "#0e8aa8", "#b07800", "#cf5a8a", "#2f8a2f", "#6250d6"],
-  dark: ["#3987e5", "#d95926", "#1a9fbf", "#c98500", "#d55181", "#008300", "#9085e9"],
-} as const;
+export type ThemeMode = "light" | "dark";
+
+export interface ChartColorToken {
+  name: string;
+  light: string;
+  dark: string;
+}
+
+export interface ChartPaletteConfig {
+  /** Fixed categorical slots, 0–6; a brand always gets the same slot. */
+  admin: readonly ChartColorToken[];
+  /** Series order for public charts (compare columns, price history). */
+  public: readonly ChartColorToken[];
+}
 
 export type PaletteIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
-/** The palette for the current theme. */
-export function useChartPalette(): readonly string[] {
-  const { resolvedTheme } = useTheme();
-  return resolvedTheme === "dark" ? CHART_PALETTE.dark : CHART_PALETTE.light;
-}
+const ADMIN: readonly ChartColorToken[] = [
+  { name: "steel blue", light: "#3b64a8", dark: "#7da2e0" },
+  { name: "slate cyan", light: "#1f6f86", dark: "#5fb3c9" },
+  { name: "amethyst", light: "#7a55a8", dark: "#b293dd" },
+  { name: "coral", light: "#a85a5e", dark: "#e09398" },
+  { name: "sage", light: "#62735a", dark: "#a3b496" },
+  { name: "plum", light: "#9c4477", dark: "#dc84b8" },
+  { name: "slate", light: "#5c6675", dark: "#9aa4b2" },
+];
+
+export const CHART_PALETTE: ChartPaletteConfig = {
+  admin: ADMIN,
+  // The same tokens, reordered: blue then coral first, the colour-blind-safe
+  // pair, since a two-laptop comparison is the common case. Four entries
+  // because /compare takes up to four laptops.
+  public: [0, 3, 2, 1].map((i) => ADMIN[i]),
+};
 
 /**
- * A brand's fixed palette slot, by name, never by its rank in a list: the
- * colour must not jump when the order changes. The seven brands in the catalog
- * have a slot each; a new one hashes its id onto the palette (stable, but may
- * share a colour, which the value labels and the table keep readable).
+ * A brand's fixed slot, by name, never by its rank in a list, so the colour
+ * does not jump when the order changes. A brand outside the seven hashes its
+ * key onto the palette: stable, but it may share a colour, which the value
+ * labels and the hidden data table keep readable.
  */
 const BRAND_SLOTS: Record<string, PaletteIndex> = {
   asus: 0,
@@ -40,10 +66,44 @@ const BRAND_SLOTS: Record<string, PaletteIndex> = {
   dell: 6,
 };
 
-export function brandSlot(brandName: string, brandId: string): PaletteIndex {
-  const fixed = BRAND_SLOTS[brandName.trim().toLowerCase()];
-  if (fixed !== undefined) return fixed;
+function hashSlot(key: string): PaletteIndex {
   let hash = 0;
-  for (const ch of brandId) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
-  return (hash % 7) as PaletteIndex;
+  for (const ch of key) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  return (hash % ADMIN.length) as PaletteIndex;
+}
+
+/** Slot for a brand: its fixed slot by name, else a stable hash of its id. */
+export function brandSlot(brandName: string, brandId: string): PaletteIndex {
+  return BRAND_SLOTS[brandName.trim().toLowerCase()] ?? hashSlot(brandId);
+}
+
+/** An admin colour by slot number, or by brand name. */
+export function getAdminSlotColor(brandKey: string | number, mode: ThemeMode): string {
+  const slot =
+    typeof brandKey === "number"
+      ? brandKey % ADMIN.length
+      : (BRAND_SLOTS[brandKey.trim().toLowerCase()] ?? hashSlot(brandKey));
+  return ADMIN[slot][mode];
+}
+
+export function getPublicChartColor(index: number, mode: ThemeMode): string {
+  const series = CHART_PALETTE.public;
+  return series[index % series.length][mode];
+}
+
+function useThemeMode(): ThemeMode {
+  const { resolvedTheme } = useTheme();
+  return resolvedTheme === "dark" ? "dark" : "light";
+}
+
+/** The admin palette for the current theme, indexed by slot. */
+export function useChartPalette(): readonly string[] {
+  const mode = useThemeMode();
+  return ADMIN.map((_, i) => getAdminSlotColor(i, mode));
+}
+
+/** The public series palette for the current theme. */
+export function usePublicChartPalette(): readonly string[] {
+  const mode = useThemeMode();
+  return CHART_PALETTE.public.map((_, i) => getPublicChartColor(i, mode));
 }
