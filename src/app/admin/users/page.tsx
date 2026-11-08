@@ -49,6 +49,7 @@ import { useAdminQuery, useSearchDraft } from "../admin-query-state";
 import { AdminEmptyState, AdminErrorState, AdminLoadingState } from "../admin-states";
 import { AdminPageHeader } from "../admin-page-header";
 import { AdminStatusPill } from "../admin-status-pill";
+import { StatTile } from "../admin-summary-ui";
 import { AdminPagination } from "../admin-pagination";
 
 const PAGE_SIZE = 20;
@@ -126,6 +127,27 @@ export default function AdminUsersPage() {
     };
   }, [token, debouncedSearch, role, status, skip, reloadTick]);
 
+  // Whole-population counts, independent of the filters: each is a limit-1
+  // list read only for its `total`. Refreshes after a role or status change.
+  const [counts, setCounts] = useState<number[] | null>(null);
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    const filters: { role?: UserRole; status?: UserStatus }[] = [
+      {},
+      { role: "admin" },
+      { status: "active" },
+      { status: "inactive" },
+      { status: "suspended" },
+    ];
+    Promise.all(filters.map((f) => listUsers(token, { ...f, limit: 1 })))
+      .then((res) => !cancelled && setCounts(res.map((r) => r.total)))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [token, reloadTick]);
+
   async function confirmPending() {
     if (!pending || !token) return;
     setSaving(true);
@@ -156,6 +178,12 @@ export default function AdminUsersPage() {
         title="Users"
         description="Search accounts, change roles, and suspend or deactivate access."
       />
+
+      <Card className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-5">
+        {["All accounts", "Admins", "Active", "Inactive", "Suspended"].map((label, i) => (
+          <StatTile key={label} label={label} value={counts ? counts[i] : "—"} />
+        ))}
+      </Card>
 
       <div className="border-line bg-surface flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center">
         <div className="relative flex-1 sm:max-w-xs">
