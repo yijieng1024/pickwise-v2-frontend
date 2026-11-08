@@ -487,6 +487,13 @@ export default function ChatPage() {
   // Messages from this index on were added live and fade in; history loaded from a
   // reopened conversation (everything below it) appears without replaying.
   const [liveFrom, setLiveFrom] = useState(0);
+  // Bumped whenever a different thread is loaded, to remount the scroller.
+  // MessageScroller applies defaultScrollPosition="end" once per mount, so a
+  // thread opened after another stayed wherever the old scroll position put
+  // it; and away from the bottom, autoScroll treats the view as "reading
+  // history" and stops following new messages. Not keyed on activeId: a new
+  // chat gets its id mid-stream, and remounting then would replay the turn.
+  const [threadKey, setThreadKey] = useState(0);
   const [laptops, setLaptops] = useState<AgentLaptopCard[]>([]);
   // laptop_id -> personalized PickScore (with its breakdown), overlaying the
   // general-mode scores. null = personalization off (guest / no wizard
@@ -589,6 +596,7 @@ export default function ChatPage() {
       setLiveFrom(1);
     } finally {
       setThreadLoading(false);
+      setThreadKey((k) => k + 1);
     }
   };
 
@@ -599,6 +607,7 @@ export default function ChatPage() {
     setLiveFrom(0);
     setLaptops([]);
     setPersonalScores(null);
+    setThreadKey((k) => k + 1);
   };
 
   // Delete confirmation — the row and thread are gone server-side with no
@@ -768,6 +777,14 @@ export default function ChatPage() {
   }
 
   const showEmptyState = messages.length === 0 && !threadLoading && !isStreaming;
+  // Only the newest user message is a scroll anchor. MessageScroller scrolls
+  // to the first anchor it has not handled whenever the item count stays the
+  // same, and anchors loaded with a reopened thread are never marked handled.
+  // A reply that ends in one step (its text and `done` together, or an error)
+  // swaps the thinking row for the reply without changing the count, so with
+  // every user message anchored it jumped to the first one: the top of the
+  // thread.
+  const lastUserIndex = messages.reduce((last, m, i) => (m.role === "user" ? i : last), -1);
   const activeTool = activity.find((c) => !c.done)?.tool ?? null;
 
   // Announced once the turn lands. The streaming bubble itself is hidden from
@@ -972,7 +989,7 @@ export default function ChatPage() {
 
           {/* Messages — MessageScroller follows streamed output at the live
               edge but stops when the user scrolls up to read. */}
-          <MessageScrollerProvider autoScroll defaultScrollPosition="end">
+          <MessageScrollerProvider key={threadKey} autoScroll defaultScrollPosition="end">
             <MessageScroller className="flex-1">
               <MessageScrollerViewport className="px-4 pt-6 pb-4 sm:px-6">
                 <MessageScrollerContent className={cn("mx-auto w-full gap-5", readWidth)}>
@@ -1011,7 +1028,7 @@ export default function ChatPage() {
 
               {messages.map((m, i) =>
                 m.role === "user" ? (
-                  <MessageScrollerItem key={i} messageId={`m-${i}`} scrollAnchor>
+                  <MessageScrollerItem key={i} messageId={`m-${i}`} scrollAnchor={i === lastUserIndex}>
                     <div className={cn("flex justify-end", i >= liveFrom && ENTER)}>
                       <div className="bg-brand max-w-[70%] rounded-[20px] rounded-br-[4px] px-4.5 py-3 text-[14.5px] leading-relaxed text-white">
                         {m.content}
