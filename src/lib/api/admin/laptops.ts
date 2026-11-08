@@ -19,7 +19,7 @@ export interface ListLaptopsParams {
   /** `created_at` bounds, inclusive. Sent as naive UTC, the column's own form. */
   addedFrom?: Date;
   addedTo?: Date;
-  sortBy?: "product_name" | "price_rm" | "created_at";
+  sortBy?: "product_name" | "price_rm" | "created_at" | "shuffle";
   sortDir?: "asc" | "desc";
   skip?: number;
   limit?: number;

@@ -61,7 +61,9 @@ export default async function LaptopsPage({
     status: "active",
     priceMin,
     priceMax,
-    sortBy: sort === "reco" ? undefined : "price_rm",
+    // Recommended = a daily-seeded shuffle, so one machine's configurations
+    // don't fill the page in scrape order.
+    sortBy: sort === "reco" ? "shuffle" : "price_rm",
     sortDir: sort === "asc" ? "asc" : sort === "desc" ? "desc" : undefined,
     skip: (page - 1) * PAGE_SIZE,
     limit: PAGE_SIZE,
