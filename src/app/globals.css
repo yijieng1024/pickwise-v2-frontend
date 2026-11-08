@@ -211,7 +211,10 @@
 
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
+  /* Cards are 85% opaque so the page's dot grid shows faintly through them;
+     --surface-solid is the opaque value, for glass recipes that mix their own
+     alpha and for opaque fallbacks. */
+  --card: oklch(1 0 0 / 0.85);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
@@ -256,7 +259,8 @@
   /* Brand-coloured text (text-brand-text). Same as --brand in light mode. */
   --brand-text: var(--brand);
   --bg: #fbfbfd;
-  --surface: #ffffff;
+  --surface: rgb(255 255 255 / 0.85);
+  --surface-solid: #ffffff;
   --surface-2: #f5f5f7;
   --glass: rgba(255, 255, 255, 0.62);
   --glass-edge: rgba(255, 255, 255, 0.55);
@@ -278,7 +282,7 @@
 
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
+  --card: oklch(0.205 0 0 / 0.85);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
@@ -317,7 +321,8 @@
      --surface (5.60). Fills keep --brand: white on it is 4.88. */
   --brand-text: oklch(0.66 0.13 256.5);
   --bg: #0b0f14;
-  --surface: #151a21;
+  --surface: rgb(21 26 33 / 0.85);
+  --surface-solid: #151a21;
   --surface-2: #1c232c;
   --glass: rgba(21, 26, 33, 0.58);
   --glass-edge: rgba(255, 255, 255, 0.12);
@@ -407,7 +412,7 @@
 .admin-island [data-slot="sidebar-inner"],
 .admin-glass {
   border: 1px solid var(--glass-border);
-  background: color-mix(in oklab, var(--surface) 72%, transparent);
+  background: color-mix(in oklab, var(--surface-solid) 72%, transparent);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   box-shadow: 0 8px 30px var(--glass-shadow);
@@ -415,7 +420,7 @@
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .admin-island [data-slot="sidebar-inner"],
   .admin-glass {
-    background: var(--surface);
+    background: var(--surface-solid);
   }
 }
 /* The island hugs its content instead of running the full height: the

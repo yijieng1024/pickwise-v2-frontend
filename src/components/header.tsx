@@ -169,7 +169,7 @@ export function Header() {
                   // stays readable over any page content behind it.
                   style={{
                     background:
-                      "color-mix(in oklab, var(--surface) 92%, transparent)",
+                      "color-mix(in oklab, var(--surface-solid) 92%, transparent)",
                   }}
                 >
                   <div className="mb-1.5 flex items-center gap-2.5 border-b border-line px-2 pt-1 pb-3">

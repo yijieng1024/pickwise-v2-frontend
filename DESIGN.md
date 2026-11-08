@@ -23,7 +23,7 @@ Two token families coexist. The **shadcn set** (`background`, `foreground`, `pri
 | Token (utility) | Light | Dark | Purpose / Application |
 | --- | --- | --- | --- |
 | `bg-canvas` (`--bg`) | `#fbfbfd` | `#0b0f14` | Page canvas background, input fields |
-| `bg-surface` (`--surface`) | `#ffffff` | `#151a21` | Main content cards, floating panels |
+| `bg-surface` (`--surface`) | `#ffffff` at 85% | `#151a21` at 85% | Main content cards, floating panels. Slightly translucent so the dot grid shows faintly through; shadcn's `--card` matches. `--surface-solid` is the opaque value, for glass recipes that mix their own alpha and for opaque fallbacks |
 | `bg-surface-2` (`--surface-2`) | `#f5f5f7` | `#1c232c` | Nested fills: chips, tab rails, hover fills |
 | `bg-brand` (`--brand`) | `#042e61` | `#3b6db4` | Primary actions, logo background, active highlights |
 | `bg-brand-tint` (`--brand-tint`) | `#eaf1fa` | `#0d2038` | Selected pills, soft badges, focus rings |
