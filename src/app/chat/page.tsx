@@ -449,6 +449,9 @@ function ResultCard({
   );
 }
 
+/** Tool chips fade between running and done instead of snapping; nothing under reduced motion. */
+const FADE = "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200";
+
 /** A short rise-and-fade for things that arrive in the thread; nothing under reduced motion. */
 const ENTER =
   "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-200";
@@ -1039,25 +1042,29 @@ export default function ChatPage() {
                       <GlassSurface
                         key={chip.id}
                         cornerRadius={999}
-                        className="flex items-center gap-2 px-3.5 py-1.5 text-xs text-muted-foreground"
+                        className={cn("flex items-center gap-2 px-3.5 py-1.5 text-xs text-muted-foreground", FADE)}
                       >
                         <Check className="text-positive size-3" strokeWidth={2.6} />
                         {chip.label}
                       </GlassSurface>
                     ) : (
+                      // The fade sits on a wrapper: the chip's own animation is the shimmer.
+                      <div key={chip.id} className={FADE}>
                       <div
-                        key={chip.id}
                         className="motion-safe:animate-shimmer flex items-center gap-2 rounded-full border border-line bg-[linear-gradient(100deg,var(--glass)_40%,var(--brand-tint)_50%,var(--glass)_60%)] bg-[length:200%_100%] px-3.5 py-1.5 text-xs text-muted-foreground shadow-[0_4px_16px_var(--shadow)]"
                       >
                         <span className="border-brand-tint border-t-brand size-3 motion-safe:animate-spin rounded-full border-2" />
                         {chip.label}…
                       </div>
+                      </div>
                     ),
                   )}
                   {activity.length === 0 && !streamText && !thinkingText && (
+                    <div className={FADE}>
                     <div className="motion-safe:animate-shimmer flex items-center gap-2 rounded-full border border-line bg-[linear-gradient(100deg,var(--glass)_40%,var(--brand-tint)_50%,var(--glass)_60%)] bg-[length:200%_100%] px-3.5 py-1.5 text-xs text-muted-foreground shadow-[0_4px_16px_var(--shadow)]">
                       <span className="border-brand-tint border-t-brand size-3 motion-safe:animate-spin rounded-full border-2" />
                       Pico is thinking…
+                    </div>
                     </div>
                   )}
                 </MessageScrollerItem>
