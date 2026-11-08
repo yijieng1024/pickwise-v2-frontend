@@ -773,7 +773,8 @@ export default function ChatPage() {
       {/* Bento workspace: conversations | thread | Pico + shortlist rail */}
       <div
         className={cn(
-          "grid h-[calc(100vh-154px)] grid-cols-1 gap-5",
+          // The left column animates its width on toggle; reduced motion snaps as before.
+          "grid h-[calc(100vh-154px)] grid-cols-1 gap-5 motion-safe:transition-[grid-template-columns] motion-safe:duration-300 motion-safe:ease-[cubic-bezier(0.32,0.72,0,1)]",
           historyCollapsed
             ? "md:grid-cols-[64px_minmax(0,1fr)] lg:grid-cols-[64px_minmax(0,1fr)_300px]"
             : "md:grid-cols-[250px_minmax(0,1fr)] lg:grid-cols-[250px_minmax(0,1fr)_300px]",
@@ -783,12 +784,12 @@ export default function ChatPage() {
             two buttons (expand + new conversation), so the way back is where it was. */}
         <aside
           className={cn(
-            "border-line bg-surface hidden min-h-0 flex-col rounded-3xl border motion-safe:animate-fade-in-up md:flex",
+            "border-line bg-surface hidden min-h-0 min-w-0 flex-col overflow-hidden rounded-3xl border motion-safe:animate-fade-in-up md:flex",
             historyCollapsed ? "items-center self-start px-2 py-3" : "p-4",
           )}
         >
           {historyCollapsed ? (
-            <div className="flex flex-col items-center gap-2">
+            <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200 flex flex-col items-center gap-2">
               <button
                 type="button"
                 onClick={() => setHistoryCollapsed(false)}
@@ -810,7 +811,8 @@ export default function ChatPage() {
               </button>
             </div>
           ) : (
-          <>
+          // Fades in once the column has mostly widened, so the list is never seen squeezed.
+          <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200 motion-safe:delay-150 motion-safe:fill-mode-backwards flex min-h-0 flex-1 flex-col">
           {/* New Conversation fills the row; collapse is a fixed 40px circle,
               matching the circle buttons on the collapsed rail */}
           <div className="mb-4 flex flex-row items-center gap-2">
@@ -896,7 +898,7 @@ export default function ChatPage() {
               </p>
             )}
           </div>
-          </>
+          </div>
           )}
         </aside>
 
