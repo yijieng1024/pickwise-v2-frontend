@@ -13,7 +13,7 @@ const productLinks = [
 const aboutLinks = [
   { href: "/about", label: "About" },
   { href: "/pickscore", label: "How Pick Score works" },
-  { href: "/why-pickwise", label: "PickWise vs AI chatbots" },
+  { href: "/why-pickwise", label: "PickWise vs General LLMs" },
   { href: "/faq", label: "FAQ" },
 ];
 

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 export const metadata: Metadata = {
   title: "PickWise vs a General LLM",
   description:
-    "What changes when laptop advice comes from an agent grounded in a Malaysian catalog, official prices, benchmarks and reviewer evidence where it exists, instead of a general-purpose chatbot answering from memory.",
+    "What changes when laptop advice comes from an agent grounded in a Malaysian catalog, official prices, benchmarks and reviewer evidence where it exists, instead of a general-purpose LLM answering from memory.",
 };
 
 const question =
@@ -88,7 +88,7 @@ export default function WhyPickWisePage() {
           Same Question. Very Different Footing.
         </h1>
         <p className="mt-5 text-[15px] leading-relaxed text-muted-foreground">
-          A general-purpose chatbot is good at sounding right about laptops. Pico,
+          A general-purpose LLM is good at sounding right about laptops. Pico,
           the agent behind PickWise, uses the same kind of language model, but it
           has to look things up before it answers: a Malaysian laptop catalog, prices
           in Ringgit, public benchmarks, and, where they exist, what reviewers said.
@@ -112,7 +112,7 @@ export default function WhyPickWisePage() {
           <AnswerCard title="PickWise (Pico)" points={pickwise} tone="brand" />
         </div>
         <p className="mt-3 text-[12px] text-muted-foreground">
-          Simplified for illustration. General chatbots vary, and some can browse the
+          Simplified for illustration. General LLMs vary, and some can browse the
           web, but none of them are built around a Malaysian laptop catalog.
         </p>
       </div>
@@ -156,13 +156,13 @@ export default function WhyPickWisePage() {
         className="border-line bg-surface mt-16 rounded-2xl border p-6 motion-safe:animate-fade-in-up sm:p-8"
         style={{ animationDelay: "240ms" }}
       >
-        <h2 className="text-2xl font-semibold tracking-tight">Where a General Chatbot Still Wins</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">Where a General LLM Still Wins</h2>
         <p className="mt-3 max-w-3xl text-[13px] leading-relaxed text-muted-foreground">
           PickWise only knows the laptops in its catalog, and catalog prices can lag
           behind retailers, so confirm before you buy. Review coverage is still small:
           only a few laptops have reviewer evidence so far. For anything that isn&apos;t
           choosing a laptop, such as setting one up, fixing it, or writing your
-          assignment on it, a general chatbot is the better tool. Read more about how
+          assignment on it, a general LLM is the better tool. Read more about how
           scores are built in{" "}
           <Link href="/pickscore" className="text-brand-text underline underline-offset-2">
             How Pick Score works
