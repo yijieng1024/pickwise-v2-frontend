@@ -30,17 +30,17 @@ const pickwise = [
 const rows = [
   {
     topic: "Where the answer comes from",
-    generic: "Whatever the model remembers from training",
+    generic: "Training data, plus a web search when it decides to",
     pickwise: "PickWise's own laptop catalog, searched before it recommends",
   },
   {
     topic: "Prices",
-    generic: "Recalled from memory; often outdated or in the wrong currency",
+    generic: "Whatever it recalls or finds; can be outdated or in another currency",
     pickwise: "Ringgit: official prices plus price history, with live Malaysian listings for reference",
   },
   {
     topic: "Availability",
-    generic: "Can't tell what is actually sold in Malaysia",
+    generic: "May not know what is actually sold in Malaysia",
     pickwise: "Only laptops currently listed with a known price are recommended",
   },
   {
@@ -71,7 +71,7 @@ const rows = [
   },
   {
     topic: "Staying on topic",
-    generic: "Will happily wander off into anything",
+    generic: "Answers anything, so there are no laptop-specific checks",
     pickwise: "Focused on laptops, so its tools and checks always apply",
   },
 ] as const;
