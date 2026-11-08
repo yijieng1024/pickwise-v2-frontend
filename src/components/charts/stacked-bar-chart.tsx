@@ -2,13 +2,13 @@
 
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
-import { type PaletteIndex, useChartPalette } from "./chart-palette";
+import { type ChartSlot, slotColor, useChartPalette } from "./chart-palette";
 import { ChartDataTable } from "./chart-data-table";
 import type { TrendPoint } from "./trend-line";
 
 export interface StackSeries {
   name: string;
-  slot: PaletteIndex;
+  slot: ChartSlot;
   values: number[];
 }
 
@@ -45,7 +45,7 @@ export function StackedBarChart({
       <ul className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1">
         {series.map((s) => (
           <li key={s.name} className="text-muted-foreground flex items-center gap-1.5 text-xs">
-            <span aria-hidden className="size-2.5 shrink-0 rounded-sm" style={{ background: palette[s.slot] }} />
+            <span aria-hidden className="size-2.5 shrink-0 rounded-sm" style={{ background: slotColor(palette, s.slot) }} />
             {s.name}
           </li>
         ))}
@@ -85,7 +85,7 @@ export function StackedBarChart({
               key={s.name}
               dataKey={s.name}
               stackId="day"
-              fill={palette[s.slot]}
+              fill={slotColor(palette, s.slot)}
               maxBarSize={24}
               // Round only the top of the stack.
               radius={i === series.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}

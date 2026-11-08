@@ -101,15 +101,16 @@ Three strict elevation levels:
 ### Product Media & Visualizations
 
 - **Product Photos:** Image containers utilize `bg-white` in BOTH light and dark themes for clear transparent PNG display. CSS classes `mix-blend-multiply dark:mix-blend-normal` must be preserved. Images must use `object-contain` (never `object-cover`).
-- **Data Visualization** (`components/charts/*`): one palette for every chart, admin and public, defined once in `components/charts/chart-palette.ts` and resolved per theme with `useChartPalette()` (admin slots) or `usePublicChartPalette()` (public series). Charts name a slot, never a hex value. Every step is ≥ 4.5:1 on its surface (light on `#ffffff` and `#f8fafc`, dark on `#151a21`), muted, and never a functional colour: not the AI mint, the Top Pick amber, the interactive azure, or a status tone.
+- **Data Visualization** (`components/charts/*`): one palette for every chart, admin and public, defined once in `components/charts/chart-palette.ts` and resolved per theme with `useChartPalette()` (admin slots) or `usePublicChartPalette()` (public series). Charts name a slot, never a hex value. Chart marks are non-text graphics, so every step is ≥ 3:1 on its surface (WCAG 1.4.11; light on `#ffffff` and the `#fbfbfd` canvas, dark on `#151a21`); text on a chart uses the text tokens at 4.5:1. Closest pair (CIEDE2000) ≥ 16 for normal vision and ≥ 8 under simulated protan, deutan and tritan vision; every step is ΔE ≥ 8 from the status, brand and `--spark` colours, and orange, amber and olive hues are left out so no series reads as a warning or a Top Pick.
 
-  | Slot | 0 steel blue | 1 slate cyan | 2 amethyst | 3 coral | 4 sage | 5 plum | 6 slate |
+  | Slot | 0 indigo | 1 rose | 2 cyan | 3 leaf | 4 mauve | 5 lavender | 6 jade |
   | --- | --- | --- | --- | --- | --- | --- | --- |
   | Brand | Asus | Lenovo | HP | Acer | MSI | Apple | Dell |
-  | Light | `#3b64a8` | `#1f6f86` | `#7a55a8` | `#a85a5e` | `#62735a` | `#9c4477` | `#5c6675` |
-  | Dark | `#7da2e0` | `#5fb3c9` | `#b293dd` | `#e09398` | `#a3b496` | `#dc84b8` | `#9aa4b2` |
+  | Light | `#4a61b9` | `#cf7188` | `#2a9cae` | `#609043` | `#925786` | `#a07cdb` | `#09816b` |
+  | Dark | `#6b86e1` | `#f896ad` | `#51bcce` | `#71a255` | `#b87aab` | `#bf9bfc` | `#42a68f` |
 
-  - Public series (compare columns, price history) use slots 0, 3, 2, 1 in that order: steel blue and coral first, the colour-blind-safe pair.
+  - Public series (compare columns, price history) use slots 3, 5, 4, 1 in that order (leaf, lavender, mauve, rose): the four furthest apart under every simulated colour-vision type. The compare radar dashes the outline, and its legend key, from the third laptop on.
+  - A failure series (the dashboard's "Had failed items" bars, the jobs trend's "Failed" line) uses `--negative` through the `"negative"` slot, not a palette colour.
   - There is no visible "View as table". Bar charts keep their value labels, and every chart component carries its numbers as a visually hidden table for screen readers (`ChartDataTable`).
   - Lines are straight segments between points (`type="linear"`), never smoothed: a curve draws values that don't exist, such as a rise before a spike day. This applies to the public price history too.
   - A category keeps a fixed colour by identity, never by rank (`brandSlot()` for brands), so colours don't jump when the order changes.

@@ -7,13 +7,13 @@ import { useTheme } from "next-themes";
  * Visualization). Charts name a slot, never a hex value.
  *
  * The steps were picked against these rules:
- * - Contrast ≥ 4.5:1: light steps on #ffffff and the #f8fafc canvas, dark
- *   steps on the #151a21 surface.
- * - No functional colour impersonated: not the AI mint (#10b981), the Top Pick
- *   amber (#f59e0b / #d97706), the interactive azure (#2563eb), or the status
- *   warning, negative and positive tones. Coral and sage are kept at low
- *   chroma for that reason, so neither reads as an alert or a "good" state.
- * - Muted chroma throughout: data-vis tones, not UI accents.
+ * - Contrast ≥ 3:1 (WCAG 1.4.11, non-text graphics): light steps on #ffffff
+ *   and the #fbfbfd canvas, dark steps on the #151a21 surface. Text never
+ *   uses these; it stays on the text tokens at 4.5:1.
+ * - Distinct pairs (CIEDE2000): closest pair ≥ 16 for normal vision, ≥ 8
+ *   under simulated protan, deutan and tritan vision.
+ * - ΔE ≥ 8 from the status, brand and --spark colours, with orange, amber and
+ *   olive hues left out entirely so no series reads as a warning or Top Pick.
  */
 export type ThemeMode = "light" | "dark";
 
@@ -32,22 +32,24 @@ export interface ChartPaletteConfig {
 
 export type PaletteIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
+/** A series' colour: a palette slot, or "negative" for failures (--negative). */
+export type ChartSlot = PaletteIndex | "negative";
+
 const ADMIN: readonly ChartColorToken[] = [
-  { name: "steel blue", light: "#3b64a8", dark: "#7da2e0" },
-  { name: "slate cyan", light: "#1f6f86", dark: "#5fb3c9" },
-  { name: "amethyst", light: "#7a55a8", dark: "#b293dd" },
-  { name: "coral", light: "#a85a5e", dark: "#e09398" },
-  { name: "sage", light: "#62735a", dark: "#a3b496" },
-  { name: "plum", light: "#9c4477", dark: "#dc84b8" },
-  { name: "slate", light: "#5c6675", dark: "#9aa4b2" },
+  { name: "indigo", light: "#4a61b9", dark: "#6b86e1" },
+  { name: "rose", light: "#cf7188", dark: "#f896ad" },
+  { name: "cyan", light: "#2a9cae", dark: "#51bcce" },
+  { name: "leaf", light: "#609043", dark: "#71a255" },
+  { name: "mauve", light: "#925786", dark: "#b87aab" },
+  { name: "lavender", light: "#a07cdb", dark: "#bf9bfc" },
+  { name: "jade", light: "#09816b", dark: "#42a68f" },
 ];
 
 export const CHART_PALETTE: ChartPaletteConfig = {
   admin: ADMIN,
-  // The same tokens, reordered: blue then coral first, the colour-blind-safe
-  // pair, since a two-laptop comparison is the common case. Four entries
-  // because /compare takes up to four laptops.
-  public: [0, 3, 2, 1].map((i) => ADMIN[i]),
+  // Leaf, lavender, mauve, rose: the four slots that stay furthest apart under
+  // every simulated colour-vision type. Four because /compare takes up to four.
+  public: [3, 5, 4, 1].map((i) => ADMIN[i]),
 };
 
 /**
@@ -89,6 +91,11 @@ export function getAdminSlotColor(brandKey: string | number, mode: ThemeMode): s
 export function getPublicChartColor(index: number, mode: ThemeMode): string {
   const series = CHART_PALETTE.public;
   return series[index % series.length][mode];
+}
+
+/** A series' colour from the theme's admin palette. */
+export function slotColor(palette: readonly string[], slot: ChartSlot): string {
+  return slot === "negative" ? "var(--negative)" : palette[slot];
 }
 
 function useThemeMode(): ThemeMode {

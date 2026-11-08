@@ -19,6 +19,7 @@ import {
 
 import { CompareRadar } from "@/components/charts/compare-radar";
 import { usePublicChartPalette } from "@/components/charts/chart-palette";
+import { SeriesKey } from "@/components/charts/trend-line";
 import { GlassSurface } from "@/components/glass-surface";
 import { PickScoreRing } from "@/components/pick-score-ring";
 import { Button } from "@/components/ui/button";
@@ -151,6 +152,7 @@ export function CompareView({
       series: list.map((laptop, i) => ({
         name: laptop.name,
         color: palette[i],
+        dashed: i >= 2,
         values: factorSeries(laptop),
       })),
       leads: buildLeads(list),
@@ -190,17 +192,15 @@ export function CompareView({
         <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-[380px_1fr]">
           <div className="border-line bg-surface flex flex-col items-center gap-3 rounded-3xl border p-6">
             <CompareRadar series={series} axes={FACTOR_AXES} height={280} />
-            {/* Direct labels, not a colour key alone — the palette's green sits
-                under 3:1 on the light surface and is only legal with them.
-                Stacked rather than wrapped: product names run long enough that
+            {/* Direct labels, not a colour key alone, and each key line is dashed
+                like its outline from the third laptop on. Stacked rather than wrapped: product names run long enough that
                 a centred wrap leaves swatches on ragged left edges. */}
             <ul className="flex w-full flex-col gap-1.5 text-xs text-muted-foreground">
               {series.map((s) => (
                 <li key={s.name} className="flex items-start gap-2">
-                  <span
-                    className="mt-1 size-2.5 shrink-0 rounded-[3px]"
-                    style={{ background: s.color }}
-                  />
+                  <span className="mt-1">
+                    <SeriesKey color={s.color} dashed={s.dashed} />
+                  </span>
                   <span className="leading-snug">{s.name}</span>
                 </li>
               ))}

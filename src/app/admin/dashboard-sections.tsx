@@ -216,7 +216,7 @@ export function Trends({ summary }: { summary: DashboardSummary }) {
             points={points}
             series={[
               { name: "Succeeded", slot: 0, values: t.jobs.clean },
-              { name: "Had failed items", slot: 1, values: t.jobs.with_failures },
+              { name: "Had failed items", slot: "negative", values: t.jobs.with_failures },
             ]}
           />
         </ChartCard>

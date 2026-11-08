@@ -142,7 +142,7 @@ export function AdminJobTrendCard({
           points={trend.points}
           series={[
             { name: "Succeeded", slot: 0, values: trend.succeeded },
-            { name: "Failed", slot: 1, dashed: true, values: trend.failed },
+            { name: "Failed", slot: "negative", dashed: true, values: trend.failed },
           ]}
           yWidth={52}
         />

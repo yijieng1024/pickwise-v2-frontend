@@ -1,6 +1,6 @@
 "use client";
 
-import { type PaletteIndex, useChartPalette } from "./chart-palette";
+import { type ChartSlot, slotColor, useChartPalette } from "./chart-palette";
 import { ChartDataTable } from "./chart-data-table";
 import {
   CartesianGrid,
@@ -27,8 +27,8 @@ import {
 
 export interface TrendSeries {
   name: string;
-  /** Slot in the admin chart palette (0 = blue, 1 = orange, 2 = cyan, …). */
-  slot: PaletteIndex;
+  /** Slot in the admin chart palette, or "negative" for a failure series. */
+  slot: ChartSlot;
   /** Renders the line dashed — the non-color channel that separates series. */
   dashed?: boolean;
   /** One value per point; `null` plots a gap rather than a dishonest zero. */
@@ -75,7 +75,7 @@ export function TrendLine({
   caption?: string;
 }) {
   const palette = useChartPalette();
-  const colorOf = (s: TrendSeries) => palette[s.slot];
+  const colorOf = (s: TrendSeries) => slotColor(palette, s.slot);
   const data = points.map((point, i) => {
     const row: Record<string, string | number | null | undefined> = {
       x: point.key,
@@ -209,7 +209,7 @@ export function TrendLine({
 
 /** The line-key that carries series identity beside text — text itself never
  *  wears the data color. */
-function SeriesKey({ color, dashed }: { color: string; dashed?: boolean }) {
+export function SeriesKey({ color, dashed }: { color: string; dashed?: boolean }) {
   return (
     <svg width="14" height="8" viewBox="0 0 14 8" aria-hidden className="shrink-0">
       <line

@@ -14,6 +14,8 @@ import { RADAR_AXES } from "@/lib/laptops";
 export interface RadarSeries {
   name: string;
   color: string;
+  /** Outline dashed: the non-colour channel, from the third series on. */
+  dashed?: boolean;
   /** Values in RADAR_AXES order, 0–100 */
   values: readonly number[];
 }
@@ -63,6 +65,7 @@ export function CompareRadar({
             fill={s.color}
             fillOpacity={0.2}
             strokeWidth={2}
+            strokeDasharray={s.dashed ? "6 3" : undefined}
             dot={{ r: 3, fill: s.color }}
           />
         ))}
