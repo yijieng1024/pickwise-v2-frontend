@@ -427,7 +427,7 @@ function CategoriesSection() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete category?</AlertDialogTitle>
             <AlertDialogDescription>
-              Fails if any laptops or customizations still reference {deleteTarget?.name}.
+              Fails if any laptops are still tagged {deleteTarget?.name}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
