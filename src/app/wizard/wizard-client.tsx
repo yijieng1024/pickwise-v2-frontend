@@ -18,13 +18,19 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { type UserPreferences, updatePreferences } from "@/lib/api/auth";
+import {
+  type UserPreferences,
+  getPreferences,
+  hasAnyPreferences,
+  updatePreferences,
+} from "@/lib/api/auth";
 import type {
   Brand,
   QuestionnaireQuestion,
   QuestionOption,
 } from "@/lib/api/questionnaire";
 import { useAuth } from "@/lib/auth-context";
+import { clearDraft, loadDraft, saveDraft } from "@/lib/onboarding";
 import { cn } from "@/lib/utils";
 
 /** Sentinel option value for "No preference" on the brand question. */
@@ -77,6 +83,9 @@ export function WizardClient({ questions, brands }: WizardClientProps) {
   const [selections, setSelections] = useState<Record<string, Selection>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // False until the starting answers are known: a draft in this browser wins,
+  // else the saved preferences (editing), else nothing (first time).
+  const [ready, setReady] = useState(false);
 
   // Auth-gated page: preferences save to the account, so anonymous visitors
   // are bounced to /login before answering anything.
@@ -84,7 +93,30 @@ export function WizardClient({ questions, brands }: WizardClientProps) {
     if (!isLoading && !user) router.replace("/login");
   }, [isLoading, user, router]);
 
-  if (isLoading || !user || !token) {
+  useEffect(() => {
+    if (!user || !token || ready) return;
+    let cancelled = false;
+    const draft = loadDraft(user.id);
+    const start = draft
+      ? Promise.resolve({ step: draft.step, selections: validSelections(questions, brands, draft.selections) })
+      : getPreferences(token)
+          .then((prefs) => ({
+            step: 0,
+            selections: hasAnyPreferences(prefs) ? selectionsFromPreferences(questions, brands, prefs) : {},
+          }))
+          .catch(() => ({ step: 0, selections: {} }));
+    start.then(({ step: s, selections: sel }) => {
+      if (cancelled) return;
+      setSelections(sel);
+      setStep(Math.min(Math.max(0, s), questions.length - 1));
+      setReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, token, ready, questions, brands]);
+
+  if (isLoading || !user || !token || !ready) {
     return (
       <main className="flex w-full flex-1 items-center justify-center py-24">
         <Spinner className="size-6 text-muted-foreground" />
@@ -104,38 +136,44 @@ export function WizardClient({ questions, brands }: WizardClientProps) {
       ? Array.isArray(selection) && selection.length > 0
       : typeof selection === "number";
 
+  // The draft is written on the user's own actions only, so a pre-fill from the
+  // server never turns into a draft by itself.
+  const userId = user.id;
+  function remember(nextStep: number, nextSelections: Record<string, Selection>) {
+    saveDraft(userId, { step: nextStep, selections: nextSelections });
+  }
+
   function pick(index: number) {
     setError(null);
-    setSelections((prev) => {
-      const prevSel = prev[current.id];
-      if (isRanking) {
-        const order = Array.isArray(prevSel) ? prevSel : [];
-        const next = order.includes(index)
-          ? order.filter((i) => i !== index) // tap again to un-rank
-          : [...order, index];
-        return { ...prev, [current.id]: next };
-      }
-      if (isMulti) {
-        const picked = Array.isArray(prevSel) ? prevSel : [];
-        const isNone = options[index].value === NO_PREFERENCE;
-        if (isNone) return { ...prev, [current.id]: [index] };
-        const withoutNone = picked.filter(
-          (i) => options[i].value !== NO_PREFERENCE,
-        );
-        const next = withoutNone.includes(index)
-          ? withoutNone.filter((i) => i !== index)
-          : [...withoutNone, index];
-        return { ...prev, [current.id]: next };
-      }
-      return { ...prev, [current.id]: index };
-    });
+    const next = { ...selections, [current.id]: toggled(selections[current.id], index) };
+    setSelections(next);
+    remember(step, next);
+  }
+
+  function toggled(prevSel: Selection | undefined, index: number): Selection {
+    if (isRanking) {
+      const order = Array.isArray(prevSel) ? prevSel : [];
+      return order.includes(index)
+        ? order.filter((i) => i !== index) // tap again to un-rank
+        : [...order, index];
+    }
+    if (isMulti) {
+      const picked = Array.isArray(prevSel) ? prevSel : [];
+      if (options[index].value === NO_PREFERENCE) return [index];
+      const withoutNone = picked.filter((i) => options[i].value !== NO_PREFERENCE);
+      return withoutNone.includes(index)
+        ? withoutNone.filter((i) => i !== index)
+        : [...withoutNone, index];
+    }
+    return index;
   }
 
   async function next() {
     // token is guaranteed by the auth gate above; re-checked for narrowing.
     if (!stepComplete || submitting || !token) return;
     if (step < questions.length - 1) {
-      setStep((s) => s + 1);
+      setStep(step + 1);
+      remember(step + 1, selections);
       return;
     }
 
@@ -143,6 +181,7 @@ export function WizardClient({ questions, brands }: WizardClientProps) {
     setError(null);
     try {
       await updatePreferences(token, buildPreferences(questions, brands, selections));
+      clearDraft(userId);
       markPreferencesSaved();
       router.push("/chat");
     } catch (err) {
@@ -155,7 +194,9 @@ export function WizardClient({ questions, brands }: WizardClientProps) {
 
   function back() {
     setError(null);
-    setStep((s) => Math.max(0, s - 1));
+    const prev = Math.max(0, step - 1);
+    setStep(prev);
+    remember(prev, selections);
   }
 
   return (
@@ -340,4 +381,79 @@ function buildPreferences(
   }
 
   return prefs;
+}
+
+/** Draft answers that still fit today's questions: unknown questions and
+ *  out-of-range option indexes (the catalog changed since) are dropped. */
+function validSelections(
+  questions: QuestionnaireQuestion[],
+  brands: Brand[],
+  draft: Record<string, Selection>,
+): Record<string, Selection> {
+  const out: Record<string, Selection> = {};
+  for (const q of questions) {
+    const sel = draft[q.id];
+    const n = displayOptions(q, brands).length;
+    const ok = (i: unknown) => Number.isInteger(i) && (i as number) >= 0 && (i as number) < n;
+    if (typeof sel === "number" && ok(sel)) out[q.id] = sel;
+    else if (Array.isArray(sel) && sel.every(ok)) out[q.id] = sel;
+  }
+  return out;
+}
+
+/** The reverse of buildPreferences: saved answers back to option indexes. */
+function selectionsFromPreferences(
+  questions: QuestionnaireQuestion[],
+  brands: Brand[],
+  prefs: UserPreferences,
+): Record<string, Selection> {
+  const out: Record<string, Selection> = {};
+  for (const q of questions) {
+    const options = displayOptions(q, brands);
+    const indexOf = (v: unknown) => options.findIndex((o) => o.value === v);
+    const asSelection = (values: unknown[]): Selection | undefined => {
+      const idx = values.map(indexOf).filter((i) => i >= 0);
+      if (idx.length === 0) return undefined;
+      return q.question_type === "single_choice" ? idx[0] : idx;
+    };
+    let sel: Selection | undefined;
+    switch (q.target_field) {
+      case "budget": {
+        const b = prefs.budget;
+        const i = b
+          ? options.findIndex((o) => {
+              const v = o.value as { min?: number | null; max?: number | null } | null;
+              return v != null && (v.min ?? null) === (b.min ?? null) && (v.max ?? null) === (b.max ?? null);
+            })
+          : -1;
+        sel = i >= 0 ? i : undefined;
+        break;
+      }
+      case "purpose":
+        sel = asSelection(prefs.purpose ?? []);
+        break;
+      case "screen_size":
+        sel = asSelection(prefs.screen_size ?? []);
+        break;
+      case "portability":
+        sel = asSelection(prefs.portability ? [prefs.portability] : []);
+        break;
+      case "priorities": {
+        const weights = prefs.priorities ?? {};
+        const ranked = options
+          .map((o, i) => ({ i, w: weights[o.value as string] }))
+          .filter((x) => typeof x.w === "number")
+          .sort((a, b) => b.w - a.w)
+          .map((x) => x.i);
+        sel = ranked.length ? ranked : undefined;
+        break;
+      }
+      case "brand_preferences":
+        // Saved as an empty list when "No preference" was picked.
+        sel = asSelection(prefs.brand_preferences?.length ? prefs.brand_preferences : [NO_PREFERENCE]);
+        break;
+    }
+    if (sel !== undefined) out[q.id] = sel;
+  }
+  return out;
 }
