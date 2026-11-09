@@ -56,8 +56,9 @@ export default function AdminQuestionnairePage() {
   }
 
   useEffect(() => {
+    if (!token) return;
     let cancelled = false;
-    listQuestions()
+    listQuestions(token)
       .then((res) => {
         if (cancelled) return;
         setQuestions([...res].sort((a, b) => a.step_order - b.step_order));
@@ -72,7 +73,7 @@ export default function AdminQuestionnairePage() {
     return () => {
       cancelled = true;
     };
-  }, [reloadTick]);
+  }, [reloadTick, token]);
 
   // Only active questions are visible to customers, so only they define the
   // real step sequence and the preview.

@@ -73,6 +73,7 @@ export function QuestionEditor({
 
   const [text, setText] = useState(question?.question_text ?? "");
   const [helpText, setHelpText] = useState(question?.help_text ?? "");
+  const [adminNote, setAdminNote] = useState(question?.admin_note ?? "");
   const [type, setType] = useState<QuestionType>(question?.question_type ?? "single_choice");
   const [targetField, setTargetField] = useState(question?.target_field ?? "purpose");
   const [isActive, setIsActive] = useState(question?.is_active ?? true);
@@ -139,6 +140,7 @@ export function QuestionEditor({
           target_field: targetField,
           options: built,
           help_text: helpText.trim() || null,
+          admin_note: adminNote.trim() || null,
           is_active: isActive,
         });
         toast.success("Question added at the end. Move it into place from the list.");
@@ -149,6 +151,7 @@ export function QuestionEditor({
           target_field: targetField,
           options: built,
           help_text: helpText.trim() || null,
+          admin_note: adminNote.trim() || null,
           is_active: isActive,
         });
         toast.success("Question updated. Customers see it on their next start.");
@@ -188,6 +191,16 @@ export function QuestionEditor({
                 value={helpText}
                 onChange={(e) => setHelpText(e.target.value)}
                 placeholder="Optional. Shown under the question."
+              />
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor="q-admin-note">Admin note (not shown to users)</FieldLabel>
+              <Input
+                id="q-admin-note"
+                value={adminNote}
+                onChange={(e) => setAdminNote(e.target.value)}
+                placeholder="Optional. Why this question exists, where its options come from."
               />
             </Field>
 

@@ -24,7 +24,10 @@ export interface AdminQuestion {
   target_field: string;
   /** `null` is meaningful: the brand question is filled from GET /brands. */
   options: QuestionOption[] | null;
+  /** Shown to customers under the question. */
   help_text: string | null;
+  /** Internal note for admins; never sent to customers. */
+  admin_note: string | null;
   is_active: boolean;
   created_at: string;
 }
@@ -37,6 +40,7 @@ export interface QuestionInput {
   target_field: string;
   options?: QuestionOption[] | null;
   help_text?: string | null;
+  admin_note?: string | null;
   is_active?: boolean;
 }
 
@@ -58,11 +62,14 @@ export const TARGET_FIELDS = [
   { value: "tech_savviness", label: "Tech savviness", note: "Single value" },
 ] as const;
 
-/** Admin view includes inactive questions; the customer-facing call does not. */
-export function listQuestions(productType = "laptop"): Promise<AdminQuestion[]> {
+/**
+ * Admin view: inactive questions included, with each one's admin note. Admin-only
+ * (GET /questionnaire/admin); the customer-facing call never carries the note.
+ */
+export function listQuestions(token: string, productType = "laptop"): Promise<AdminQuestion[]> {
   return apiFetch<AdminQuestion[]>(
-    `/questionnaire?product_type=${encodeURIComponent(productType)}&include_inactive=true`,
-    { next: { revalidate: 0 } },
+    `/questionnaire/admin?product_type=${encodeURIComponent(productType)}`,
+    { token, next: { revalidate: 0 } },
   );
 }
 
