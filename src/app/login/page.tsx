@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
@@ -14,7 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { register } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
-import { useAuth } from "@/lib/auth-context";
+import { type LoginResult, useAuth } from "@/lib/auth-context";
+import { takeWizardPrompt } from "@/lib/onboarding";
 import { cn } from "@/lib/utils";
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -56,11 +57,23 @@ export default function LoginPage() {
 
   const [gsiReady, setGsiReady] = useState(false);
   const googleButtonRef = useRef<HTMLDivElement>(null);
+  // Set while this page's own login runs, so the effect below does not send
+  // the user to "/" before afterLogin has decided on the wizard.
+  const signingIn = useRef(false);
 
   // Already signed in — nothing to do here.
   useEffect(() => {
-    if (user) router.replace("/");
+    if (user && !signingIn.current) router.replace("/");
   }, [user, router]);
+
+  // A first login with no saved preferences goes to the wizard, once per
+  // browser; every other login goes home.
+  const afterLogin = useCallback(
+    ({ userId, hasPreferences }: LoginResult) => {
+      router.replace(takeWizardPrompt(userId, hasPreferences) ? "/wizard" : "/");
+    },
+    [router],
+  );
 
   // Render the official "Sign in with Google" button once the GIS script is
   // ready. The credential callback hands us a Google ID token, which the
@@ -76,10 +89,11 @@ export default function LoginPage() {
       callback: async ({ credential }) => {
         setError(null);
         setNotice(null);
+        signingIn.current = true;
         try {
-          await loginWithGoogle(credential);
-          router.replace("/");
+          afterLogin(await loginWithGoogle(credential));
         } catch (err) {
+          signingIn.current = false;
           setError(
             err instanceof Error ? err.message : "Google sign-in failed.",
           );
@@ -95,7 +109,7 @@ export default function LoginPage() {
       shape: "pill",
       width: Math.min(400, Math.max(200, container.offsetWidth || 400)),
     });
-  }, [gsiReady, resolvedTheme, loginWithGoogle, router]);
+  }, [gsiReady, resolvedTheme, loginWithGoogle, afterLogin]);
 
   function switchTab(next: "login" | "register") {
     setTab(next);
@@ -113,8 +127,8 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       if (isLogin) {
-        await login(identifier, password);
-        router.replace("/");
+        signingIn.current = true;
+        afterLogin(await login(identifier, password));
       } else {
         await register(username, email, password);
         // Login is blocked until the emailed verification link is clicked,
@@ -128,6 +142,7 @@ export default function LoginPage() {
         setUnverifiedEmail(email);
       }
     } catch (err) {
+      signingIn.current = false;
       setError(err instanceof Error ? err.message : "Something went wrong.");
       // Branch on the backend's `code`, never on the message text — the prose
       // is copy that can change; the code is a contract.

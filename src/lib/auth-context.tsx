@@ -20,6 +20,13 @@ import { ApiError } from "@/lib/api/client";
 
 const TOKEN_KEY = "pickwise_token";
 
+/** What a login tells its caller, so the login page can pick where to go. */
+export interface LoginResult {
+  userId: string;
+  /** null when the preferences check failed (treated as "don't know"). */
+  hasPreferences: boolean | null;
+}
+
 interface AuthContextValue {
   /** Profile of the signed-in user, or null when signed out. */
   user: AuthUser | null;
@@ -27,9 +34,9 @@ interface AuthContextValue {
   token: string | null;
   /** True while the stored token is being validated on first load. */
   isLoading: boolean;
-  login: (identifier: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<LoginResult>;
   /** Completes Sign in with Google given the GIS credential (ID token). */
-  loginWithGoogle: (idToken: string) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<LoginResult>;
   /** Replaces the cached profile after a server-confirmed update. */
   updateUser: (user: AuthUser) => void;
   /**
@@ -55,6 +62,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // Whether the account has saved wizard preferences; see hasPreferences above.
+  const [hasPreferences, setHasPreferences] = useState<boolean | null>(null);
 
   // Restore the session from localStorage: the token is only trusted once
   // the profile fetch confirms it. A 401 means expired/revoked — drop it;
@@ -84,18 +93,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Shared tail of every login flow: trust the token only once the profile
-  // fetch succeeds, then persist it.
-  const completeLogin = useCallback(async (accessToken: string) => {
-    const profile = await getProfile(accessToken);
-    localStorage.setItem(TOKEN_KEY, accessToken);
-    setToken(accessToken);
-    setUser(profile);
-  }, []);
+  // fetch succeeds, then persist it. The preferences check runs here too, so
+  // the caller knows before navigating whether to offer the wizard.
+  const completeLogin = useCallback(
+    async (accessToken: string): Promise<LoginResult> => {
+      const profile = await getProfile(accessToken);
+      const hasPrefs = await getPreferences(accessToken)
+        .then(hasAnyPreferences)
+        .catch(() => null);
+      localStorage.setItem(TOKEN_KEY, accessToken);
+      setToken(accessToken);
+      setUser(profile);
+      setHasPreferences(hasPrefs);
+      return { userId: profile.id, hasPreferences: hasPrefs };
+    },
+    [],
+  );
 
   const login = useCallback(
     async (identifier: string, password: string) => {
       const { access_token } = await apiLogin(identifier, password);
-      await completeLogin(access_token);
+      return completeLogin(access_token);
     },
     [completeLogin],
   );
@@ -103,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginWithGoogle = useCallback(
     async (idToken: string) => {
       const { access_token } = await googleLogin(idToken);
-      await completeLogin(access_token);
+      return completeLogin(access_token);
     },
     [completeLogin],
   );
@@ -113,7 +131,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Checked once per session whenever a token lands (restore or login);
   // logout resets it below. A failed check stays null — treated as "not
   // confirmed saved", so the wizard nav entry keeps showing.
-  const [hasPreferences, setHasPreferences] = useState<boolean | null>(null);
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
