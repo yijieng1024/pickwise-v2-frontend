@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
+import { WizardBanner } from "@/components/wizard-banner";
 
 /** Routes with their own full app shell — no marketing header/footer at all. */
 const NO_CHROME_ROUTES = ["/admin"];
@@ -27,6 +28,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Header />
+      <WizardBanner />
       {/* Breathing room between the floating nav island and page content */}
       <div className="flex flex-1 flex-col pt-6">{children}</div>
       {!hideFooter && <Footer />}
