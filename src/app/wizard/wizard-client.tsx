@@ -31,7 +31,7 @@ import type {
   QuestionOption,
 } from "@/lib/api/questionnaire";
 import { useAuth } from "@/lib/auth-context";
-import { clearDraft, loadDraft, saveDraft } from "@/lib/onboarding";
+import { clearDraft, draftIsNewer, loadDraft, saveDraft } from "@/lib/onboarding";
 import { cn } from "@/lib/utils";
 
 /** Sentinel option value for "No preference" on the brand question. */
@@ -84,8 +84,9 @@ export function WizardClient({ questions, brands }: WizardClientProps) {
   const [selections, setSelections] = useState<Record<string, Selection>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // False until the starting answers are known: a draft in this browser wins,
-  // else the saved preferences (editing), else nothing (first time).
+  // False until the starting answers are known: a draft in this browser if it
+  // is newer than the saved answers, else the saved answers (editing), else
+  // nothing (first time).
   const [ready, setReady] = useState(false);
   // After the six questions are saved, the optional "About you" step.
   const [phase, setPhase] = useState<"questions" | "about">("questions");
@@ -99,15 +100,24 @@ export function WizardClient({ questions, brands }: WizardClientProps) {
   useEffect(() => {
     if (!user || !token || ready) return;
     let cancelled = false;
-    const draft = loadDraft(user.id);
-    const start = draft
-      ? Promise.resolve({ step: draft.step, selections: validSelections(questions, brands, draft.selections) })
-      : getPreferences(token)
-          .then((prefs) => ({
-            step: 0,
-            selections: hasAnyPreferences(prefs) ? selectionsFromPreferences(questions, brands, prefs) : {},
-          }))
-          .catch(() => ({ step: 0, selections: {} }));
+    const userId = user.id;
+    const draft = loadDraft(userId);
+    const fromDraft = (d: NonNullable<typeof draft>) => ({
+      step: d.step,
+      selections: validSelections(questions, brands, d.selections),
+    });
+    const start = getPreferences(token)
+      .then((prefs) => {
+        const hasSaved = hasAnyPreferences(prefs);
+        if (draft && draftIsNewer(draft, prefs.updated_at, hasSaved)) return fromDraft(draft);
+        if (draft) clearDraft(userId); // older than what was saved since
+        return {
+          step: 0,
+          selections: hasSaved ? selectionsFromPreferences(questions, brands, prefs) : {},
+        };
+      })
+      // Server unreachable: the draft is the best we have.
+      .catch(() => (draft ? fromDraft(draft) : { step: 0, selections: {} }));
     start.then(({ step: s, selections: sel }) => {
       if (cancelled) return;
       setSelections(sel);

@@ -51,6 +51,22 @@ export function dismissBanner(userId: string): void {
 export interface WizardDraft {
   step: number;
   selections: Record<string, number | number[]>;
+  /** ISO time of the last change; compared with the server's updated_at. */
+  saved_at?: string;
+}
+
+/**
+ * Whether a draft should win over the saved answers: only if there are none,
+ * the server cannot say when they were saved, or the draft is newer. A draft
+ * from before saved_at existed counts as older.
+ */
+export function draftIsNewer(draft: WizardDraft, savedAt: string | null | undefined, hasSaved: boolean): boolean {
+  if (!hasSaved || !savedAt) return true;
+  if (!draft.saved_at) return false;
+  // The column is a timestamp without time zone holding UTC, so the API sends
+  // no offset; Date.parse would read that as local time (8 hours off in MY).
+  const utc = /[zZ]|[+-]\d\d:?\d\d$/.test(savedAt) ? savedAt : `${savedAt}Z`;
+  return Date.parse(draft.saved_at) > Date.parse(utc);
 }
 
 export function loadDraft(userId: string): WizardDraft | null {
@@ -64,8 +80,8 @@ export function loadDraft(userId: string): WizardDraft | null {
   }
 }
 
-export function saveDraft(userId: string, draft: WizardDraft): void {
-  write(`${DRAFT}:${userId}`, JSON.stringify(draft));
+export function saveDraft(userId: string, draft: Omit<WizardDraft, "saved_at">): void {
+  write(`${DRAFT}:${userId}`, JSON.stringify({ ...draft, saved_at: new Date().toISOString() }));
 }
 
 export function clearDraft(userId: string): void {

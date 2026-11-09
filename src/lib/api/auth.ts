@@ -132,6 +132,8 @@ export interface UserPreferences {
   portability: string | null;
   brand_preferences: string[] | null;
   tech_savviness: string | null;
+  /** When the answers were last saved; null with no saved answers. Response only. */
+  updated_at?: string | null;
 }
 
 /**
