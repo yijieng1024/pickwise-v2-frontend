@@ -13,9 +13,6 @@ export interface AuthUser {
   email: string;
   role: string;
   is_verified: boolean;
-  birthday: string | null;
-  gender: string | null;
-  occupation: string | null;
   created_at: string;
 }
 
@@ -120,28 +117,6 @@ export function googleLogin(idToken: string): Promise<AuthToken> {
 export function getProfile(token: string): Promise<AuthUser> {
   return apiFetch<AuthUser>("/auth/me/profile", {
     token,
-    next: { revalidate: 0 },
-  });
-}
-
-/**
- * Payload for PUT /auth/me/profile. The backend applies partial updates
- * (`exclude_unset`), so send every field: an explicit null clears it.
- */
-export interface ProfileUpdate {
-  birthday: string | null;
-  gender: "Male" | "Female" | "Other" | null;
-  occupation: string | null;
-}
-
-export function updateProfile(
-  token: string,
-  update: ProfileUpdate,
-): Promise<AuthUser> {
-  return apiFetch<AuthUser>("/auth/me/profile", {
-    method: "PUT",
-    token,
-    body: JSON.stringify(update),
     next: { revalidate: 0 },
   });
 }

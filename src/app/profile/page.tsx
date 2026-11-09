@@ -3,28 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  BadgeCheck,
-  Calendar as CalendarIcon,
-  MailWarning,
-  Wand2,
-} from "lucide-react";
+import { BadgeCheck, MailWarning, Wand2 } from "lucide-react";
 
+import { AboutYouFields } from "@/components/about-you-fields";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { UserAvatar } from "@/components/user-avatar";
 import {
@@ -33,35 +15,10 @@ import {
   deleteAvatar,
   getPreferences,
   hasAnyPreferences,
-  updateProfile,
   uploadAvatar,
 } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
-import { cn } from "@/lib/utils";
-
-// Restyles the shadcn Input to the app's form-field look; the focus-visible
-// overrides mute the component's default ring in favor of the brand-tint glow.
-const inputClass =
-  "border-line bg-canvas dark:bg-canvas h-11.5 rounded-xl border px-4 text-[13.5px] md:text-[13.5px] transition-shadow focus:shadow-[0_0_0_3px_var(--brand-tint)] focus-visible:border-line focus-visible:ring-0";
-
-/** yyyy-mm-dd (the backend's date format) ↔ local Date for the calendar. */
-const dateFromIso = (iso: string) =>
-  iso ? new Date(`${iso}T00:00:00`) : undefined;
-const isoFromDate = (d?: Date) =>
-  d
-    ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-    : "";
-
-/** Sentinel for "no gender set" — the Select needs a non-empty value. */
-const GENDER_UNSET = "unset";
-
-const genderOptions = [
-  { value: GENDER_UNSET, label: "Prefer not to say" },
-  { value: "Male", label: "Male" },
-  { value: "Female", label: "Female" },
-  { value: "Other", label: "Other" },
-];
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -85,12 +42,12 @@ export default function ProfilePage() {
       <div className="motion-safe:animate-fade-in-up">
         <h1 className="text-4xl font-bold tracking-tight">Your Profile</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Account details and the personal info Pico uses to tailor advice.
+          Your account, what you told Pico about yourself, and your laptop preferences.
         </p>
       </div>
 
       <AccountCard user={user} />
-      <PersonalDetailsCard user={user} token={token} />
+      <AboutYouCard token={token} />
       <PreferencesCard token={token} />
     </main>
   );
@@ -220,147 +177,18 @@ function AccountCard({ user }: { user: AuthUser }) {
   );
 }
 
-function PersonalDetailsCard({
-  user,
-  token,
-}: {
-  user: AuthUser;
-  token: string;
-}) {
-  const { updateUser } = useAuth();
-  const [birthday, setBirthday] = useState(user.birthday ?? "");
-  const [gender, setGender] = useState(user.gender ?? GENDER_UNSET);
-  const [occupation, setOccupation] = useState(user.occupation ?? "");
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setSaving(true);
-    setSaved(false);
-    setError(null);
-    try {
-      const updated = await updateProfile(token, {
-        birthday: birthday || null,
-        gender:
-          gender === GENDER_UNSET
-            ? null
-            : (gender as "Male" | "Female" | "Other"),
-        occupation: occupation.trim() || null,
-      });
-      updateUser(updated);
-      setSaved(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save changes.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
+function AboutYouCard({ token }: { token: string }) {
+  const { hasPreferences } = useAuth();
   return (
     <section
       className="border-line bg-surface rounded-[24px] border p-7 motion-safe:animate-fade-in-up"
       style={{ animationDelay: "120ms" }}
     >
-      <h2 className="text-base font-bold tracking-tight">Personal Details</h2>
+      <h2 className="text-base font-bold tracking-tight">About You</h2>
       <p className="mt-0.5 mb-5 text-[13px] text-muted-foreground">
-        Optional — helps PickWise put recommendations in context.
+        Optional. Helps Pico explain things your way. Each answer saves as you go.
       </p>
-
-      <form
-        onSubmit={handleSubmit}
-        className="grid grid-cols-1 gap-4.5 sm:grid-cols-2"
-      >
-        <label className="flex flex-col gap-1.5 text-xs font-semibold">
-          Birthday
-          <Popover>
-            <PopoverTrigger
-              className={cn(
-                inputClass,
-                "flex w-full cursor-pointer items-center justify-between gap-2 font-normal",
-                !birthday && "text-muted-foreground",
-              )}
-            >
-              {birthday
-                ? dateFromIso(birthday)!.toLocaleDateString("en-MY", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })
-                : "Pick a date"}
-              <CalendarIcon className="size-4 text-muted-foreground" />
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={dateFromIso(birthday)}
-                onSelect={(d) => setBirthday(isoFromDate(d))}
-                defaultMonth={dateFromIso(birthday)}
-                captionLayout="dropdown"
-                disabled={{ after: new Date() }}
-              />
-            </PopoverContent>
-          </Popover>
-        </label>
-
-        <label className="flex flex-col gap-1.5 text-xs font-semibold">
-          Gender
-          <Select
-            items={genderOptions}
-            value={gender}
-            onValueChange={(value) => setGender(value as string)}
-          >
-            <SelectTrigger
-              aria-label="Gender"
-              className="border-line bg-canvas w-full cursor-pointer rounded-xl px-4 text-[13.5px] font-normal data-[size=default]:h-11.5"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent
-              alignItemWithTrigger={false}
-              className="rounded-2xl p-1"
-            >
-              {genderOptions.map((option) => (
-                <SelectItem
-                  key={option.value}
-                  value={option.value}
-                  className="cursor-pointer rounded-lg px-3 py-2 text-[12.5px] font-medium"
-                >
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </label>
-
-        <label className="flex flex-col gap-1.5 text-xs font-semibold sm:col-span-2">
-          Occupation
-          <Input
-            type="text"
-            placeholder="e.g. Software engineer, student, designer…"
-            value={occupation}
-            onChange={(e) => setOccupation(e.target.value)}
-            className={inputClass}
-          />
-        </label>
-
-        <div className="flex items-center gap-3 sm:col-span-2">
-          <Button type="submit" size="xl" shape="pill" disabled={saving}>
-            {saving ? "Saving…" : "Save changes"}
-          </Button>
-          {saved && !error && (
-            <span className="text-[12.5px] font-medium text-positive">
-              Saved.
-            </span>
-          )}
-          {error && (
-            <span className="text-[12.5px] font-medium text-negative">
-              {error}
-            </span>
-          )}
-        </div>
-      </form>
+      <AboutYouFields token={token} withKnowledge={hasPreferences === true} />
     </section>
   );
 }
