@@ -228,3 +228,34 @@ export function deleteAvatar(token: string): Promise<void> {
     next: { revalidate: 0 },
   });
 }
+
+/** Onboarding background answers (GET/PUT /auth/me/background). All optional. */
+export type UserType = "student" | "working" | "buying_for_business" | "other";
+
+export interface UserBackground {
+  user_type: UserType | null;
+  /** Only kept while user_type is "student"; the backend clears it otherwise. */
+  field_of_study: string | null;
+  current_laptop: string | null;
+  change_reason: string | null;
+}
+
+export function getBackground(token: string): Promise<UserBackground> {
+  return apiFetch<UserBackground>("/auth/me/background", {
+    token,
+    next: { revalidate: 0 },
+  });
+}
+
+/** Partial: only the fields sent change; an explicit null clears one. */
+export function updateBackground(
+  token: string,
+  update: Partial<UserBackground>,
+): Promise<UserBackground> {
+  return apiFetch<UserBackground>("/auth/me/background", {
+    method: "PUT",
+    token,
+    body: JSON.stringify(update),
+    next: { revalidate: 0 },
+  });
+}

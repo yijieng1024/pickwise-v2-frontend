@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AboutYouFields } from "@/components/about-you-fields";
 import { Spinner } from "@/components/ui/spinner";
 import { useRouter } from "next/navigation";
 import {
@@ -86,6 +87,8 @@ export function WizardClient({ questions, brands }: WizardClientProps) {
   // False until the starting answers are known: a draft in this browser wins,
   // else the saved preferences (editing), else nothing (first time).
   const [ready, setReady] = useState(false);
+  // After the six questions are saved, the optional "About you" step.
+  const [phase, setPhase] = useState<"questions" | "about">("questions");
 
   // Auth-gated page: preferences save to the account, so anonymous visitors
   // are bounced to /login before answering anything.
@@ -120,6 +123,42 @@ export function WizardClient({ questions, brands }: WizardClientProps) {
     return (
       <main className="flex w-full flex-1 items-center justify-center py-24">
         <Spinner className="size-6 text-muted-foreground" />
+      </main>
+    );
+  }
+
+  if (phase === "about") {
+    return (
+      <main className="flex min-h-[calc(100vh-164px)] flex-1 items-start justify-center px-4 py-16 sm:px-6">
+        <div className="border-line bg-surface w-full max-w-[680px] rounded-3xl border p-8 shadow-[0_16px_48px_var(--shadow)] motion-safe:animate-fade-in-up sm:p-11">
+          <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+            About you · optional
+          </span>
+          <h2 className="mt-2.5 mb-2 text-[28px] leading-tight font-bold tracking-tight">
+            Your preferences are saved
+          </h2>
+          <p className="mb-7 text-sm leading-relaxed text-muted-foreground">
+            A few more questions help Pico explain things your way. Skip any of
+            them. Each answer saves as you go.
+          </p>
+          <AboutYouFields token={token} withKnowledge />
+          <div className="mt-8 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => router.push("/chat")}
+              className="rounded-full px-4.5 py-2.5 text-[13.5px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Skip
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/chat")}
+              className="bg-brand rounded-full px-6 py-2.5 text-[13.5px] font-semibold text-white hover:opacity-90"
+            >
+              See my matches
+            </button>
+          </div>
+        </div>
       </main>
     );
   }
@@ -183,7 +222,8 @@ export function WizardClient({ questions, brands }: WizardClientProps) {
       await updatePreferences(token, buildPreferences(questions, brands, selections));
       clearDraft(userId);
       markPreferencesSaved();
-      router.push("/chat");
+      setSubmitting(false);
+      setPhase("about");
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to save preferences.",
@@ -300,7 +340,7 @@ export function WizardClient({ questions, brands }: WizardClientProps) {
             {submitting
               ? "Saving…"
               : step === questions.length - 1
-                ? "Save & see my matches"
+                ? "Save and continue"
                 : "Continue"}
           </button>
         </div>
