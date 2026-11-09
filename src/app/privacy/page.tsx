@@ -13,7 +13,7 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       title="Privacy Policy"
-      updated="8 November 2026"
+      updated="9 November 2026"
       intro="This policy explains what personal data PickWise collects, why we collect it, who processes it on our behalf, and the choices you have. We collect only what the service needs to work — there is no advertising and we never sell your data."
     >
       <LegalSection title="1. Data we collect">
@@ -23,9 +23,7 @@ export default function PrivacyPage() {
           see them in plain text.
         </p>
         <p>
-          <strong>Optional profile details.</strong> Birthday, gender,
-          occupation, and a profile photo, if you choose to add them. These are
-          optional and help Pico put recommendations in context.
+          <strong>Profile photo.</strong> A photo, if you choose to add one.
         </p>
         <p>
           <strong>Google Sign-In.</strong> If you sign in with Google, we
@@ -35,8 +33,16 @@ export default function PrivacyPage() {
         <p>
           <strong>Laptop preferences.</strong> Your Needs Wizard answers —
           budget range, purpose, factor priorities, screen size, portability,
-          and brand preferences — plus a tech-savviness level that tunes how
-          Pico explains things.
+          and brand preferences.
+        </p>
+        <p>
+          <strong>Background answers.</strong> After the Needs Wizard we ask a
+          few more questions: whether you are a student, working, buying for a
+          business or something else; what you study, if you are a student;
+          how much you know about laptops; the laptop you use now; and why you
+          want to change. Every one is optional, you can change or clear them
+          on your profile page, and we use them only to tailor Pico&apos;s
+          answers to you.
         </p>
         <p>
           <strong>Conversations with Pico.</strong> Your chat messages,
@@ -70,7 +76,8 @@ export default function PrivacyPage() {
       <LegalSection title="3. AI processing">
         <p>
           Pico is powered by third-party AI models. When you chat, your
-          messages, saved preferences, and relevant catalog data are sent to
+          messages, saved preferences, background answers, and relevant catalog
+          data are sent to
           AI providers (Google&apos;s Gemini and Gemma models) to generate a reply. These providers process the data on
           our behalf.{" "}
           <strong>
@@ -124,6 +131,13 @@ export default function PrivacyPage() {
             <>
               <strong>Theme choice</strong> — your light/dark mode preference.
             </>,
+            <>
+              <strong>Needs Wizard progress</strong> — an unfinished draft of
+              your answers, plus two reminders: whether we have already sent you
+              to the wizard, and whether you closed the reminder banner. They
+              stay in your browser&apos;s local storage, not on our server, and
+              the draft is deleted once you finish the wizard.
+            </>,
           ]}
         />
         <p>We don&apos;t use advertising or cross-site tracking cookies.</p>
@@ -139,7 +153,8 @@ export default function PrivacyPage() {
             admin-pickwise@ngyijie.com
           </a>{" "}
           and we&apos;ll delete your account and everything linked to it:
-          conversations, logs, preferences, saved laptops and photo.
+          conversations, logs, preferences, background answers, saved laptops
+          and photo.
         </p>
       </LegalSection>
 
@@ -147,8 +162,8 @@ export default function PrivacyPage() {
         <LegalList
           items={[
             <>
-              <strong>Access and update</strong> — view and edit your profile
-              details and laptop preferences anytime on your{" "}
+              <strong>Access and update</strong> — view and edit your background
+              answers and laptop preferences anytime on your{" "}
               <Link
                 href="/profile"
                 className="text-brand-text underline underline-offset-2"
