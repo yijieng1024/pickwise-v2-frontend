@@ -25,6 +25,19 @@ export interface AppleOptionsRun {
   stopped: Record<string, unknown> | null;
   chip_not_offered: { product: string; size_inch: number; line: string; chips: string[] }[] | null;
   options_failed: { product: string; size_inch: number; line: string; chip: string | null; reason: string }[] | null;
+  /** The education-store pass of the same run (step 10d); null on runs before it. */
+  edu: {
+    prices?: number;
+    chip_kits?: number;
+    apple_calls?: number;
+    prices_failed?: { url: string; reason: string }[];
+    options_failed?: { product: string; size_inch: number; line: string; chip: string | null; reason: string }[];
+    no_laptop?: string[];
+    not_below_official?: { laptop_id: string; edu: number; official: number }[];
+    stopped?: { reason?: string } | null;
+    skipped?: string;
+    error?: string;
+  } | null;
 }
 
 export interface AppleOptionsView {

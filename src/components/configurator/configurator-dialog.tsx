@@ -108,7 +108,7 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-function Editor({ options, initial, onDone }: { options: LaptopOptions; initial: Picks; onDone: (p: Picks, r: Configured) => void }) {
+function Editor({ options, edu, initial, onDone }: { options: LaptopOptions; edu: boolean; initial: Picks; onDone: (p: Picks, r: Configured) => void }) {
   const { laptopId } = useConfigurator();
   const { token } = useAuth();
   const [picks, setPicks] = useState<Picks>(initial);
@@ -121,7 +121,7 @@ function Editor({ options, initial, onDone }: { options: LaptopOptions; initial:
   useEffect(() => {
     let cancelled = false;
     const timer = setTimeout(() => {
-      configureLaptop(laptopId, picks, token)
+      configureLaptop(laptopId, picks, token, edu)
         .then((r) => {
           if (!cancelled) {
             setResult(r);
@@ -134,7 +134,7 @@ function Editor({ options, initial, onDone }: { options: LaptopOptions; initial:
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [laptopId, picks, token]);
+  }, [laptopId, picks, token, edu]);
 
   const current = totalOf(options, picks);
   const loading = !result || result.chip !== picks.chip || OPTION_GROUPS.some(
@@ -226,7 +226,7 @@ function Editor({ options, initial, onDone }: { options: LaptopOptions; initial:
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
-                Your configuration
+                Your configuration{edu && " · Education price"}
               </div>
               <div className="text-xl font-bold tracking-tight tabular-nums">
                 {live ? `RM ${live.total_rm.toLocaleString()}` : <Spinner className="size-4" />}
@@ -255,8 +255,11 @@ function Editor({ options, initial, onDone }: { options: LaptopOptions; initial:
 
 /** The "Configure" modal. Opens with the applied picks, or the standard config's. */
 export function ConfiguratorDialog({ productName }: { productName: string }) {
-  const { options, applied, editorOpen, setEditorOpen, apply } = useConfigurator();
+  const { editorOptions: options, editorEdu, applied, editorOpen, setEditorOpen, apply } = useConfigurator();
   if (!options) return null;
+  // The education store may not price the applied chip: start from the standard config then.
+  const initial =
+    applied && options.kits.some((k) => k.chip === applied.picks.chip) ? applied.picks : standardPicks(options);
   return (
     <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
       <DialogContent
@@ -275,11 +278,12 @@ export function ConfiguratorDialog({ productName }: { productName: string }) {
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold tracking-tight">Configure</DialogTitle>
           <DialogDescription className="text-[12.5px]">
-            {productName}. Apple&apos;s build-to-order prices; a configuration is not a catalog laptop.
+            {productName}. Apple&apos;s build-to-order prices{editorEdu && " on its education store"}; a
+            configuration is not a catalog laptop.
           </DialogDescription>
         </DialogHeader>
         {editorOpen && (
-          <Editor options={options} initial={applied?.picks ?? standardPicks(options)} onDone={apply} />
+          <Editor key={String(editorEdu)} options={options} edu={editorEdu} initial={initial} onDone={apply} />
         )}
         </div>
       </DialogContent>

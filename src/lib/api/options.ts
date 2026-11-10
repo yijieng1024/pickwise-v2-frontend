@@ -6,6 +6,11 @@ import type { BackendLaptop } from "./types";
  * Apple build-to-order options (backend step 10c): GET /laptops/{id}/options and
  * GET /laptops/{id}/configure. Only active Apple standard configs have them; anything
  * else is a 404, which getLaptopOptions turns into null.
+ *
+ * Education prices (backend step 10d) are for the details page's Edu toggle only:
+ * GET /laptops/{id}/edu-price, and `edu=true` on the two calls above, which prices the
+ * configurator from the education store (409 when it has no numbers for this laptop).
+ * Cards, rankings, compare, saved and Pico always show the official price.
  */
 export const OPTION_GROUPS = ["memory", "storage", "adapter", "display"] as const;
 export type OptionGroup = (typeof OPTION_GROUPS)[number];
@@ -41,6 +46,8 @@ export interface LaptopOptions {
   standard_chip: string;
   standard: Partial<Record<OptionGroup | "keyboard", string>>;
   standard_price_rm: number;
+  /** Priced from the education store. */
+  edu?: boolean;
   kits: ChipKit[];
 }
 
@@ -59,6 +66,8 @@ export interface Configured {
   gpu_model: string | null;
   standard_price_rm: number;
   chip_add_on_rm: number;
+  /** Priced from the education store. */
+  edu?: boolean;
   add_ons: { group: string; value: string; label: string | null; add_on_rm: number }[];
   total_rm: number;
   scores: ConfiguredScore[] | null;
@@ -70,19 +79,47 @@ export interface Configured {
 /** Every group's pick, chip included. */
 export type Picks = { chip: string } & Partial<Record<OptionGroup, string>>;
 
-export async function getLaptopOptions(laptopId: string): Promise<LaptopOptions | null> {
+export async function getLaptopOptions(laptopId: string, edu = false): Promise<LaptopOptions | null> {
   try {
-    return await apiFetch<LaptopOptions>(`/laptops/${laptopId}/options`, { next: { revalidate: 0 } });
+    return await apiFetch<LaptopOptions>(`/laptops/${laptopId}/options${edu ? "?edu=true" : ""}`, {
+      next: { revalidate: 0 },
+    });
   } catch (err) {
-    if (err instanceof ApiError && err.status === 404) return null;
+    // 409: configurable, but the education store's numbers for it are not stored.
+    if (err instanceof ApiError && (err.status === 404 || err.status === 409)) return null;
     throw err;
   }
 }
 
-export function configureLaptop(laptopId: string, picks: Picks, token?: string | null) {
+/** A laptop at its education-store price, with the Pick Scores calculated live from it. */
+export interface EduPrice {
+  price_rm: number;
+  official_price_rm: number;
+  saving_rm: number;
+  checked_at: string;
+  /** Whose education store, e.g. "apple_my_edu". */
+  source: string;
+  source_url: string | null;
+  scores: ConfiguredScore[] | null;
+  score_unavailable_reason: string | null;
+  /** Only with a bearer token and a preference profile. */
+  personalized_score: Configured["personalized_score"];
+}
+
+/** null: the laptop has no education price to show, so there is no toggle. */
+export async function getEduPrice(laptopId: string, token?: string | null): Promise<EduPrice | null> {
+  const body = await apiFetch<{ edu: EduPrice | null }>(`/laptops/${laptopId}/edu-price`, {
+    token: token ?? undefined,
+    cache: "no-store",
+  });
+  return body.edu;
+}
+
+export function configureLaptop(laptopId: string, picks: Picks, token?: string | null, edu = false) {
   const query = new URLSearchParams(
     Object.entries(picks).filter((e): e is [string, string] => Boolean(e[1])),
   );
+  if (edu) query.set("edu", "true");
   return apiFetch<Configured>(`/laptops/${laptopId}/configure?${query}`, {
     token: token ?? undefined,
     cache: "no-store",
