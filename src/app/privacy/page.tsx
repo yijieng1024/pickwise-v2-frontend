@@ -237,6 +237,21 @@ export default function PrivacyPage() {
           .
         </p>
       </LegalSection>
+
+      <LegalSection title="11. Contact us">
+        <p>
+          Email{" "}
+          <a
+            href="mailto:admin-pickwise@ngyijie.com"
+            className="text-brand-text underline underline-offset-2"
+          >
+            admin-pickwise@ngyijie.com
+          </a>{" "}
+          to ask what data we hold about you, to ask for a correction, or with
+          any question about privacy. To delete your account, use the
+          &ldquo;Delete account&rdquo; button on your profile page (section 6).
+        </p>
+      </LegalSection>
     </LegalPage>
   );
 }
