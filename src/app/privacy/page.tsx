@@ -13,7 +13,7 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       title="Privacy Policy"
-      updated="9 November 2026"
+      updated="10 November 2026"
       intro="This policy explains what personal data PickWise collects, why we collect it, who processes it on our behalf, and the choices you have. We collect only what the service needs to work — there is no advertising and we never sell your data."
     >
       <LegalSection title="1. Data we collect">
@@ -57,7 +57,10 @@ export default function PrivacyPage() {
         <p>
           <strong>Service logs.</strong> We keep monitoring logs of each Pico
           turn, including your message and Pico&apos;s reply, and a search log
-          with the search text. Deleting a conversation deletes both.
+          with the search text. Deleting a conversation deletes its monitoring
+          logs; the search log is deleted with your account. We also keep
+          counts of AI usage (the model and how much text it processed, never
+          the text itself).
         </p>
       </LegalSection>
 
@@ -152,9 +155,16 @@ export default function PrivacyPage() {
           <a href="mailto:admin-pickwise@ngyijie.com" className="text-brand-text underline underline-offset-2">
             admin-pickwise@ngyijie.com
           </a>{" "}
-          and we&apos;ll delete your account and everything linked to it:
-          conversations, logs, preferences, background answers, saved laptops
+          and we&apos;ll delete your account together with your conversations
+          (messages, replies and shortlists), the monitoring and search logs
+          linked to you, your preferences, background answers, saved laptops
           and photo.
+        </p>
+        <p>
+          Two things are kept, with nothing that points to you. AI usage counts
+          stay, with your account removed from them. Search text logged before
+          10 November 2026 was stored without a link to any account, so we
+          cannot tell which of it was yours and it is not deleted.
         </p>
       </LegalSection>
 
@@ -181,8 +191,8 @@ export default function PrivacyPage() {
               <a href="mailto:admin-pickwise@ngyijie.com" className="text-brand-text underline underline-offset-2">
                 admin-pickwise@ngyijie.com
               </a>{" "}
-              and we&apos;ll delete your account and everything linked to it
-              (see section 6).
+              and we&apos;ll delete your account and the data linked to it
+              (section 6 lists what is deleted and what is kept).
             </>,
           ]}
         />
