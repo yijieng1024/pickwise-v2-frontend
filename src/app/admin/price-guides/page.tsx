@@ -2,7 +2,7 @@
 
 import { type FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { ExternalLink, FileText, Loader2, RefreshCw, Trash2 } from "lucide-react";
+import { AlertTriangle, ExternalLink, FileText, Info, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -40,6 +41,7 @@ import {
   type BaseCodeLaptop,
   type GuideLaptop,
   type GuideRow,
+  type GuideWarning,
   type MatchedLaptop,
   type PriceGuide,
   type PriceGuideKind,
@@ -171,15 +173,94 @@ const pageColumn: Column<GuideRow> = {
   cell: (r) => <span className="tabular-nums">{r.page}</span>,
 };
 
+const WARNING_LABELS: Record<GuideWarning["type"], string> = {
+  duplicate: "Possible duplicate row",
+  wrong_price: "Suspected wrong price",
+  price_history: "Price history",
+  multi_sku: "SKUs may not match",
+};
+
+/** Tabs whose rows are guide rows, which none of the four checks reads. */
+const GUIDE_ROW_OUTCOMES: Outcome[] = ["ambiguous", "unmatched_guide", "unpriced"];
+
+function countWarnings(rows: GuideLaptop[]): { warnings: number; info: number } {
+  const all = rows.flatMap((r) => r.warnings ?? []);
+  const warnings = all.filter((w) => w.level === "warning").length;
+  return { warnings, info: all.length - warnings };
+}
+
+/** Warned rows first, then info, then the rest, so a paged tab shows them on page 1. */
+function warnedFirst<T extends GuideLaptop>(rows: T[]): T[] {
+  const rank = (row: T) => {
+    const levels = (row.warnings ?? []).map((w) => w.level);
+    return levels.includes("warning") ? 0 : levels.length > 0 ? 1 : 2;
+  };
+  return [...rows].sort((a, b) => rank(a) - rank(b));
+}
+
+/** One icon per level beside the laptop; the reasons show on hover or focus. */
+function WarningIcons({ warnings }: { warnings: GuideWarning[] }) {
+  return (["warning", "info"] as const).map((level) => {
+    const items = warnings.filter((w) => w.level === level);
+    if (items.length === 0) return null;
+    const Icon = level === "warning" ? AlertTriangle : Info;
+    const label = level === "warning" ? "warning" : "info note";
+    return (
+      <Tooltip key={level}>
+        <TooltipTrigger
+          aria-label={`${items.length} ${label}${items.length === 1 ? "" : "s"}`}
+          className={cn(
+            "focus-visible:ring-ring/50 inline-flex flex-none rounded-sm align-text-bottom outline-none focus-visible:ring-3",
+            level === "warning" ? "text-warning" : "text-muted-foreground",
+          )}
+        >
+          <Icon className="size-4" />
+        </TooltipTrigger>
+        <TooltipContent className="max-w-sm flex-col items-start gap-1.5 py-2">
+          {items.map((w) => (
+            <span key={w.type}>
+              <strong>{WARNING_LABELS[w.type]}.</strong> {w.message}
+            </span>
+          ))}
+        </TooltipContent>
+      </Tooltip>
+    );
+  });
+}
+
+function WarningSummary({ outcome, preview }: { outcome: Outcome; preview: PriceGuidePreview }) {
+  if (GUIDE_ROW_OUTCOMES.includes(outcome)) {
+    return <p className="text-muted-foreground text-[12.5px]">No warnings apply to this tab.</p>;
+  }
+  const { warnings, info } = countWarnings(preview[outcome] as GuideLaptop[]);
+  if (warnings === 0 && info === 0) {
+    return <p className="text-muted-foreground text-[12.5px]">No warnings in this tab.</p>;
+  }
+  const parts = [
+    warnings > 0 && `${warnings} ${warnings === 1 ? "warning" : "warnings"}`,
+    info > 0 && `${info} info`,
+  ].filter(Boolean);
+  return (
+    <OutcomeAlert status={warnings > 0 ? "warning" : "info"} title={`${parts.join(" · ")} in this tab`}>
+      The affected laptops are listed first. Hover the icon beside a laptop for the reason.
+      {info > 0 && " Info is a reminder that a guide changed a price by 30% or more."} Warnings do
+      not change what an apply writes.
+    </OutcomeAlert>
+  );
+}
+
 const laptopColumn: Column<GuideLaptop> = {
   head: "Laptop",
   cell: (l) => (
-    <Link
-      href={`/admin/catalog/laptops/${l.id}/edit`}
-      className="text-brand-text text-[13px] font-medium hover:underline"
-    >
-      {l.product_name}
-    </Link>
+    <span className="inline-flex items-center gap-1.5">
+      <Link
+        href={`/admin/catalog/laptops/${l.id}/edit`}
+        className="text-brand-text text-[13px] font-medium hover:underline"
+      >
+        {l.product_name}
+      </Link>
+      {l.warnings && <WarningIcons warnings={l.warnings} />}
+    </span>
   ),
 };
 const currentPriceColumn: Column<GuideLaptop> = {
@@ -429,7 +510,7 @@ function OutcomeRows({
     case "matched":
       return (
         <OutcomeTable
-          rows={preview.matched}
+          rows={warnedFirst(preview.matched)}
           columns={MATCHED_COLUMNS}
           rowKey={laptopId}
           {...paging}
@@ -438,7 +519,7 @@ function OutcomeRows({
     case "matched_by_suffix_rule":
       return (
         <OutcomeTable
-          rows={preview.matched_by_suffix_rule}
+          rows={warnedFirst(preview.matched_by_suffix_rule)}
           columns={SUFFIX_COLUMNS}
           rowKey={laptopId}
           {...selection}
@@ -447,7 +528,7 @@ function OutcomeRows({
     case "matched_by_base_code":
       return (
         <OutcomeTable
-          rows={preview.matched_by_base_code}
+          rows={warnedFirst(preview.matched_by_base_code)}
           columns={BASE_CODE_COLUMNS}
           rowKey={laptopId}
           {...selection}
@@ -460,7 +541,7 @@ function OutcomeRows({
     case "conflict":
       return (
         <OutcomeTable
-          rows={preview.conflict}
+          rows={warnedFirst(preview.conflict)}
           columns={CONFLICT_COLUMNS}
           rowKey={laptopId}
           {...paging}
@@ -482,7 +563,7 @@ function OutcomeRows({
     case "differs_from_guide":
       return (
         <OutcomeTable
-          rows={preview.differs_from_guide}
+          rows={warnedFirst(preview.differs_from_guide)}
           columns={DIFFERS_COLUMNS}
           rowKey={laptopId}
           {...selection}
@@ -491,8 +572,11 @@ function OutcomeRows({
     case "uncovered":
       return (
         <OutcomeTable
-          // The ones with no price are the ones an admin has to act on. 0 is "unknown".
-          rows={[...preview.uncovered].sort((a, b) => Number(a.price_rm > 0) - Number(b.price_rm > 0))}
+          // Warned rows, then the ones with no price: those are the ones an admin has
+          // to act on. 0 is "unknown". The sort is stable, so the second order survives.
+          rows={warnedFirst(
+            [...preview.uncovered].sort((a, b) => Number(a.price_rm > 0) - Number(b.price_rm > 0)),
+          )}
           columns={UNCOVERED_COLUMNS}
           rowKey={laptopId}
           {...paging}
@@ -978,12 +1062,21 @@ export default function AdminPriceGuidesPage() {
                       <span className={cn("tabular-nums", !active && "text-muted-foreground")}>
                         {preview[o.value].length}
                       </span>
+                      {!GUIDE_ROW_OUTCOMES.includes(o.value) &&
+                        countWarnings(preview[o.value] as GuideLaptop[]).warnings > 0 && (
+                          <AlertTriangle
+                            aria-label="Has warnings"
+                            className={cn("size-3.5", !active && "text-warning")}
+                          />
+                        )}
                     </button>
                   );
                 })}
               </div>
 
               <p className="text-muted-foreground text-[12.5px]">{hint}</p>
+
+              <WarningSummary outcome={outcome.value} preview={preview} />
 
               {selected.size > 0 && (
                 <Card className="bg-brand-tint gap-0 border-transparent p-3">

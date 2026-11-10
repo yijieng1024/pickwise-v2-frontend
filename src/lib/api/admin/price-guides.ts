@@ -42,6 +42,18 @@ export interface GuideRow {
   panel: string | null;
 }
 
+/**
+ * Something to look at before trusting a row. Computed by the backend
+ * (`price_guide.row_warnings`); it never changes what an apply writes. At most
+ * one entry per type and level, several reasons joined in `message`.
+ */
+export interface GuideWarning {
+  type: "duplicate" | "wrong_price" | "price_history" | "multi_sku";
+  /** `info` is a reminder (a guide changed the price a lot), not counted as a warning. */
+  level: "warning" | "info";
+  message: string;
+}
+
 export interface GuideLaptop {
   id: string;
   product_name: string;
@@ -49,6 +61,8 @@ export interface GuideLaptop {
   status: string;
   /** 0 is the catalog's "price unknown". */
   price_rm: number;
+  /** Absent on an ambiguous row's candidates, which are not checked. */
+  warnings?: GuideWarning[];
 }
 
 export interface MatchedLaptop extends GuideLaptop {
