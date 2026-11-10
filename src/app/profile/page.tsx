@@ -6,12 +6,24 @@ import { useRouter } from "next/navigation";
 import { BadgeCheck, MailWarning, Wand2 } from "lucide-react";
 
 import { AboutYouFields } from "@/components/about-you-fields";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { UserAvatar } from "@/components/user-avatar";
 import {
   type AuthUser,
   type UserPreferences,
+  deleteAccount,
   deleteAvatar,
   getPreferences,
   hasAnyPreferences,
@@ -49,6 +61,7 @@ export default function ProfilePage() {
       <AccountCard user={user} />
       <AboutYouCard token={token} />
       <PreferencesCard token={token} />
+      <DeleteAccountCard user={user} token={token} />
     </main>
   );
 }
@@ -320,6 +333,131 @@ function PreferencesCard({ token }: { token: string }) {
           </dl>
         )}
       </div>
+    </section>
+  );
+}
+
+function DeleteAccountCard({ user, token }: { user: AuthUser; token: string }) {
+  const { logout } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [typed, setTyped] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Same rule as the backend: the username exactly, surrounding spaces ignored.
+  const matches = typed.trim() === user.username;
+
+  async function handleDelete() {
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteAccount(token, typed);
+      logout();
+      // A full navigation: this page's own effect sends a signed-out visitor
+      // to /login, and would win a race against router.replace("/").
+      window.location.assign("/");
+    } catch (err) {
+      // Includes the last-active-admin 400, whose message says why.
+      setError(
+        err instanceof Error ? err.message : "Could not delete your account.",
+      );
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section
+      className="border-line bg-surface flex flex-wrap items-center justify-between gap-4 rounded-[24px] border p-7 motion-safe:animate-fade-in-up"
+      style={{ animationDelay: "240ms" }}
+    >
+      <div>
+        <h2 className="text-base font-bold tracking-tight">Delete Account</h2>
+        <p className="mt-0.5 text-[13px] text-muted-foreground">
+          Removes your account and your data. This cannot be undone.
+        </p>
+      </div>
+      <Button variant="destructive" shape="pill" onClick={() => setOpen(true)}>
+        Delete account
+      </Button>
+
+      <AlertDialog
+        open={open}
+        onOpenChange={(next) => {
+          if (busy) return;
+          setOpen(next);
+          if (!next) {
+            setTyped("");
+            setError(null);
+          }
+        }}
+      >
+        <AlertDialogContent className="data-[size=default]:sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete your account?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This cannot be undone. See the{" "}
+              <Link href="/privacy">Privacy Policy</Link>, section 6.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="flex flex-col gap-3 text-[13px]">
+            <div>
+              <p className="font-semibold">Deleted</p>
+              <ul className="mt-1 list-disc pl-5 text-muted-foreground">
+                <li>Your account: username, email and password</li>
+                <li>
+                  Your conversations with Pico: messages, replies and shortlists
+                </li>
+                <li>The monitoring and search logs linked to you</li>
+                <li>Your laptop preferences and background answers</li>
+                <li>Your saved laptops and your photo</li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-semibold">
+                Kept, with nothing that points to you
+              </p>
+              <ul className="mt-1 list-disc pl-5 text-muted-foreground">
+                <li>AI usage counts, with your account removed from them</li>
+                <li>
+                  Search text logged before 10 November 2026, which was stored
+                  without a link to any account
+                </li>
+              </ul>
+            </div>
+            <label className="flex flex-col gap-1.5">
+              <span>
+                Type your username, <strong>{user.username}</strong>, to
+                confirm.
+              </span>
+              <Input
+                value={typed}
+                onChange={(e) => setTyped(e.target.value)}
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                disabled={busy}
+              />
+            </label>
+            {error && (
+              <p role="alert" className="font-medium text-negative">
+                {error}
+              </p>
+            )}
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={!matches || busy}
+            >
+              {busy ? "Deleting…" : "Delete account"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

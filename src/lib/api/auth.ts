@@ -206,6 +206,19 @@ export function deleteAvatar(token: string): Promise<void> {
   });
 }
 
+/**
+ * Deletes the account and its data (DELETE /auth/me). The backend checks the
+ * username too: wrong or missing is a 400, as is the last active admin.
+ */
+export function deleteAccount(token: string, username: string): Promise<void> {
+  return apiFetch<void>("/auth/me", {
+    method: "DELETE",
+    token,
+    body: JSON.stringify({ username }),
+    next: { revalidate: 0 },
+  });
+}
+
 /** Onboarding background answers (GET/PUT /auth/me/background). All optional. */
 export type UserType = "student" | "working" | "buying_for_business" | "other";
 

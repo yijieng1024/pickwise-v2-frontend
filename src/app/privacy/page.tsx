@@ -150,12 +150,16 @@ export default function PrivacyPage() {
         <p>
           We keep your account data, preferences, and conversation history for
           as long as your account exists. Service logs are kept only as long as
-          needed for quality monitoring. There is no self-service account
-          deletion yet. Email us at{" "}
-          <a href="mailto:admin-pickwise@ngyijie.com" className="text-brand-text underline underline-offset-2">
-            admin-pickwise@ngyijie.com
-          </a>{" "}
-          and we&apos;ll delete your account together with your conversations
+          needed for quality monitoring. You can delete your account yourself
+          with the &ldquo;Delete account&rdquo; button on your{" "}
+          <Link
+            href="/profile"
+            className="text-brand-text underline underline-offset-2"
+          >
+            profile page
+          </Link>
+          . It asks you to type your username, then deletes your account
+          together with your conversations
           (messages, replies and shortlists), the monitoring and search logs
           linked to you, your preferences, background answers, saved laptops
           and photo.
@@ -187,12 +191,10 @@ export default function PrivacyPage() {
               from the profile page at any time.
             </>,
             <>
-              <strong>Delete your account</strong> — email{" "}
-              <a href="mailto:admin-pickwise@ngyijie.com" className="text-brand-text underline underline-offset-2">
-                admin-pickwise@ngyijie.com
-              </a>{" "}
-              and we&apos;ll delete your account and the data linked to it
-              (section 6 lists what is deleted and what is kept).
+              <strong>Delete your account</strong> — use the &ldquo;Delete
+              account&rdquo; button on your profile page. It deletes your
+              account and the data linked to it (section 6 lists what is
+              deleted and what is kept).
             </>,
           ]}
         />
