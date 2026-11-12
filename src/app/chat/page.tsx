@@ -64,6 +64,7 @@ import {
 } from "@/lib/api/agent";
 import { type PersonalPickScore, calculatePersonalScoreBatch } from "@/lib/api/pickscore";
 import { useAuth } from "@/lib/auth-context";
+import { chatLinkKind } from "@/lib/chat-links";
 import { cn } from "@/lib/utils";
 
 /** The agent's tools — shown as a capabilities tile; the active one lights up. */
@@ -179,26 +180,31 @@ function renderMarkdownLite(text: string, animate = false) {
     );
   };
 
-  // [label](url) → anchor; everything else falls through to bold(). While a
-  // link is still streaming in (no closing paren yet) it renders as plain
-  // text and converts once complete.
+  // [label](target) → a link, for the two kinds chatLinkKind accepts: an http(s) URL
+  // (new tab, as before) and a path inside PickWise such as /laptops/{id}?chip=…, which
+  // opens like the shortlist card does (same tab, client navigation). Any other target
+  // stays plain text. While a link is still streaming in (no closing paren yet) it
+  // renders as plain text and converts once complete.
   const inline = (line: string, key: number) => {
-    const linkRe = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+    const linkRe = /\[([^\]]+)\]\(([^\s)]+)\)/g;
+    const linkClass = "text-brand-text font-medium underline underline-offset-2 hover:opacity-80";
     const parts: React.ReactNode[] = [];
     let last = 0;
     let k = 0;
     for (let m = linkRe.exec(line); m !== null; m = linkRe.exec(line)) {
+      const kind = chatLinkKind(m[2]);
+      if (kind === null) continue; // left in the text around it
       if (m.index > last) parts.push(bold(line.slice(last, m.index), k++));
       parts.push(
-        <a
-          key={k++}
-          href={m[2]}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-brand-text font-medium underline underline-offset-2 hover:opacity-80"
-        >
-          {words(m[1])}
-        </a>,
+        kind === "internal" ? (
+          <Link key={k++} href={m[2]} className={linkClass}>
+            {words(m[1])}
+          </Link>
+        ) : (
+          <a key={k++} href={m[2]} target="_blank" rel="noopener noreferrer" className={linkClass}>
+            {words(m[1])}
+          </a>
+        ),
       );
       last = m.index + m[0].length;
     }
