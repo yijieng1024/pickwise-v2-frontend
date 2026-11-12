@@ -13,7 +13,7 @@ import {
   type Picks,
 } from "@/lib/api/options";
 import { useAuth } from "@/lib/auth-context";
-import { buildConfigPath, cleanConfigSearch } from "@/lib/config-url";
+import { buildConfigPath, cleanConfigSearch, isStandardConfig } from "@/lib/config-url";
 
 export type ConfigView = "original" | "configured";
 
@@ -218,6 +218,15 @@ export function ConfiguratorProvider({
       const search = cleanConfigSearch(window.location.search, buildConfigPath(laptopId, options, picks));
       window.history.replaceState(null, "", window.location.pathname + search + window.location.hash);
     }
+    setNotice(null);
+    setEditorOpen(false);
+    // The standard config's own picks are no configuration: the page a refresh would show,
+    // with no Original / Configured switch and no "Your configuration" label.
+    if (options && isStandardConfig(options, picks)) {
+      setState(null);
+      setView("original");
+      return;
+    }
     setState({
       picks,
       official: result.edu ? null : result,
@@ -225,9 +234,7 @@ export function ConfiguratorProvider({
       eduMissing: false,
       needsPersonal: false,
     });
-    setNotice(null);
     setView("configured");
-    setEditorOpen(false);
   };
 
   const setEduOn = (on: boolean) => {

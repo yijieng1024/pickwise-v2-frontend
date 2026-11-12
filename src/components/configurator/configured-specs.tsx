@@ -3,6 +3,7 @@
 import { Cpu, Feather, HardDrive, Monitor, RectangleEllipsis, Zap } from "lucide-react";
 
 import { FullSpecs } from "@/components/full-specs";
+import { ShareButton } from "@/components/share-button";
 import { configuredLaptop } from "@/lib/api/options";
 import type { BackendLaptop } from "@/lib/api/types";
 
@@ -19,6 +20,13 @@ function useShownLaptop(raw: BackendLaptop): BackendLaptop {
 export function ConfiguredTitle({ raw, name }: { raw: BackendLaptop; name: string }) {
   const shown = useShownLaptop(raw);
   return <>{shown === raw ? name : shown.product_name}</>;
+}
+
+/** The share button, titled with the name the page shows for the current view: the link
+ *  it sends carries the configuration, so the title must not name the standard config. */
+export function ConfiguredShareButton({ raw, name }: { raw: BackendLaptop; name: string }) {
+  const shown = useShownLaptop(raw);
+  return <ShareButton name={shown === raw ? name : shown.product_name} />;
 }
 
 export function ConfiguredFullSpecs({ raw }: { raw: BackendLaptop }) {

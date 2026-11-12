@@ -31,10 +31,12 @@ export type ConfigParam = (typeof CONFIG_PARAMS)[number];
 /** Next's `searchParams` object, or a URLSearchParams. */
 export type RawParams = URLSearchParams | Record<string, string | string[] | undefined>;
 
-const isStandard = (options: LaptopOptions, picks: Picks): boolean => {
+/** Whether *picks* are the standard config's own: then there is no configuration, on the
+ *  page as in the URL. */
+export function isStandardConfig(options: LaptopOptions, picks: Picks): boolean {
   const standard = standardPicks(options);
   return CONFIG_PARAMS.every((p) => picks[p] === standard[p]);
-};
+}
 
 const kitComesWith = (options: LaptopOptions, chip: string, group: OptionGroup) =>
   options.kits.find((k) => k.chip === chip)?.options[group]?.find((o) => o.is_included)?.value;
@@ -42,7 +44,7 @@ const kitComesWith = (options: LaptopOptions, chip: string, group: OptionGroup) 
 /** The details page's path for *picks* (every group's pick, as `picksOn` gives them). */
 export function buildConfigPath(laptopId: string, options: LaptopOptions, picks: Picks): string {
   const plain = `/laptops/${laptopId}`;
-  if (isStandard(options, picks)) return plain;
+  if (isStandardConfig(options, picks)) return plain;
   const query = new URLSearchParams();
   for (const param of CONFIG_PARAMS) {
     const value = picks[param];
@@ -95,7 +97,7 @@ export function parseConfigParams(params: RawParams, options: LaptopOptions | nu
     else dropped.push(group);
   }
   const picks = picksOn(options, chip!, asked);
-  return { picks: isStandard(options, picks) ? null : picks, dropped };
+  return { picks: isStandardConfig(options, picks) ? null : picks, dropped };
 }
 
 export interface ConfigLink {

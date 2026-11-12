@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import type { LaptopOptions, Picks } from "./api/options";
 import shared from "./config-url.cases.json";
-import { buildConfigPath, cleanConfigSearch, parseConfigParams, readConfigLink } from "./config-url";
+import { buildConfigPath, cleanConfigSearch, isStandardConfig, parseConfigParams, readConfigLink } from "./config-url";
 
 /**
  * The shared cases are the backend's: the Pro 14 Liquid Retina M6 standard config
@@ -203,5 +203,21 @@ describe("cleanConfigSearch", () => {
     expect(cleanConfigSearch("?utm_source=x&memory=999gb", "/laptops/{id}")).toBe("?utm_source=x");
     expect(cleanConfigSearch("?utm_source=x&memory=32gb", "/laptops/{id}?chip=m6-12-12&memory=32gb&storage=1tb"))
       .toBe("?chip=m6-12-12&memory=32gb&storage=1tb&utm_source=x");
+  });
+});
+
+describe("isStandardConfig", () => {
+  it("is true only for the standard config's own picks", () => {
+    expect(isStandardConfig(options, STANDARD)).toBe(true);
+    expect(isStandardConfig(options, { ...STANDARD, memory: "32gb" })).toBe(false);
+    expect(isStandardConfig(options, { ...STANDARD, adapter: "96w" })).toBe(false);
+    expect(isStandardConfig(options, { ...STANDARD, display: "nano_texture" })).toBe(false);
+    expect(isStandardConfig(options, { ...STANDARD, chip: "m5pro-15-16", memory: "24gb" })).toBe(false);
+  });
+
+  it("agrees with the URL: the plain path exactly when the picks are the standard config's own", () => {
+    for (const { picks, path } of shared.cases) {
+      expect(isStandardConfig(options, picks)).toBe(!path.includes("?"));
+    }
   });
 });

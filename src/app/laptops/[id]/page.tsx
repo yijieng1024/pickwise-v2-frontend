@@ -10,7 +10,12 @@ import {
 } from "lucide-react";
 
 import { PriceHistory } from "@/components/charts/price-history";
-import { ConfiguredFullSpecs, ConfiguredQuickFacts, ConfiguredTitle } from "@/components/configurator/configured-specs";
+import {
+  ConfiguredFullSpecs,
+  ConfiguredQuickFacts,
+  ConfiguredShareButton,
+  ConfiguredTitle,
+} from "@/components/configurator/configured-specs";
 import { LaptopGallery } from "@/components/laptop-gallery";
 import { ConfiguratorProvider, type ConfigLinkState } from "@/components/configurator/configurator-context";
 import { ConfiguratorDialog } from "@/components/configurator/configurator-dialog";
@@ -24,7 +29,6 @@ import {
 } from "@/components/configurator/configured-hero";
 import { ReviewSentiment } from "@/components/review-sentiment";
 import { SaveButton } from "@/components/save-button";
-import { ShareButton } from "@/components/share-button";
 import { compareHref } from "@/lib/compare";
 import { apiFetch, ApiError } from "@/lib/api/client";
 import { mapBackendLaptop, priceLabel } from "@/lib/api/adapters";
@@ -166,7 +170,7 @@ export default async function LaptopDetailsPage({
             Compare
           </Button> */}
           <span className="flex items-center gap-1">
-            <ShareButton name={laptop.name} />
+            <ConfiguredShareButton raw={raw} name={laptop.name} />
             <SaveButton laptopId={laptop.id} />
           </span>
         </div>
