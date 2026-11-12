@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth-context";
+import { SITE_URL } from "@/lib/indexing";
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
@@ -12,9 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  // The site's public address, for canonical and Open Graph URLs. Set
-  // NEXT_PUBLIC_SITE_URL on Vercel (Production and Preview); unset means local.
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
+  // The site's public address, for canonical and Open Graph URLs (lib/indexing.ts).
+  metadataBase: new URL(SITE_URL),
   title: "PickWise",
   description: "Your decision-making agent for better choices.",
 };

@@ -38,6 +38,7 @@ import { bestFit, getLaptopPickScores, labelForUseCase } from "@/lib/api/picksco
 import { configuredLaptop } from "@/lib/api/options";
 import { getLaptopReviews } from "@/lib/api/reviews";
 import type { BackendBrand, BackendPriceHistoryEntry } from "@/lib/api/types";
+import { mayIndex } from "@/lib/indexing";
 import { laptopMeta } from "@/lib/laptop-meta";
 import { cn, formatDate } from "@/lib/utils";
 
@@ -86,6 +87,9 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
       title,
       description,
       alternates: { canonical },
+      // An inactive laptop's page still opens, but stays out of search engines; its links
+      // may be followed. Active and discontinued pages are indexed (lib/indexing.ts).
+      ...(mayIndex(raw.status) ? {} : { robots: { index: false, follow: true } }),
       openGraph: { title, description, url: canonical, ...(image ? { images: [image] } : {}) },
     };
   } catch {
