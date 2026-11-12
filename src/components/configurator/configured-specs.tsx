@@ -22,11 +22,14 @@ export function ConfiguredTitle({ raw, name }: { raw: BackendLaptop; name: strin
   return <>{shown === raw ? name : shown.product_name}</>;
 }
 
-/** The share button, titled with the name the page shows for the current view: the link
- *  it sends carries the configuration, so the title must not name the standard config. */
+/** The share button. Its title follows the link, not the view: the address carries the
+ *  applied configuration whichever of Original / Configured is showing, so the title is
+ *  the configured name whenever one is applied, and the person who receives it sees the
+ *  name of the page the link opens. A plain address has the standard name. */
 export function ConfiguredShareButton({ raw, name }: { raw: BackendLaptop; name: string }) {
-  const shown = useShownLaptop(raw);
-  return <ShareButton name={shown === raw ? name : shown.product_name} />;
+  const { options, applied } = useConfigurator();
+  const linked = applied && options ? configuredLaptop(raw, options, applied.result, applied.picks).product_name : name;
+  return <ShareButton name={linked} />;
 }
 
 export function ConfiguredFullSpecs({ raw }: { raw: BackendLaptop }) {
