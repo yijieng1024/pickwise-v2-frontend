@@ -57,6 +57,8 @@ function EduToggle() {
       onClick={() => setEduOn(!eduOn)}
       className="flex h-10 items-center gap-2.5 self-start rounded-full pr-1 text-[12.5px] font-semibold"
     >
+      <GraduationCap className="size-4 text-muted-foreground" />
+      Education price
       <span
         className={cn(
           "relative h-5 w-9 flex-none rounded-full transition-colors",
@@ -70,8 +72,6 @@ function EduToggle() {
           )}
         />
       </span>
-      <GraduationCap className="size-4 text-muted-foreground" />
-      Education price
     </button>
   );
 }
