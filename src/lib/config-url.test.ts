@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import type { LaptopOptions, Picks } from "./api/options";
 import shared from "./config-url.cases.json";
-import { buildConfigPath, parseConfigParams } from "./config-url";
+import { buildConfigPath, cleanConfigSearch, parseConfigParams, readConfigLink } from "./config-url";
 
 /**
  * The shared cases are the backend's: the Pro 14 Liquid Retina M6 standard config
@@ -127,5 +127,81 @@ describe("parseConfigParams", () => {
     const path = buildConfigPath(ID, options, picks);
     expect(path).toBe("/laptops/{id}?chip=m5pro-18-20&memory=64gb&storage=4tb&display=nano_texture");
     expect(parse(path.split("?")[1])).toEqual({ picks, dropped: [] });
+  });
+});
+
+describe("readConfigLink", () => {
+  const read = (query: string, opts: LaptopOptions | null = options) =>
+    readConfigLink(ID, new URLSearchParams(query), opts);
+
+  it("keeps a link whose params are all valid, with no notice", () => {
+    expect(read("chip=m5pro-15-16&memory=48gb&storage=2tb&adapter=96w")).toEqual({
+      picks: { chip: "m5pro-15-16", memory: "48gb", storage: "2tb", adapter: "96w", display: "standard" },
+      path: "/laptops/{id}?chip=m5pro-15-16&memory=48gb&storage=2tb&adapter=96w",
+      notice: null,
+    });
+  });
+
+  it("drops a memory the chip does not have, keeps the rest and says so", () => {
+    // 16GB exists on the M6, not on the M5 Pro.
+    const link = read("chip=m5pro-15-16&memory=16gb&storage=2tb");
+    expect(link.picks).toEqual({ chip: "m5pro-15-16", memory: "24gb", storage: "2tb", adapter: "70w", display: "standard" });
+    expect(link.path).toBe("/laptops/{id}?chip=m5pro-15-16&memory=24gb&storage=2tb");
+    expect(link.notice).toBe("The memory in this link is not available with this chip, so it was left out.");
+  });
+
+  it("drops a value nothing offers, keeps the rest and says so", () => {
+    const link = read("memory=999gb&storage=4tb&display=matte");
+    expect(link.picks).toEqual({ ...STANDARD, storage: "4tb" });
+    expect(link.path).toBe("/laptops/{id}?chip=m6-12-12&memory=16gb&storage=4tb");
+    expect(link.notice).toBe("The memory and display in this link are not available with this chip, so they were left out.");
+  });
+
+  it("falls back to the standard config for a chip that is not offered, and says so", () => {
+    expect(read("chip=m9-1-1&memory=32gb&storage=4tb")).toEqual({
+      picks: null,
+      path: "/laptops/{id}",
+      notice: "The chip in this link is not available for this laptop, so the standard configuration is shown.",
+    });
+  });
+
+  it("still says so when the only param was bad and the standard config is what is left", () => {
+    expect(read("memory=999gb")).toEqual({
+      picks: null,
+      path: "/laptops/{id}",
+      notice: "The memory in this link is not available with this chip, so it was left out.",
+    });
+  });
+
+  it("is the plain page with no notice for the standard config's own picks", () => {
+    expect(read("chip=m6-12-12&memory=16gb&storage=1tb")).toEqual({ picks: null, path: "/laptops/{id}", notice: null });
+    expect(read("")).toEqual({ picks: null, path: "/laptops/{id}", notice: null });
+  });
+
+  it("is the plain page with no notice on a laptop with no options", () => {
+    expect(read("chip=m6-12-12&memory=32gb", null)).toEqual({ picks: null, path: "/laptops/{id}", notice: null });
+  });
+});
+
+describe("cleanConfigSearch", () => {
+  it("leaves a link that is already its own address alone", () => {
+    const query = "?chip=m6-12-12&memory=32gb&storage=4tb";
+    expect(cleanConfigSearch(query, `/laptops/{id}${query}`)).toBe(query);
+    expect(cleanConfigSearch("", "/laptops/{id}")).toBe("");
+  });
+
+  it("removes the configuration's params when the page is the plain one", () => {
+    expect(cleanConfigSearch("?chip=m9-1-1&memory=32gb", "/laptops/{id}")).toBe("");
+  });
+
+  it("rewrites the configuration's params to the picks shown, in the fixed order", () => {
+    expect(cleanConfigSearch("?storage=2tb&memory=16gb&chip=m5pro-15-16", "/laptops/{id}?chip=m5pro-15-16&memory=24gb&storage=2tb"))
+      .toBe("?chip=m5pro-15-16&memory=24gb&storage=2tb");
+  });
+
+  it("keeps params that are not the configuration's", () => {
+    expect(cleanConfigSearch("?utm_source=x&memory=999gb", "/laptops/{id}")).toBe("?utm_source=x");
+    expect(cleanConfigSearch("?utm_source=x&memory=32gb", "/laptops/{id}?chip=m6-12-12&memory=32gb&storage=1tb"))
+      .toBe("?chip=m6-12-12&memory=32gb&storage=1tb&utm_source=x");
   });
 });

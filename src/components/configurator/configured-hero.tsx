@@ -76,6 +76,17 @@ function EduToggle() {
   );
 }
 
+/** One line when an option in the link the page was opened with was not available. */
+export function ConfigNotice() {
+  const { notice } = useConfigurator();
+  if (!notice) return null;
+  return (
+    <p role="status" className="bg-surface-2 text-muted-foreground rounded-xl px-3 py-2 text-xs">
+      {notice}
+    </p>
+  );
+}
+
 /** Original / Configured, Configure or Edit configuration, and the Education price
  *  switch. The first two need options; the switch needs an education price. */
 export function ConfiguratorControls() {

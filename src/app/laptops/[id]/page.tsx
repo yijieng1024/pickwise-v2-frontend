@@ -12,9 +12,10 @@ import {
 import { PriceHistory } from "@/components/charts/price-history";
 import { ConfiguredFullSpecs, ConfiguredQuickFacts, ConfiguredTitle } from "@/components/configurator/configured-specs";
 import { LaptopGallery } from "@/components/laptop-gallery";
-import { ConfiguratorProvider } from "@/components/configurator/configurator-context";
+import { ConfiguratorProvider, type ConfigLinkState } from "@/components/configurator/configurator-context";
 import { ConfiguratorDialog } from "@/components/configurator/configurator-dialog";
 import {
+  ConfigNotice,
   ConfiguratorControls,
   ConfiguredPickScoreCard,
   ConfiguredPrice,
@@ -29,7 +30,8 @@ import { apiFetch, ApiError } from "@/lib/api/client";
 import { mapBackendLaptop, priceLabel } from "@/lib/api/adapters";
 import { DiscontinuedLabel } from "@/components/discontinued-label";
 import { bestFit, getLaptopPickScores, labelForUseCase } from "@/lib/api/pickscore";
-import { getLaptopOptions } from "@/lib/api/options";
+import { configureLaptop, getLaptopOptions } from "@/lib/api/options";
+import { readConfigLink } from "@/lib/config-url";
 import { getLaptopReviews } from "@/lib/api/reviews";
 import type {
   BackendBrand,
@@ -40,8 +42,10 @@ import { cn, formatDate } from "@/lib/utils";
 
 export default async function LaptopDetailsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const { id } = await params;
 
@@ -81,6 +85,26 @@ export default async function LaptopDetailsPage({
 
   const laptop = mapBackendLaptop(raw, brand);
 
+  // A link with a configuration (?chip=…&memory=…&storage=…) opens on that configuration,
+  // priced here so the first paint is already right. Which params are valid is decided
+  // from the options loaded above, never by asking /configure and reading its 422. The
+  // official price only: the Edu price swaps in the browser, as on any other visit.
+  const read = readConfigLink(id, await searchParams, options);
+  let link: ConfigLinkState = { applied: null, path: read.path, notice: read.notice };
+  if (read.picks) {
+    try {
+      link = { ...link, applied: { picks: read.picks, result: await configureLaptop(id, read.picks) } };
+    } catch {
+      // The options list said yes and /configure did not answer: show the standard
+      // config and leave the address alone, so a refresh can try again.
+      link = {
+        applied: null,
+        path: null,
+        notice: "The configuration in this link could not be loaded, so the standard configuration is shown.",
+      };
+    }
+  }
+
   const priceHistorySorted = [...rawHistory].sort(
     (a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime(),
   );
@@ -115,7 +139,7 @@ export default async function LaptopDetailsPage({
 
 
   return (
-    <ConfiguratorProvider laptopId={laptop.id} options={options}>
+    <ConfiguratorProvider key={laptop.id} laptopId={laptop.id} options={options} link={link}>
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-10 pb-24 sm:px-6 lg:px-8">
       <ConfiguratorDialog productName={laptop.name} />
       <div className="mb-8 flex items-center justify-between">
@@ -182,6 +206,7 @@ export default async function LaptopDetailsPage({
 
           {/* Price + CTAs as one bottom block */}
           <div className="flex flex-col gap-4">
+            <ConfigNotice />
             <ConfiguratorControls />
             <ConfiguredPrice original={discontinued ? (
               <div className="flex flex-col gap-2">

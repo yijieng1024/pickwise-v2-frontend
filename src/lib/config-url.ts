@@ -1,4 +1,5 @@
 import {
+  GROUP_LABELS,
   OPTION_GROUPS,
   chipAllows,
   picksOn,
@@ -21,7 +22,8 @@ import {
  * The backend builds the same path for Pico (options_service.config_path). Both are held
  * to config-url.cases.json, which is the backend's tests/unit/fixtures/config_url_cases.json.
  *
- * Pure: no fetch, no router. Used by nothing yet.
+ * Pure: no fetch, no router. The details page reads a link with `readConfigLink` on the
+ * server and the browser tidies the address with `cleanConfigSearch`.
  */
 export const CONFIG_PARAMS = ["chip", ...OPTION_GROUPS] as const;
 export type ConfigParam = (typeof CONFIG_PARAMS)[number];
@@ -94,4 +96,56 @@ export function parseConfigParams(params: RawParams, options: LaptopOptions | nu
   }
   const picks = picksOn(options, chip!, asked);
   return { picks: isStandard(options, picks) ? null : picks, dropped };
+}
+
+export interface ConfigLink {
+  /** The configuration the link asks for, after dropping what is not available; null: the standard config. */
+  picks: Picks | null;
+  /** The address this link should have: the picks' own path. */
+  path: string;
+  /** One line when an option in the link was not available on this laptop; else null. */
+  notice: string | null;
+}
+
+/**
+ * What a details-page link means for this laptop: which of its params are valid for the
+ * laptop's options, the address that says exactly that, and the notice to show.
+ *
+ * - Every param valid: those picks, no notice.
+ * - A value the chip does not allow: that param is dropped, the rest kept, with a notice.
+ * - A chip that is not offered: the standard config, with a notice.
+ * - Picks that are the standard config's own: the standard config, the plain path, no notice.
+ * - A laptop with no options: the plain path and no notice, whatever the params.
+ */
+export function readConfigLink(laptopId: string, params: RawParams, options: LaptopOptions | null): ConfigLink {
+  const { picks, dropped } = parseConfigParams(params, options);
+  const path = options && picks ? buildConfigPath(laptopId, options, picks) : `/laptops/${laptopId}`;
+  return { picks, path, notice: options ? noticeFor(dropped) : null };
+}
+
+function noticeFor(dropped: ConfigParam[]): string | null {
+  if (dropped.length === 0) return null;
+  if (dropped.includes("chip")) {
+    return "The chip in this link is not available for this laptop, so the standard configuration is shown.";
+  }
+  const names = dropped.map((p) => GROUP_LABELS[p].toLowerCase());
+  const list = names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}` : names[0];
+  return `The ${list} in this link ${names.length > 1 ? "are" : "is"} not available with this chip, so ${
+    names.length > 1 ? "they were" : "it was"
+  } left out.`;
+}
+
+/**
+ * The query string the address should have for *path* (a `ConfigLink.path`), given the
+ * one it has now: the configuration's params first, in their fixed order, then every
+ * param that is not ours (a campaign tag stays). "" for none, else with its "?".
+ */
+export function cleanConfigSearch(search: string, path: string): string {
+  const next = new URLSearchParams(path.split("?")[1] ?? "");
+  const ours = new Set<string>(CONFIG_PARAMS);
+  for (const [name, value] of new URLSearchParams(search)) {
+    if (!ours.has(name)) next.append(name, value);
+  }
+  const query = next.toString();
+  return query ? `?${query}` : "";
 }
