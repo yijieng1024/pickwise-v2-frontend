@@ -86,7 +86,8 @@ export default function AdminAppleOptionsPage() {
       <p className="text-muted-foreground text-[12.5px]">
         Fetch now reads Apple&apos;s configurator for every size on the stored buy pages, then the same on
         Apple&apos;s education store with each standard config&apos;s education price (about 8 minutes, about 95
-        calls). It does not re-scrape the buy pages. A deploy stops a running fetch; the stored options are kept.
+        calls). Nothing runs it on a schedule: Apple changes prices a few times a year, so run it here when it
+        does. It does not re-scrape the buy pages. A deploy stops a running fetch; the stored options are kept.
         {view?.running_job_id && !job.accepted && " An Apple fetch or scrape is running now."}
       </p>
 
@@ -116,13 +117,20 @@ export default function AdminAppleOptionsPage() {
           {/* The education-store pass of the same run (10d). */}
           {run.edu && (
             <>
-              <p className="text-muted-foreground">
-                Education store:{" "}
-                {run.edu.error ?? run.edu.skipped ??
-                  `${run.edu.prices ?? 0} prices · ${run.edu.chip_kits ?? 0} chip kits · ${run.edu.apple_calls ?? 0} Apple calls`}
-              </p>
-              {run.edu.stopped && (
-                <p className="text-destructive">Education store stopped by Apple: {String(run.edu.stopped.reason ?? "")}</p>
+              {/* An Edu failure leaves the older Edu prices on the public page with their
+                  older date, so it is the loudest line here: it is the cue to fetch again. */}
+              {run.edu.problem ? (
+                <p
+                  role="alert"
+                  className="border-destructive/40 bg-destructive/10 text-destructive rounded-lg border px-3 py-2 font-semibold"
+                >
+                  Education prices failed. {run.edu.problem}. Run Fetch now again.
+                </p>
+              ) : (
+                <p className="text-muted-foreground">
+                  Education store: {run.edu.prices ?? 0} prices · {run.edu.chip_kits ?? 0} chip kits ·{" "}
+                  {run.edu.apple_calls ?? 0} Apple calls
+                </p>
               )}
               <Problems
                 title="Education prices failed (stored prices kept)"

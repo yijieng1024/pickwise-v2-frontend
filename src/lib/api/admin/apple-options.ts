@@ -37,6 +37,8 @@ export interface AppleOptionsRun {
     stopped?: { reason?: string } | null;
     skipped?: string;
     error?: string;
+    /** One sentence when the Edu pass did not fully succeed; null when it did. */
+    problem?: string | null;
   } | null;
 }
 
