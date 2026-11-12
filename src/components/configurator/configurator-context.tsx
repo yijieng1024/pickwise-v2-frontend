@@ -13,7 +13,7 @@ import {
   type Picks,
 } from "@/lib/api/options";
 import { useAuth } from "@/lib/auth-context";
-import { cleanConfigSearch } from "@/lib/config-url";
+import { buildConfigPath, cleanConfigSearch } from "@/lib/config-url";
 
 export type ConfigView = "original" | "configured";
 
@@ -91,7 +91,7 @@ const Ctx = createContext<ConfiguratorState | null>(null);
  * read the URL and priced the picks, so the page is rendered in the "Configured" view
  * from the first byte. The browser then only tidies the address, with replace, and
  * fetches what the server could not know: the caller's own score, and the Edu price.
- * "Done" does not write the URL yet.
+ * "Done" writes the picks back to the address the same way (`apply`); nothing else does.
  */
 export function ConfiguratorProvider({
   laptopId,
@@ -211,6 +211,13 @@ export function ConfiguratorProvider({
   }, [state, eduActive, laptopId, token, isLoading]);
 
   const apply = (picks: Picks, result: Configured) => {
+    // "Done" is the only thing that writes the configuration to the address (plan step
+    // 10d+): replace, so Back leaves the page in one press. The picks only: never the
+    // view, never Edu. The standard config's own picks are the plain URL.
+    if (options) {
+      const search = cleanConfigSearch(window.location.search, buildConfigPath(laptopId, options, picks));
+      window.history.replaceState(null, "", window.location.pathname + search + window.location.hash);
+    }
     setState({
       picks,
       official: result.edu ? null : result,
