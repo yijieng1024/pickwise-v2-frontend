@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -17,7 +18,7 @@ import {
   ConfiguredTitle,
 } from "@/components/configurator/configured-specs";
 import { LaptopGallery } from "@/components/laptop-gallery";
-import { ConfiguratorProvider, type ConfigLinkState } from "@/components/configurator/configurator-context";
+import { ConfiguratorProvider } from "@/components/configurator/configurator-context";
 import { ConfiguratorDialog } from "@/components/configurator/configurator-dialog";
 import {
   ConfigNotice,
@@ -30,47 +31,76 @@ import {
 import { ReviewSentiment } from "@/components/review-sentiment";
 import { SaveButton } from "@/components/save-button";
 import { compareHref } from "@/lib/compare";
-import { apiFetch, ApiError } from "@/lib/api/client";
+import { apiFetch } from "@/lib/api/client";
 import { mapBackendLaptop, priceLabel } from "@/lib/api/adapters";
 import { DiscontinuedLabel } from "@/components/discontinued-label";
 import { bestFit, getLaptopPickScores, labelForUseCase } from "@/lib/api/pickscore";
-import { configureLaptop, getLaptopOptions } from "@/lib/api/options";
-import { readConfigLink } from "@/lib/config-url";
+import { configuredLaptop } from "@/lib/api/options";
 import { getLaptopReviews } from "@/lib/api/reviews";
-import type {
-  BackendBrand,
-  BackendLaptopDetail,
-  BackendPriceHistoryEntry,
-} from "@/lib/api/types";
+import type { BackendBrand, BackendPriceHistoryEntry } from "@/lib/api/types";
+import { laptopMeta } from "@/lib/laptop-meta";
 import { cn, formatDate } from "@/lib/utils";
 
-export default async function LaptopDetailsPage({
-  params,
-  searchParams,
-}: {
+import { getConfigLink, getLaptop, getOptions, queryOf } from "./data";
+
+interface PageProps {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
+}
+
+/**
+ * The page's own title, description and canonical. The canonical is always the plain
+ * /laptops/{id}: a configuration is not indexed, whatever params the link carries. On a
+ * link with a valid configuration the title and description are the configured
+ * machine's (the name the heading and the share title use, the official build-to-order
+ * total); with invalid params they are the standard laptop's. Never the Education price.
+ * Shares the page's own fetches (./data), and never throws: a laptop that is not there
+ * gets the site's default title and the not-found page.
+ */
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
+  try {
+    const { id } = await params;
+    const raw = await getLaptop(id);
+    if (!raw) return {};
+    const [options, link] = await Promise.all([
+      getOptions(id, raw.model_code),
+      getConfigLink(id, raw.model_code, queryOf(await searchParams)),
+    ]);
+    const applied = options && link.applied;
+    const shown = applied ? configuredLaptop(raw, options, applied.result, applied.picks) : raw;
+    const { title, description } = laptopMeta({
+      name: shown.product_name,
+      processor: shown.processor_model,
+      gpu: shown.gpu_model,
+      ramGb: shown.ram_gb,
+      ssdGb: shown.ssd_gb,
+      displayInch: shown.display_size_inch,
+      weightKg: shown.weight_kg,
+      // A laptop no longer sold has no current price to state.
+      priceRm: applied ? applied.result.total_rm : raw.status === "discontinued" ? null : raw.price_rm,
+      configured: Boolean(applied),
+    });
+    const canonical = `/laptops/${id}`;
+    const image = raw.image_urls[0];
+    return {
+      title,
+      description,
+      alternates: { canonical },
+      openGraph: { title, description, url: canonical, ...(image ? { images: [image] } : {}) },
+    };
+  } catch {
+    return {}; // the page itself reports the error; metadata must not be what breaks
+  }
+}
+
+export default async function LaptopDetailsPage({ params, searchParams }: PageProps) {
   const { id } = await params;
 
-  let raw: BackendLaptopDetail;
-  try {
-    // No caching: the price shown here (and the history below) must reflect
-    // admin edits / scraper runs immediately — a stale 60s data-cache made
-    // updated prices appear to "not show". Opting these fetches out of the
-    // cache also makes the route dynamic, so the whole page stays current.
-    raw = await apiFetch<BackendLaptopDetail>(`/laptops/${id}`, { next: { revalidate: 0 } });
-  } catch (err) {
-    // 404 = well-formed id, no such laptop. 422 = backend's UUID path-param
-    // validation rejecting a malformed id (e.g. a stale non-UUID link).
-    // Both mean "no laptop here" from the user's point of view.
-    if (err instanceof ApiError && (err.status === 404 || err.status === 422)) {
-      notFound();
-    }
-    throw err;
-  }
+  // 404 and 422 both mean "no laptop here" (./data).
+  const raw = await getLaptop(id);
+  if (!raw) notFound();
 
-  const [brand, rawHistory, pickScores, reviews, options] = await Promise.all([
+  const [brand, rawHistory, pickScores, reviews, options, link] = await Promise.all([
     apiFetch<BackendBrand>(`/brands/${raw.brand_id}`),
     apiFetch<BackendPriceHistoryEntry[]>(`/laptops/${id}/price-history`, {
       next: { revalidate: 0 },
@@ -80,34 +110,12 @@ export default async function LaptopDetailsPage({
     // A failure must not take the page down; null renders an honest error
     // state in the reviews section (never placeholder points).
     getLaptopReviews(id).catch(() => null),
-    // Apple build-to-order options (10c): only MacBook standard configs have them,
-    // and a failure only hides the Configure button.
-    raw.model_code?.startsWith("apple-macbook-")
-      ? getLaptopOptions(id).catch(() => null)
-      : Promise.resolve(null),
+    getOptions(id, raw.model_code),
+    // A link with a configuration opens on that configuration, priced on the server.
+    getConfigLink(id, raw.model_code, queryOf(await searchParams)),
   ]);
 
   const laptop = mapBackendLaptop(raw, brand);
-
-  // A link with a configuration (?chip=…&memory=…&storage=…) opens on that configuration,
-  // priced here so the first paint is already right. Which params are valid is decided
-  // from the options loaded above, never by asking /configure and reading its 422. The
-  // official price only: the Edu price swaps in the browser, as on any other visit.
-  const read = readConfigLink(id, await searchParams, options);
-  let link: ConfigLinkState = { applied: null, path: read.path, notice: read.notice };
-  if (read.picks) {
-    try {
-      link = { ...link, applied: { picks: read.picks, result: await configureLaptop(id, read.picks) } };
-    } catch {
-      // The options list said yes and /configure did not answer: show the standard
-      // config and leave the address alone, so a refresh can try again.
-      link = {
-        applied: null,
-        path: null,
-        notice: "The configuration in this link could not be loaded, so the standard configuration is shown.",
-      };
-    }
-  }
 
   const priceHistorySorted = [...rawHistory].sort(
     (a, b) => new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime(),

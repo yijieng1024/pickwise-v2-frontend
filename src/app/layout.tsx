@@ -12,6 +12,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  // The site's public address, for canonical and Open Graph URLs. Set
+  // NEXT_PUBLIC_SITE_URL on Vercel (Production and Preview); unset means local.
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
   title: "PickWise",
   description: "Your decision-making agent for better choices.",
 };
