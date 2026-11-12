@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run lint` — ESLint 9 flat config (`eslint.config.mjs`); lint one file with `npx eslint src/app/page.tsx`
 - `npx tsc --noEmit` — type check
 
-No test framework is configured.
+- `npm test` — Vitest, run once. Local only: there is no CI workflow (decided 2026-11-12). It covers pure functions only; today that is `src/lib/config-url.ts`, the rule for a configuration in the details page URL (`buildConfigPath`, `parseConfigParams`; used by nothing yet). Its cases are `src/lib/config-url.cases.json`, a copy of the backend's `tests/unit/fixtures/config_url_cases.json` that the backend's own path builder is tested against: change both files together, and the test fails when they differ (it compares them when the backend repo sits beside this one). Vitest stays on 4.x while `@types/node` is `^20`: Vitest 5 needs Node types 22 or newer.
 
 ## Commit messages
 
