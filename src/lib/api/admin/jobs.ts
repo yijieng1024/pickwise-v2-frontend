@@ -1,5 +1,4 @@
-// Relative, not "@/": Vitest has no alias config, and jobs.test.ts imports this file.
-import { apiFetch } from "../client";
+import { apiFetch } from "@/lib/api/client";
 
 /**
  * The four long-running admin actions no longer hold the connection open:

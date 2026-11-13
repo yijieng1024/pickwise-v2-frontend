@@ -147,7 +147,8 @@ export function AdminJobPanel({
                 : `Finished with ${job.failed_count} failed`
             }
           >
-            {job.failed_count > 0
+            {/* A feed crawl has no next run that retries it. */}
+            {job.failed_count > 0 && job.job_type !== "scraper.feed_crawler"
               ? "Failed items are retried automatically on the next run."
               : jobResultSummary(job)}
           </OutcomeAlert>
