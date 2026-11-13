@@ -36,6 +36,7 @@ import {
   listScrapeTargets,
   scrapeTargets,
 } from "@/lib/api/admin/scraper";
+import { isJobAccepted } from "@/lib/api/admin/jobs";
 import { ApiError } from "@/lib/api/client";
 import { useJob } from "@/lib/admin/use-job";
 import { useAuth } from "@/lib/auth-context";
@@ -182,6 +183,12 @@ export default function AdminQueuePage() {
     setStarting(true);
     try {
       const res = await feedCrawler(token, brandId);
+      if (isJobAccepted(res)) {
+        // The crawl is a job: the panel follows it and shows the counts.
+        job.start(res);
+        toast.success(res.message);
+        return;
+      }
       const added = res.added_to_queue ?? res.added_count ?? 0;
       const found = res.total_found;
       // "Found 49, added 0" means every link was already queued. That is a
@@ -193,7 +200,13 @@ export default function AdminQueuePage() {
       );
       setReloadTick((t) => t + 1);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Couldn't run the crawler.");
+      // 409 job_running: a scrape or processing job holds the shared lock.
+      toast.error(
+        err instanceof ApiError ? err.message : "Couldn't run the crawler.",
+        err instanceof ApiError && err.code === "job_running"
+          ? { action: { label: "Open Jobs", onClick: () => window.location.assign("/admin/jobs") } }
+          : undefined,
+      );
     } finally {
       setStarting(false);
     }

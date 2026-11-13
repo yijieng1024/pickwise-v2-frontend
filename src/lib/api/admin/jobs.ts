@@ -1,4 +1,5 @@
-import { apiFetch } from "@/lib/api/client";
+// Relative, not "@/": Vitest has no alias config, and jobs.test.ts imports this file.
+import { apiFetch } from "../client";
 
 /**
  * The four long-running admin actions no longer hold the connection open:
@@ -9,6 +10,7 @@ export type JobType =
   | "processor.categorize_untagged"
   | "scraper.bulk_scrape"
   | "scraper.scrape_targets"
+  | "scraper.feed_crawler"
   | "embeddings.generate_all"
   | "pickscore.generate_all"
   | "reviews.ingest_bulk"
@@ -54,6 +56,15 @@ export interface JobAccepted {
   estimated_completion_at: string | null;
   poll_url: string;
   message: string;
+}
+
+/**
+ * Whether a response body is a 202 job envelope. For a route that changed
+ * from answering with its result to answering with a job (the feed crawl),
+ * so the page works against a backend from before or after the change.
+ */
+export function isJobAccepted(body: object): body is JobAccepted {
+  return "job_id" in body;
 }
 
 /** Mirrors the backend's `JobRead` schema (GET /jobs, GET /jobs/{job_id}). */
@@ -162,6 +173,7 @@ const JOB_TYPE_LABELS: Record<string, string> = {
   "processor.categorize_untagged": "Add missing tags",
   "scraper.bulk_scrape": "Bulk scrape brand",
   "scraper.scrape_targets": "Scrape selected targets",
+  "scraper.feed_crawler": "Find new pages",
   "embeddings.generate_all": "Generate embeddings",
   "pickscore.generate_all": "Recalculate Pick Scores",
   "reviews.ingest_bulk": "Run ingest",
@@ -188,6 +200,19 @@ export function jobResultSummary(job: Pick<Job, "job_type" | "result">): string 
   if (r && job.job_type === "processor.process_pending") {
     const n = Array.isArray(r.identity_conflicts) ? r.identity_conflicts.length : 0;
     return n > 0 ? `${n} identity conflict${n === 1 ? "" : "s"}: not updated, open the job to see them.` : null;
+  }
+  if (r && job.job_type === "scraper.feed_crawler") {
+    // "Found 49, added 0" means every link was already queued: a success.
+    const sites = Object.entries(
+      (r.sites ?? {}) as Record<string, { pages_found: number; targets_added: number }>,
+    );
+    const total = `Found ${r.total_found}, added ${r.added_to_queue} new.`;
+    // One site says nothing the totals do not; an ASUS crawl covers two.
+    if (sites.length < 2) return total;
+    return [
+      total,
+      ...sites.map(([host, s]) => `${host}: found ${s.pages_found}, added ${s.targets_added}.`),
+    ].join(" ");
   }
   if (r && job.job_type === "price_guide.apply") {
     return `Written: ${r.filled}. Confirmed: ${r.confirmed}. Differs: ${r.differs_from_guide}. Awaiting confirmation: ${r.awaiting_confirmation}. Unclear: ${r.skipped_unclear}.`;

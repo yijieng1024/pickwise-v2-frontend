@@ -51,8 +51,13 @@ export interface BulkScrapeReport {
  * not accept one from the client, so a brand can never be crawled against
  * another brand's site. Change it on the brand record instead.
  */
-export function feedCrawler(token: string, brandId: string): Promise<FeedCrawlerResult> {
-  return apiFetch<FeedCrawlerResult>("/scraper/feed-crawler", {
+export function feedCrawler(
+  token: string,
+  brandId: string,
+): Promise<FeedCrawlerResult | JobAccepted> {
+  // A backend from before the crawl became a job answers 200 with the counts;
+  // after, 202 with a job. Tell them apart with `isJobAccepted`.
+  return apiFetch<FeedCrawlerResult | JobAccepted>("/scraper/feed-crawler", {
     method: "POST",
     token,
     body: JSON.stringify({ brand_id: brandId }),
