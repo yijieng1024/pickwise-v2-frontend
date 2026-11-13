@@ -84,6 +84,12 @@ const STATUS_OPTIONS = [
   { value: "suspended", label: "Suspended" },
 ];
 
+const CHECKED_OPTIONS = [
+  { value: "any", label: "Any Last Checked" },
+  { value: "never", label: "Never checked" },
+  { value: "checked", label: "Has Last Checked" },
+];
+
 const STATUS_VALUES: LaptopStatus[] = ["active", "inactive", "discontinued", "suspended"];
 
 /**
@@ -127,10 +133,10 @@ export default function AdminCatalogLaptopsPage() {
   const [reloadTick, setReloadTick] = useState(0);
 
   const query = useAdminQuery({
-    filters: { q: "", brand: "all", status: "all", added: "any" },
+    filters: { q: "", brand: "all", status: "all", added: "any", checked: "any" },
     sortKeys: SORT_KEYS,
   });
-  const { q: debouncedSearch, brand: brandId, status, added } = query.values;
+  const { q: debouncedSearch, brand: brandId, status, added, checked } = query.values;
   const { page, sort } = query;
   const [search, setSearch] = useSearchDraft(debouncedSearch, (value) =>
     query.set({ q: value }),
@@ -188,6 +194,7 @@ export default function AdminCatalogLaptopsPage() {
       status: status === "all" ? undefined : (status as LaptopStatus),
       addedFrom:
         added === "any" ? undefined : new Date(Date.now() - Number(added) * 86_400_000),
+      priceChecked: checked === "any" ? undefined : checked === "checked",
       sortBy: sort?.key,
       sortDir: sort?.direction,
       skip: (page - 1) * PAGE_SIZE,
@@ -205,7 +212,7 @@ export default function AdminCatalogLaptopsPage() {
     return () => {
       cancelled = true;
     };
-  }, [debouncedSearch, brandId, status, added, sort, page, reloadTick]);
+  }, [debouncedSearch, brandId, status, added, checked, sort, page, reloadTick]);
 
   async function confirmDelete() {
     if (!target || !token) return;
@@ -340,6 +347,24 @@ export default function AdminCatalogLaptopsPage() {
             <SelectContent>
               <SelectGroup>
                 {ADDED_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <Select
+            items={CHECKED_OPTIONS}
+            value={checked}
+            onValueChange={(v) => query.set({ checked: v as string })}
+          >
+            <SelectTrigger className="w-48" aria-label="Filter by price Last Checked">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {CHECKED_OPTIONS.map((o) => (
                   <SelectItem key={o.value} value={o.value}>
                     {o.label}
                   </SelectItem>
