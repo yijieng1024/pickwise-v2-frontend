@@ -1,6 +1,7 @@
 import {
   Activity,
   Bot,
+  CalendarClock,
   Coins,
   Cpu,
   Database,
@@ -129,6 +130,7 @@ export const navGroups: NavGroup[] = [
     links: [
       { href: "/admin/agent-monitoring", label: "Chatbot Monitoring", icon: Activity },
       { href: "/admin/llm-settings", label: "LLM Settings", icon: Settings2 },
+      { href: "/admin/pipeline-settings", label: "Weekly Pipeline", icon: CalendarClock },
       { href: "/admin/llm-usage", label: "Token Usage", icon: Coins },
     ],
   },

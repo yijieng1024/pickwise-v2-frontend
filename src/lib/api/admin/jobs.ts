@@ -72,6 +72,10 @@ export interface Job {
   job_type: string;
   status: JobStatus;
   created_by: string | null;
+  /** "admin" (a button, or a run started by hand) or "schedule". */
+  started_by: "admin" | "schedule";
+  /** The worker runs in GitHub Actions, not on Render. */
+  runs_outside_render: boolean;
   params: Record<string, unknown>;
   total_count: number;
   processed_count: number;
@@ -184,6 +188,7 @@ const JOB_TYPE_LABELS: Record<string, string> = {
   "benchmarks.refresh_gpu": "Refresh PassMark GPU marks",
   "price_guide.apply": "Apply price guide",
   "apple.options_fetch": "Fetch Apple options",
+  "pipeline.weekly": "Weekly pipeline",
 };
 
 export function jobTypeLabel(jobType: string): string {
@@ -224,4 +229,31 @@ export function jobResultSummary(job: Pick<Job, "job_type" | "result">): string 
   if (r.written === false) return "Stopped before writing — the previous scores are unchanged.";
   const rows = Number(r.rows_created ?? 0) + Number(r.rows_updated ?? 0);
   return `${r.laptops_scored} scored, ${r.laptops_withheld} withheld, ${rows} rows written.`;
+}
+
+/**
+ * The last weekly pipeline run, in words: when it started (Malaysia time), who
+ * started it, and how it ended. A run skipped because another job was busy is
+ * `completed` with `result.skipped`; a run stopped at a step is `failed` with
+ * `result.stopped_at`.
+ */
+export function pipelineRunSummary(
+  job: Pick<Job, "status" | "started_by" | "created_at" | "started_at" | "result">,
+): { when: string; startedBy: string; status: string } {
+  const when = new Date(job.started_at ?? job.created_at).toLocaleString("en-MY", {
+    timeZone: "Asia/Kuala_Lumpur",
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const startedBy = job.started_by === "schedule" ? "By the schedule" : "By hand";
+  const r = job.result;
+  let status: string = job.status;
+  if (r && typeof r.skipped === "string") status = `skipped: ${r.skipped}`;
+  else if (r && typeof r.stopped_at === "string") status = `stopped at ${r.stopped_at}`;
+  return { when, startedBy, status };
 }

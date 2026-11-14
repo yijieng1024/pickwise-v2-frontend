@@ -179,3 +179,47 @@ export function setReviewPauseReason(token: string, reason: string | null): Prom
     next: { revalidate: 0 },
   });
 }
+
+// ---------------------------------------------------------------------------
+// Weekly pipeline (GET/PUT /admin/settings/pipeline)
+// ---------------------------------------------------------------------------
+
+export const PIPELINE_WEEKDAYS = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+] as const;
+
+/** Mirrors the backend's `PipelineSettingsRead`. `weekday` is in Malaysia time. */
+export interface PipelineSettings {
+  enabled: boolean;
+  weekday: string;
+  /** Empty: no summary email is sent. */
+  report_email: string;
+  /** 1 to 100; price changes at or above it are flagged at the top of the email. */
+  price_jump_percent: number;
+  asus_enabled: boolean;
+  rog_enabled: boolean;
+  hp_enabled: boolean;
+  updated_at: string;
+}
+
+/** Omit a field to leave it unchanged. A 422's message says what is wrong — show it as-is. */
+export type PipelineSettingsUpdate = Partial<Omit<PipelineSettings, "updated_at">>;
+
+export function getPipelineSettings(token: string): Promise<PipelineSettings> {
+  return apiFetch<PipelineSettings>("/admin/settings/pipeline", { token, next: { revalidate: 0 } });
+}
+
+export function updatePipelineSettings(token: string, body: PipelineSettingsUpdate): Promise<PipelineSettings> {
+  return apiFetch<PipelineSettings>("/admin/settings/pipeline", {
+    method: "PUT",
+    token,
+    body: JSON.stringify(body),
+    next: { revalidate: 0 },
+  });
+}
