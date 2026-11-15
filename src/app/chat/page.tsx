@@ -1302,7 +1302,7 @@ export default function ChatPage() {
             {renameError && (
               <p className="text-negative text-[12px] font-medium">{renameError}</p>
             )}
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-3">
               <Button
                 type="button"
                 variant="outline"

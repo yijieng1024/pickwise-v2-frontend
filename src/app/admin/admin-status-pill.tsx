@@ -178,9 +178,17 @@ const UPLOAD: Record<string, Entry> = {
   invalid: { label: "Not a product page", tone: "bad" },
 };
 
+/**
+ * Pico turns and the model calls inside one. `answered` is a model call that
+ * returned a reply. `fallback` is `warn`, not `bad`: a backup model answered,
+ * so the user got their reply, but a rising count says the primary is being
+ * rate-limited or failing.
+ */
 const AGENT: Record<string, Entry> = {
   success: { label: "Success", tone: "good" },
+  answered: { label: "Answered", tone: "good" },
   error: { label: "Error", tone: "bad" },
+  fallback: { label: "Fallback", tone: "warn" },
 };
 
 const VOCABULARIES = {

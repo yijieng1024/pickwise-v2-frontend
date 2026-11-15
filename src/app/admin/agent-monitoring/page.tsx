@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Activity,
   AlertTriangle,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   Coins,
   Copy,
@@ -12,16 +15,17 @@ import {
   MessageSquare,
   Search,
   Sparkles,
+  X,
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { StatusBarChart } from "@/components/charts/status-bar-chart";
 import { TrendLine } from "@/components/charts/trend-line";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Sheet, SheetClose, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -38,7 +42,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Spinner } from "@/components/ui/spinner";
 import { Card } from "@/components/ui/card";
 import {
   type AgentModelCall,
@@ -65,6 +68,7 @@ import {
   type TrendRange,
 } from "../admin-trend-range";
 import { SortableTableHead } from "../admin-sortable-head";
+import { AdminStatusPill } from "../admin-status-pill";
 
 const PAGE_SIZE = 25;
 
@@ -92,13 +96,23 @@ const statusOptions = [
   { value: "error", label: "Error" },
 ];
 
-const statusBadgeClass: Record<AgentRunStatus, string> = {
-  success: "bg-positive/10 text-positive",
-  error: "bg-negative/10 text-negative",
-};
+/** Error-rate tile: neutral below the first, amber from it, red from the second. */
+const ERROR_RATE_WARN_PCT = 2;
+const ERROR_RATE_BAD_PCT = 5;
+
+/** The open turn, in the URL so it can be linked and survives a refresh. */
+const RUN_PARAM = "run";
+
+/** "850 ms" below a second, "12.3 s" from one second up. */
+function formatLatency(ms: number): string {
+  return ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(1)} s`;
+}
 
 export default function AdminAgentMonitoringPage() {
   const { token } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const [stats, setStats] = useState<AgentMonitoringStats | null>(null);
   const [statsError, setStatsError] = useState<string | null>(null);
@@ -128,20 +142,33 @@ export default function AdminAgentMonitoringPage() {
     query.set({ q: value }),
   );
 
-  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  // Kept apart from useAdminQuery on purpose: its filters feed `signature`,
+  // and opening a turn must not refetch the table behind it.
+  const selectedRunId = searchParams.get(RUN_PARAM);
+  function selectRun(id: string | null) {
+    const sp = new URLSearchParams(searchParams.toString());
+    if (id) sp.set(RUN_PARAM, id);
+    else sp.delete(RUN_PARAM);
+    const qs = sp.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }
   const [selectedRun, setSelectedRun] = useState<AgentRunDetail | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [detailReloadTick, setDetailReloadTick] = useState(0);
 
-  // Reset the loading state once the effective query changes — the "adjust
+  // A new query keeps the previous rows on screen, dimmed, until its own
+  // arrive (as public browse does): `pending` is true while the rows shown
+  // belong to another query. Only a stale error is cleared here — the "adjust
   // state during render" pattern, not an effect (see laptops-browse.tsx).
   const paramsSig = query.signature;
   const [prevParamsSig, setPrevParamsSig] = useState(paramsSig);
   if (paramsSig !== prevParamsSig) {
     setPrevParamsSig(paramsSig);
-    setRuns(null);
     setLoadError(null);
   }
+  const fetchSig = `${paramsSig}#${reloadTick}`;
+  const [loadedSig, setLoadedSig] = useState<string | null>(null);
+  const pending = runs !== null && loadedSig !== fetchSig;
 
   useEffect(() => {
     if (!token) return;
@@ -159,16 +186,19 @@ export default function AdminAgentMonitoringPage() {
         if (cancelled) return;
         setRuns(res.items);
         setTotal(res.total);
+        setLoadedSig(fetchSig);
+        setLoadError(null);
       })
       .catch((err) => {
         if (cancelled) return;
-        setLoadError(err instanceof ApiError ? err.message : "Failed to load agent runs.");
+        setLoadError(err instanceof ApiError ? err.message : "Failed to load turns.");
       });
 
     return () => {
       cancelled = true;
     };
-  }, [token, debouncedSearch, status, sort, page, reloadTick]);
+    // fetchSig carries every filter, the sort, the page and the retry tick.
+  }, [token, debouncedSearch, status, sort, page, fetchSig]);
 
   useEffect(() => {
     if (!token) return;
@@ -229,13 +259,28 @@ export default function AdminAgentMonitoringPage() {
       })
       .catch((err) => {
         if (!cancelled) {
-          setDetailError(err instanceof ApiError ? err.message : "Failed to load run detail.");
+          setDetailError(err instanceof ApiError ? err.message : "Failed to load this turn.");
         }
       });
     return () => {
       cancelled = true;
     };
   }, [selectedRunId, token, detailReloadTick]);
+
+  // Previous / next in the sheet step through the rows on the current page.
+  const selectedIndex = runs && selectedRunId ? runs.findIndex((r) => r.id === selectedRunId) : -1;
+  const prevRunId = runs && selectedIndex > 0 ? runs[selectedIndex - 1].id : null;
+  const nextRunId =
+    runs && selectedIndex >= 0 && selectedIndex < runs.length - 1 ? runs[selectedIndex + 1].id : null;
+
+  // Median and 95th percentile for the latency tile, over the same latest
+  // 1,000 turns the backend's /stats aggregates (the trend fetch asks for that
+  // exact window: newest first, limit TREND_WINDOW).
+  const windowLatency = useMemo(() => {
+    if (!trendRuns || trendRuns.length === 0) return null;
+    const latencies = trendRuns.map((r) => r.latency_ms);
+    return { median: percentile(latencies, 50), p95: percentile(latencies, 95) };
+  }, [trendRuns]);
 
   const chartData = useMemo(
     () =>
@@ -305,40 +350,81 @@ export default function AdminAgentMonitoringPage() {
 
       <div className="flex flex-col gap-3">
         <h2 className="text-sm font-bold tracking-tight">Stats</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          <StatTile icon={Activity} label="Runs today" value={stats?.runs_today} error={!!statsError} />
-          <StatTile
-            icon={XCircle}
-            label="Error rate"
-            value={stats?.error_rate_pct}
-            suffix="%"
-            error={!!statsError}
-            tone={stats && stats.error_rate_pct > 0 ? "negative" : undefined}
-          />
-          <StatTile
-            icon={Clock}
-            label="Avg latency"
-            value={stats?.avg_latency_ms}
-            suffix=" ms"
-            error={!!statsError}
-          />
-          <StatTile icon={Coins} label="Tokens today" value={stats?.tokens_today} error={!!statsError} />
-          <StatTile
-            icon={Coins}
-            label="Avg tokens / run"
-            value={stats ? Math.round(stats.avg_tokens_per_run) : undefined}
-            error={!!statsError}
-          />
-          {/* Same window as the other tiles: the latest 1,000 runs. A backup
-              answering is not an error, but a rising count says the primary is
-              being rate-limited or failing. */}
-          <StatTile
-            icon={LifeBuoy}
-            label="Fallback runs"
-            value={stats?.fallback_count}
-            error={!!statsError}
-            tone={stats && stats.fallback_count > 0 ? "warning" : undefined}
-          />
+        {/* Two periods, so two labelled groups: the first pair counts today,
+            the other four cover the backend's stats window (its latest 1,000
+            turns, fewer while history is shorter than that). */}
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_2fr]">
+          <div className="flex flex-col gap-1.5">
+            <TileGroupCaption>Today</TileGroupCaption>
+            <div className="grid grid-cols-2 gap-3">
+              <StatTile
+                icon={Activity}
+                label="Turns today"
+                value={stats?.runs_today.toLocaleString()}
+                error={!!statsError}
+              />
+              <StatTile
+                icon={Coins}
+                label="Tokens today"
+                value={stats?.tokens_today.toLocaleString()}
+                error={!!statsError}
+              />
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <TileGroupCaption>
+              Last {(stats?.total_runs ?? TREND_WINDOW).toLocaleString()} turns
+            </TileGroupCaption>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <StatTile
+                icon={XCircle}
+                label="Error rate"
+                value={stats ? `${stats.error_rate_pct.toLocaleString()}%` : undefined}
+                error={!!statsError}
+                tone={
+                  !stats || stats.error_rate_pct < ERROR_RATE_WARN_PCT
+                    ? undefined
+                    : stats.error_rate_pct < ERROR_RATE_BAD_PCT
+                      ? "warning"
+                      : "negative"
+                }
+              />
+              {/* Median, not the mean: the chart below says why. From the trend
+                  fetch, which is the same latest-1,000 window. */}
+              <StatTile
+                icon={Clock}
+                label="Median latency"
+                value={
+                  trendRuns === null
+                    ? undefined
+                    : windowLatency?.median == null
+                      ? "—"
+                      : formatLatency(windowLatency.median)
+                }
+                sub={windowLatency?.p95 == null ? undefined : `p95 ${formatLatency(windowLatency.p95)}`}
+                error={!!trendError}
+              />
+              <StatTile
+                icon={Coins}
+                label="Avg tokens / turn"
+                value={stats ? Math.round(stats.avg_tokens_per_run).toLocaleString() : undefined}
+                error={!!statsError}
+              />
+              {/* A backup answering is not an error, but a rising count says
+                  the primary is being rate-limited or failing. */}
+              <StatTile
+                icon={LifeBuoy}
+                label="Fallback turns"
+                value={
+                  stats
+                    ? `${stats.fallback_count.toLocaleString()} / ${stats.total_runs.toLocaleString()}`
+                    : undefined
+                }
+                error={!!statsError}
+                tone={stats && stats.fallback_count > 0 ? "warning" : undefined}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Trends. A stat tile says where Pico is now; these say which way it
@@ -420,7 +506,7 @@ export default function AdminAgentMonitoringPage() {
                     values: trend.p95,
                   },
                 ]}
-                formatValue={(v) => `${v.toLocaleString()} ms`}
+                formatValue={formatLatency}
                 yWidth={72}
               />
             </Card>
@@ -436,21 +522,22 @@ export default function AdminAgentMonitoringPage() {
             <AdminEmptyState title="No tool calls recorded yet" />
           ) : (
             <>
-              <h3 className="mb-2 text-[13px] font-semibold text-muted-foreground">
-                Tool usage (last {stats.total_runs.toLocaleString()} runs)
-              </h3>
+              <ChartHeading
+                title="Tool usage"
+                caption={`Calls per tool across the last ${stats.total_runs.toLocaleString()} turns.`}
+              />
               <StatusBarChart data={chartData} height={200} />
             </>
           )}
         </Card>
       </div>
 
-      <div className="border-line bg-surface flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center">
+      <Card className="flex-col gap-3 p-4 sm:flex-row sm:items-center">
         <div className="relative flex-1 sm:max-w-xs">
           <Search className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search message…"
-            aria-label="Search agent runs by message"
+            aria-label="Search turns by message"
             autoComplete="off"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -458,7 +545,7 @@ export default function AdminAgentMonitoringPage() {
           />
         </div>
         <Select items={statusOptions} value={status} onValueChange={(v) => query.set({ status: v as string })}>
-          <SelectTrigger className="w-full sm:w-40">
+          <SelectTrigger className="w-full sm:w-40" aria-label="Filter turns by status">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -471,7 +558,7 @@ export default function AdminAgentMonitoringPage() {
             </SelectGroup>
           </SelectContent>
         </Select>
-      </div>
+      </Card>
 
       <Card className="py-0">
         {loadError ? (
@@ -479,100 +566,153 @@ export default function AdminAgentMonitoringPage() {
         ) : runs === null ? (
           <AdminLoadingState />
         ) : runs.length === 0 ? (
-          <AdminEmptyState title="No agent runs match these filters" />
+          <AdminEmptyState title="No turns match these filters" />
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Message</TableHead>
-                <TableHead>User</TableHead>
-                <TableHead className="w-[120px]">Status</TableHead>
-                <TableHead>Tools</TableHead>
-                <TableHead>Model</TableHead>
-                <SortableTableHead
-                  label="Latency"
-                  sortKey="latency_ms"
-                  className="text-right"
-                  sort={sort}
-                  onSort={query.sortBy}
-                />
-                <SortableTableHead
-                  label="Tokens in"
-                  sortKey="input_tokens"
-                  className="text-right"
-                  sort={sort}
-                  onSort={query.sortBy}
-                />
-                <SortableTableHead
-                  label="Tokens out"
-                  sortKey="output_tokens"
-                  className="text-right"
-                  sort={sort}
-                  onSort={query.sortBy}
-                />
-                <SortableTableHead
-                  label="Created"
-                  sortKey="created_at"
-                  sort={sort}
-                  onSort={query.sortBy}
-                />
-                <TableHead className="w-[70px] text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {runs.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell className="max-w-xs truncate">{r.user_message}</TableCell>
-                  <TableCell className="text-muted-foreground">{r.username}</TableCell>
-                  <TableCell>
-                    <Badge className={cn("capitalize", statusBadgeClass[r.status])}>{r.status}</Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {r.tool_call_count > 0 ? r.tool_names.join(", ") : "—"}
-                  </TableCell>
-                  <TableCell>
-                    <ModelCell model={r.model} position={r.model_position} fallback={r.fallback_triggered} />
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">{r.latency_ms.toLocaleString()} ms</TableCell>
-                  <TableCell className="text-right tabular-nums">{r.input_tokens?.toLocaleString() ?? "—"}</TableCell>
-                  <TableCell className="text-right tabular-nums">{r.output_tokens?.toLocaleString() ?? "—"}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {new Date(r.created_at).toLocaleString("en-MY", {
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="outline" size="sm" onClick={() => setSelectedRunId(r.id)}>
-                      View
-                    </Button>
-                  </TableCell>
+          <div className={cn("transition-opacity", pending && "opacity-60")} aria-busy={pending}>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Message</TableHead>
+                  <TableHead>User</TableHead>
+                  <TableHead className="w-[120px]">Status</TableHead>
+                  <TableHead>Tools</TableHead>
+                  <TableHead>Model</TableHead>
+                  <SortableTableHead
+                    label="Latency"
+                    sortKey="latency_ms"
+                    className="text-right"
+                    sort={sort}
+                    onSort={query.sortBy}
+                  />
+                  {/* One column for both counts, as in the turn's model-calls
+                      table. It sorts on input tokens; output-token sort went
+                      with its column. */}
+                  <SortableTableHead
+                    label="Tokens in / out"
+                    sortKey="input_tokens"
+                    className="text-right"
+                    sort={sort}
+                    onSort={query.sortBy}
+                  />
+                  <SortableTableHead
+                    label="Created"
+                    sortKey="created_at"
+                    sort={sort}
+                    onSort={query.sortBy}
+                  />
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {runs.map((r) => (
+                  <TableRow key={r.id} data-state={r.id === selectedRunId ? "selected" : undefined}>
+                    <TableCell className="max-w-xs">
+                      {/* The way into the turn: a real button, so Tab and Enter work. */}
+                      <button
+                        type="button"
+                        title={r.user_message}
+                        onClick={() => selectRun(r.id)}
+                        className="text-brand-text block w-full cursor-pointer truncate rounded-sm text-left font-medium outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+                      >
+                        {r.user_message}
+                      </button>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{r.username}</TableCell>
+                    <TableCell>
+                      <AdminStatusPill kind="agent" value={r.status} />
+                    </TableCell>
+                    {/* One tool per line: the column stays as narrow as its
+                        longest name however many tools a turn called. */}
+                    <TableCell className="text-muted-foreground">
+                      {r.tool_names.length === 0 ? (
+                        "—"
+                      ) : (
+                        <ul className="flex flex-col gap-0.5">
+                          {r.tool_names.map((name, i) => (
+                            <li key={i}>{name}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <ModelCell model={r.model} position={r.model_position} fallback={r.fallback_triggered} />
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">{formatLatency(r.latency_ms)}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {r.input_tokens === null
+                        ? "—"
+                        : `${r.input_tokens.toLocaleString()} / ${(r.output_tokens ?? 0).toLocaleString()}`}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {parseUtc(r.created_at).toLocaleString("en-MY", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </Card>
 
       <AdminPagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={query.setPage} />
 
-      <Dialog open={selectedRunId !== null} onOpenChange={(open) => !open && setSelectedRunId(null)}>
-        <DialogContent className="max-h-[85vh] w-[calc(100vw-2rem)] sm:max-w-4xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Agent run detail</DialogTitle>
-          </DialogHeader>
-          {detailError ? (
-            <AdminErrorState message={detailError} onRetry={() => setDetailReloadTick((t) => t + 1)} />
-          ) : selectedRun === null ? (
-            <AdminLoadingState />
-          ) : (
-            <RunDetail run={selectedRun} />
-          )}
-        </DialogContent>
-      </Dialog>
+      <Sheet open={selectedRunId !== null} onOpenChange={(open) => !open && selectRun(null)}>
+        {/* The side-prefixed width classes are the ones that beat the sheet's
+            own `data-[side=right]:sm:max-w-sm`. The header sits outside the
+            scrolling body, so the title and close stay put. */}
+        <SheetContent
+          side="right"
+          showCloseButton={false}
+          className="gap-0 data-[side=right]:w-full data-[side=right]:sm:max-w-3xl"
+        >
+          <div className="border-line flex shrink-0 items-center gap-1 border-b py-2.5 pr-3 pl-4">
+            <SheetTitle className="mr-auto">Turn detail</SheetTitle>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Previous turn on this page"
+              disabled={!prevRunId}
+              onClick={() => selectRun(prevRunId)}
+            >
+              <ChevronLeft />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Next turn on this page"
+              disabled={!nextRunId}
+              onClick={() => selectRun(nextRunId)}
+            >
+              <ChevronRight />
+            </Button>
+            <SheetClose render={<Button variant="ghost" size="icon-sm" aria-label="Close" />}>
+              <X />
+            </SheetClose>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            {detailError ? (
+              <AdminErrorState message={detailError} onRetry={() => setDetailReloadTick((t) => t + 1)} />
+            ) : selectedRun === null ? (
+              <AdminLoadingState />
+            ) : (
+              <RunDetail run={selectedRun} />
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
+  );
+}
+
+function TileGroupCaption({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="text-muted-foreground text-[11px] font-semibold tracking-wide uppercase">
+      {children}
+    </span>
   );
 }
 
@@ -594,11 +734,11 @@ function ChartHeading({ title, caption }: { title: string; caption: string }) {
 }
 
 function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  return parseUtc(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
 
 function relativeTime(iso: string): string {
-  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  const mins = Math.floor((Date.now() - parseUtc(iso).getTime()) / 60000);
   if (mins < 1) return "just now";
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
@@ -635,11 +775,11 @@ function Meta({ label, value }: { label: string; value: string }) {
 
 function CopyableId({ label, value }: { label: string; value: string }) {
   const [copied, setCopied] = useState(false);
+  // Success is the check icon alone; only a failure needs words.
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(value);
       setCopied(true);
-      toast.success(`${label} ID copied.`);
       setTimeout(() => setCopied(false), 1500);
     } catch {
       toast.error("Couldn't copy to clipboard.");
@@ -649,14 +789,15 @@ function CopyableId({ label, value }: { label: string; value: string }) {
     <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
       <span className="font-medium uppercase tracking-wide">{label}</span>
       <span className="truncate font-mono">{value}</span>
-      <button
-        type="button"
-        aria-label={`Copy ${label.toLowerCase()} ID`}
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        aria-label={copied ? `${label} ID copied` : `Copy ${label.toLowerCase()} ID`}
         onClick={handleCopy}
-        className="hover:text-foreground shrink-0"
+        className="shrink-0"
       >
         {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -666,7 +807,7 @@ function RunDetail({ run }: { run: AgentRunDetail }) {
     <div className="flex flex-col gap-4 text-[13px]">
       {/* Header: status + who + when */}
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <Badge className={cn("capitalize", statusBadgeClass[run.status])}>{run.status}</Badge>
+        <AdminStatusPill kind="agent" value={run.status} />
         <span className="font-medium">{run.username}</span>
         <span className="text-muted-foreground">·</span>
         <span className="text-muted-foreground">
@@ -676,7 +817,7 @@ function RunDetail({ run }: { run: AgentRunDetail }) {
 
       {/* Metadata grid */}
       <div className="border-line grid grid-cols-2 gap-x-4 gap-y-3 rounded-lg border p-3 sm:grid-cols-4">
-        <Meta label="Latency" value={`${run.latency_ms.toLocaleString()} ms`} />
+        <Meta label="Latency" value={formatLatency(run.latency_ms)} />
         <Meta label="Input tokens" value={run.input_tokens?.toLocaleString() ?? "—"} />
         <Meta label="Output tokens" value={run.output_tokens?.toLocaleString() ?? "—"} />
         <Meta label="Tool calls" value={String(run.tool_calls.length)} />
@@ -688,7 +829,7 @@ function RunDetail({ run }: { run: AgentRunDetail }) {
       {/* Conversation */}
       <div className="flex flex-col gap-1">
         <span className="flex items-center gap-1.5 text-[12px] font-semibold text-muted-foreground">
-          <MessageSquare /> User
+          <MessageSquare className="size-3.5" /> User
         </span>
         <p className="bg-surface-2 rounded-lg p-3 whitespace-pre-wrap">{run.user_message}</p>
       </div>
@@ -703,7 +844,7 @@ function RunDetail({ run }: { run: AgentRunDetail }) {
       {run.error_message && (
         <div className="flex flex-col gap-1">
           <span className="text-negative flex items-center gap-1.5 text-[12px] font-semibold">
-            <AlertTriangle /> Error
+            <AlertTriangle className="size-3.5" /> Error
           </span>
           <p className="bg-negative/10 text-negative rounded-lg p-3 whitespace-pre-wrap">
             {run.error_message}
@@ -730,10 +871,10 @@ function RunDetail({ run }: { run: AgentRunDetail }) {
                 <span className="font-semibold">{call.name}</span>
                 {call.duration_ms !== null && (
                   <span className="tabular-nums text-[12px] text-muted-foreground">
-                    {call.duration_ms.toLocaleString()} ms
+                    {formatLatency(call.duration_ms)}
                   </span>
                 )}
-                {call.error && <Badge className="bg-negative/10 text-negative">Error</Badge>}
+                {call.error && <AdminStatusPill kind="agent" value="error" />}
               </div>
               {call.error && <p className="text-negative mb-2 text-[12.5px]">{call.error}</p>}
               <PreviewBlock label="Args" content={call.args_preview} />
@@ -745,7 +886,7 @@ function RunDetail({ run }: { run: AgentRunDetail }) {
 
       {/* IDs */}
       <div className="border-line flex flex-col gap-1.5 border-t pt-3">
-        <CopyableId label="Run" value={run.id} />
+        <CopyableId label="Turn" value={run.id} />
         <CopyableId label="Conversation" value={run.conversation_id} />
       </div>
     </div>
@@ -792,17 +933,10 @@ function ModelCalls({ calls }: { calls: AgentModelCall[] }) {
                   )}
                 </TableCell>
                 <TableCell>
-                  <Badge
-                    className={cn(
-                      "capitalize",
-                      statusBadgeClass[call.status === "answered" ? "success" : "error"],
-                    )}
-                  >
-                    {call.status}
-                  </Badge>
+                  <AdminStatusPill kind="agent" value={call.status} />
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
-                  {call.duration_ms === null ? "—" : `${call.duration_ms.toLocaleString()} ms`}
+                  {call.duration_ms === null ? "—" : formatLatency(call.duration_ms)}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
                   {call.input_tokens === null
@@ -827,7 +961,6 @@ function PreviewBlock({ label, content }: { label: string; content: string }) {
     try {
       await navigator.clipboard.writeText(formatted);
       setCopied(true);
-      toast.success(`${label} copied.`);
       setTimeout(() => setCopied(false), 1500);
     } catch {
       toast.error("Couldn't copy to clipboard.");
@@ -853,19 +986,21 @@ function StatTile({
   icon: Icon,
   label,
   value,
-  suffix = "",
+  sub,
   error,
   tone,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
-  value: number | undefined;
-  suffix?: string;
+  /** Already formatted. `undefined` while loading. */
+  value: string | undefined;
+  /** A second, smaller figure under the label. */
+  sub?: string;
   error: boolean;
   tone?: "negative" | "warning";
 }) {
   return (
-    <div className="border-line bg-surface flex items-center gap-3 rounded-lg border p-3">
+    <Card className="flex-row items-center gap-3 p-3">
       <span
         className={cn(
           "flex size-8 shrink-0 items-center justify-center rounded-full",
@@ -878,25 +1013,22 @@ function StatTile({
       >
         <Icon className="size-4" />
       </span>
-      <div>
+      <div className="min-w-0">
+        {/* The skeleton bar sits in a box the height of the text line it
+            replaces (text-xl: 28px), so the tile does not jump when data lands. */}
         <div
           className={cn(
-            "text-xl font-bold tabular-nums",
+            "flex h-7 items-center text-xl font-bold whitespace-nowrap tabular-nums",
             tone === "negative" && "text-negative",
             tone === "warning" && "text-warning",
           )}
         >
-          {error ? (
-            "—"
-          ) : value === undefined ? (
-            <Spinner className="size-4 text-muted-foreground" />
-          ) : (
-            `${value.toLocaleString()}${suffix}`
-          )}
+          {error ? "—" : value === undefined ? <Skeleton className="h-4 w-14" /> : value}
         </div>
         <div className="text-[12.5px] text-muted-foreground">{label}</div>
+        {sub && !error && <div className="text-[11px] text-muted-foreground tabular-nums">{sub}</div>}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -925,9 +1057,12 @@ function ModelCell({
     <div className="flex flex-col items-start gap-0.5">
       <span className="text-[12.5px]">{model}</span>
       {fallback && (
-        <Badge className="bg-warning/10 text-warning">
-          Fallback{position ? ` · backup ${position}` : " · earlier step"}
-        </Badge>
+        <span className="flex items-center gap-1.5">
+          <AdminStatusPill kind="agent" value="fallback" />
+          <span className="text-[11px] text-muted-foreground">
+            {position ? `backup ${position}` : "earlier step"}
+          </span>
+        </span>
       )}
     </div>
   );
