@@ -133,7 +133,7 @@ export function ConfiguratorControls() {
 }
 
 const PRICE_BADGE =
-  "bg-brand-tint text-brand-text self-start rounded-full px-2.5 py-1 text-[10.5px] font-semibold tracking-wide uppercase";
+  "bg-brand-tint text-brand-text self-start rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase";
 
 /** The hero price block: the server-rendered original, its education price, or the
  *  configured total (at whichever of the two prices is on). */
@@ -173,7 +173,7 @@ export function ConfiguredPrice({ original }: { original: ReactNode }) {
           <span className="sr-only">Official price </span>
           <s>RM {eduView.official_price_rm.toLocaleString()}</s>
         </span>
-        <span className="text-positive bg-positive/10 rounded-md px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase">
+        <span className="text-positive bg-positive/10 rounded-md px-2.5 py-1 text-[11px] font-bold tracking-wider uppercase">
           Save RM {eduView.saving_rm.toLocaleString()}
         </span>
       </div>
@@ -190,7 +190,7 @@ export function ConfiguredRing({ laptopId, fallbackScore, os }: { laptopId: stri
   const live = configured ?? eduView;
   if (!live) {
     if (fallbackScore == null) return null; // no stored scores yet: no ring, as before
-    return <PersonalPickScoreRing laptopId={laptopId} fallbackScore={fallbackScore} size={64} caption="below" className="flex-none" />;
+    return <PersonalPickScoreRing laptopId={laptopId} fallbackScore={fallbackScore} size={64} captionPosition="below" className="flex-none" />;
   }
   const best = bestFit(live.scores ?? undefined, os);
   const personal = live.personalized_score?.score;
@@ -201,7 +201,7 @@ export function ConfiguredRing({ laptopId, fallbackScore, os }: { laptopId: stri
       fallbackScore={best?.score ?? 0}
       personalScore={personal ?? null}
       size={64}
-      caption="below"
+      captionPosition="below"
       className="flex-none"
     />
   );

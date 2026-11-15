@@ -82,7 +82,7 @@ export function PickScorePopover({
             {score === null ? "No score" : `${personal ? "For you" : "Pick Score"} ${score}`}
           </span>
         ) : score === null ? (
-          <span className="border-line flex items-center justify-center rounded-full border border-dashed px-2 text-[10px] font-semibold text-muted-foreground" style={{ height: ringSize }}>
+          <span className="border-line flex items-center justify-center rounded-full border border-dashed px-2 text-[11px] font-semibold text-muted-foreground" style={{ height: ringSize }}>
             No score
           </span>
         ) : (

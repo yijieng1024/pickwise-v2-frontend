@@ -160,11 +160,11 @@ export function PickScoreBreakdown({
                     <span className="font-normal text-muted-foreground">/100</span>
                   </span>
                 ) : (
-                  <span className="bg-surface-2 rounded-md px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground uppercase">
+                  <span className="bg-surface-2 rounded-md px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground uppercase">
                     {state === "unverified" ? "Unverified" : "Not scored"}
                   </span>
                 )}
-                <span className="text-[10.5px] text-muted-foreground tabular-nums">
+                <span className="text-[11px] text-muted-foreground tabular-nums">
                   {Math.round(f.weight * 100)}% weight
                 </span>
               </span>
@@ -184,7 +184,7 @@ export function PickScoreBreakdown({
           </div>
         );
       })}
-      {footnote && <p className="text-[10.5px] leading-snug text-muted-foreground">{footnote}</p>}
+      {footnote && <p className="text-[11px] leading-snug text-muted-foreground">{footnote}</p>}
     </div>
   );
 }

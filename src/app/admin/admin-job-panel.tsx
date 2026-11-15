@@ -55,7 +55,7 @@ export function AdminJobPanel({
       <div className="flex items-baseline justify-between gap-3">
         <span className="flex items-center gap-2 text-[13.5px] font-semibold">
           {!finished && (
-            <Loader2 className="motion-safe:animate-spin size-3.5 text-muted-foreground" />
+            <Loader2 className="animate-spin size-3.5 text-muted-foreground" />
           )}
           {label}
         </span>

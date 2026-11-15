@@ -225,7 +225,7 @@ function Editor({ options, edu, initial, onDone }: { options: LaptopOptions; edu
         >
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <div className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+              <div className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
                 Your configuration{edu && " · Education price"}
               </div>
               <div className="text-xl font-bold tracking-tight tabular-nums">

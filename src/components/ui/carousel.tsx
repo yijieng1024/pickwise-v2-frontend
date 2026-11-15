@@ -267,7 +267,9 @@ function CarouselDots({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="carousel-dots"
-      className={cn("flex items-center justify-center gap-1.5", className)}
+      // gap-3.5 + the buttons' 7px `after` inset: 6px dots on a 20px pitch,
+      // each with a 20x20 hit area that does not overlap its neighbour.
+      className={cn("flex items-center justify-center gap-3.5", className)}
       {...props}
     >
       {scrollSnaps.slice(start, start + maxDots).map((_, i) => {
@@ -278,7 +280,7 @@ function CarouselDots({ className, ...props }: React.ComponentProps<"div">) {
             type="button"
             onClick={() => api?.scrollTo(index)}
             className={cn(
-              "h-1.5 w-1.5 rounded-full transition-colors",
+              "relative h-1.5 w-1.5 rounded-full transition-colors after:absolute after:-inset-[7px]",
               index === selectedIndex ? "bg-foreground" : "bg-foreground/25"
             )}
             aria-label={`Go to slide ${index + 1}`}

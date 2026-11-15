@@ -118,7 +118,7 @@ export function ConfigPicker({
   if (!data) {
     return (
       <div className="text-muted-foreground flex items-center gap-2 py-4 text-sm">
-        <Loader2 className="size-4 motion-safe:animate-spin" />
+        <Loader2 className="size-4 animate-spin" />
         Reading the description and transcript…
       </div>
     );
@@ -276,7 +276,7 @@ export function ConfigPicker({
                           {decisive && (
                             <Badge
                               variant="outline"
-                              className="border-brand/40 text-brand-text mt-0.5 h-4 w-fit px-1 py-0 text-[10px] font-normal"
+                              className="border-brand/40 text-brand-text mt-0.5 h-4 w-fit px-1 py-0 text-[11px] font-normal"
                             >
                               matches the video
                             </Badge>
@@ -284,7 +284,7 @@ export function ConfigPicker({
                           {config.indistinguishable && (
                             <Badge
                               variant="outline"
-                              className="text-warning border-warning/40 mt-0.5 h-4 w-fit px-1 py-0 text-[10px] font-normal"
+                              className="text-warning border-warning/40 mt-0.5 h-4 w-fit px-1 py-0 text-[11px] font-normal"
                             >
                               duplicate row
                             </Badge>
@@ -292,7 +292,7 @@ export function ConfigPicker({
                           {config.status !== "active" && (
                             <Badge
                               variant="outline"
-                              className="mt-0.5 h-4 w-fit px-1 py-0 text-[10px] font-normal"
+                              className="mt-0.5 h-4 w-fit px-1 py-0 text-[11px] font-normal"
                             >
                               {config.status}
                             </Badge>

@@ -155,7 +155,7 @@ function BrandLink() {
         <span className="truncate text-[13.5px] leading-tight font-bold tracking-tight">
           PickWise
         </span>
-        <span className="text-muted-foreground truncate text-[10.5px] leading-tight font-semibold tracking-[0.08em] uppercase">
+        <span className="text-muted-foreground truncate text-[11px] leading-tight font-semibold tracking-[0.08em] uppercase">
           Admin Portal
         </span>
       </span>

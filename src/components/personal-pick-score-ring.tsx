@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { UserRound } from "lucide-react";
 
-import { PickScoreRing } from "@/components/pick-score-ring";
+import { PickScoreRing, type PickScoreCaptionPosition } from "@/components/pick-score-ring";
 import { calculatePersonalScore } from "@/lib/api/pickscore";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
@@ -13,7 +13,8 @@ interface PersonalPickScoreRingProps {
   /** General-mode score shown until (and unless) a personal one resolves. */
   fallbackScore: number;
   size?: number;
-  caption?: "below" | "inside" | "none";
+  caption?: "show" | "none";
+  captionPosition?: PickScoreCaptionPosition;
   className?: string;
   /** A personalized score the caller already has (a configuration's); null for none.
    *  Undefined (the default) fetches the laptop's own. */
@@ -30,7 +31,8 @@ export function PersonalPickScoreRing({
   laptopId,
   fallbackScore,
   size = 64,
-  caption = "below",
+  caption = "show",
+  captionPosition,
   className,
   personalScore,
 }: PersonalPickScoreRingProps) {
@@ -75,6 +77,7 @@ export function PersonalPickScoreRing({
         score={personal ?? fallbackScore}
         size={size}
         caption={caption}
+        captionPosition={captionPosition}
       />
       {personal != null && (
         <span className="bg-brand absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full text-white">

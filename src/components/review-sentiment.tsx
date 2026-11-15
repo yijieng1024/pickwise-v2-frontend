@@ -117,19 +117,19 @@ function Point({ p }: { p: ReviewPoint }) {
       <span className="min-w-0">
         <span className="block text-[13.5px] leading-snug">{p.text}</span>
         {p.applies_to === "configuration_not_stated" && (
-          <span className="bg-surface-2 mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10.5px] text-muted-foreground">
+          <span className="bg-surface-2 mt-1.5 inline-block rounded-full px-2 py-0.5 text-[11px] text-muted-foreground">
             Reviewer didn&apos;t say which configuration they tested
           </span>
         )}
         {p.applies_to === "other_configuration" && p.tested_on_name && (
-          <span className="bg-surface-2 mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10.5px] text-muted-foreground">
+          <span className="bg-surface-2 mt-1.5 inline-block rounded-full px-2 py-0.5 text-[11px] text-muted-foreground">
             Tested on {p.tested_on_name}
           </span>
         )}
         <span className="mt-1.5 flex items-start gap-1.5 text-[11px] text-muted-foreground">
           {/* The initial stays underneath; the image only mounts once it has
               loaded, so a missing or broken avatar leaves the initial. */}
-          <Avatar className="bg-surface-2 size-4 items-center justify-center overflow-hidden text-[9px] font-bold after:hidden">
+          <Avatar className="bg-surface-2 size-4 items-center justify-center overflow-hidden text-[11px] font-bold after:hidden">
             {p.channel_name.charAt(0).toUpperCase()}
             {p.channel_img_url && (
               <AvatarImage

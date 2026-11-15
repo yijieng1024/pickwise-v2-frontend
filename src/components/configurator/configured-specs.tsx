@@ -71,7 +71,7 @@ export function ConfiguredQuickFacts({ raw: catalog }: { raw: BackendLaptop }) {
             <Icon className="size-3.5" />
           </span>
           <span className="min-w-0">
-            <span className="block text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+            <span className="block text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
               {label}
             </span>
             <span className="block text-[12.5px] leading-snug font-medium">{value}</span>

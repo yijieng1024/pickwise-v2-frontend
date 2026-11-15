@@ -198,12 +198,12 @@ export default async function LaptopDetailsPage({ params, searchParams }: PagePr
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-1.5">
                 {laptop.tags[0] && (
-                  <span className="bg-brand-tint text-brand-text rounded-full px-2.5 py-1 text-[10.5px] font-semibold tracking-wide uppercase">
+                  <span className="bg-brand-tint text-brand-text rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase">
                     {laptop.tags[0]}
                   </span>
                 )}
                 {best && (
-                  <span className="bg-brand-tint text-brand-text flex items-center gap-1 rounded-full px-2.5 py-1 text-[10.5px] font-semibold">
+                  <span className="bg-brand-tint text-brand-text flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold">
                     <Sparkles className="text-spark size-3" />
                     Best fit: {labelForUseCase(best.use_case)}
                   </span>
@@ -243,7 +243,7 @@ export default async function LaptopDetailsPage({ params, searchParams }: PagePr
                 {laptop.price}
               </span>
               {priceDrop > 0 && (
-                <span className="text-positive bg-positive/10 flex items-center gap-1 rounded-md px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase">
+                <span className="text-positive bg-positive/10 flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-bold tracking-wider uppercase">
                   <TrendingDown className="size-3" /> RM{" "}
                   {priceDrop.toLocaleString()} below launch
                 </span>
@@ -346,7 +346,7 @@ export default async function LaptopDetailsPage({ params, searchParams }: PagePr
               {laptop.price}
             </span>
             {priceDrop > 0 && (
-              <span className="text-positive mb-1 flex items-center gap-1 rounded-md bg-positive/10 px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase">
+              <span className="text-positive mb-1 flex items-center gap-1 rounded-md bg-positive/10 px-2.5 py-1 text-[11px] font-bold tracking-wider uppercase">
                 <TrendingDown className="size-3" /> Great deal
               </span>
             )}

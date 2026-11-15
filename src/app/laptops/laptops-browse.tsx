@@ -249,10 +249,11 @@ export function LaptopsBrowse({
         >
           {laptops.map((laptop, i) => (
             <div
-              // Key includes the query so a new page replays the reveal.
-              key={`${view}-${brand}-${sort}-${query}-${page}-${laptop.id}`}
+              // Keyed by laptop alone: a filter, sort or page change swaps the
+              // results under the pending dim, and only new cards fade in.
+              key={laptop.id}
               className="motion-safe:animate-fade-in-up"
-              style={{ animationDelay: `${i * 40}ms` }}
+              style={{ animationDelay: `${Math.min(i, 5) * 40}ms` }}
             >
               <LaptopCard
                 laptop={laptop}

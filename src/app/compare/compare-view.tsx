@@ -379,7 +379,7 @@ export function CompareView({
  */
 function BestMarker() {
   return (
-    <span className="text-positive inline-flex items-center gap-1 text-[10.5px] font-bold tracking-wide uppercase">
+    <span className="text-positive inline-flex items-center gap-1 text-[11px] font-bold tracking-wide uppercase">
       <Check className="size-3" aria-hidden />
       Best
     </span>
