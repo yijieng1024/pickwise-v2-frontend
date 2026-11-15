@@ -170,6 +170,11 @@ export default function PrivacyPage() {
           10 November 2026 was stored without a link to any account, so we
           cannot tell which of it was yours and it is not deleted.
         </p>
+        <p>
+          For an admin account, the background jobs, price guides and price
+          guide reviews you made also stay, with your account removed from
+          them, because they are the record of how a price was set.
+        </p>
       </LegalSection>
 
       <LegalSection title="7. Your choices and rights">

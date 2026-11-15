@@ -46,6 +46,7 @@ import {
   type PriceGuide,
   type PriceGuideKind,
   type PriceGuidePreview,
+  type ReviewedLaptop,
   type AmbiguousRow,
   type ConflictLaptop,
   type ExtractionRun,
@@ -55,7 +56,9 @@ import {
   getExtractionRun,
   getPriceGuidePreview,
   listPriceGuides,
+  markGuideReviewed,
   startPriceGuideExtraction,
+  undoGuideReviewed,
   writeGuidePrices,
 } from "@/lib/api/admin/price-guides";
 import { ApiError } from "@/lib/api/client";
@@ -93,7 +96,8 @@ type Outcome =
   | "unmatched_guide"
   | "unpriced"
   | "differs_from_guide"
-  | "uncovered";
+  | "uncovered"
+  | "reviewed";
 
 const OUTCOMES: Array<{ value: Outcome; label: string; hint: string }> = [
   {
@@ -140,6 +144,11 @@ const OUTCOMES: Array<{ value: Outcome; label: string; hint: string }> = [
     value: "uncovered",
     label: "Not in this guide",
     hint: "ASUS laptops this guide has no row for. Most already have a price, and another guide may cover them.",
+  },
+  {
+    value: "reviewed",
+    label: "Reviewed",
+    hint: "Rows an admin has decided on, left out of the other tabs and the weekly email. A row comes back on its own if a guide prices it differently. Undo puts it back now.",
   },
 ];
 
@@ -320,6 +329,37 @@ const SUFFIX_COLUMNS: Array<Column<SuffixRuleLaptop>> = [
   statusColumn,
 ];
 
+const LISTED_ON: Record<ReviewedLaptop["listed_on"], string> = {
+  differs_from_guide: "Differs from guide",
+  matched_by_suffix_rule: "Suffix rule",
+  matched_by_base_code: "Base code",
+};
+
+const REVIEWED_COLUMNS: Array<Column<ReviewedLaptop>> = [
+  laptopColumn,
+  { head: "Was in", cell: (l) => LISTED_ON[l.listed_on] },
+  { head: "Guide SKU", cell: (l) => <span className="font-mono text-[12px]">{l.guide_sku}</span> },
+  currentPriceColumn,
+  { head: "Guide price", cell: (l) => <span className="tabular-nums">{rm(l.guide_price_rm)}</span> },
+  { head: "Decision", cell: (l) => (l.decision === "kept" ? "Kept current price" : "Used guide price") },
+  { head: "Reviewed", cell: (l) => new Date(l.reviewed_at).toLocaleDateString() },
+];
+
+function actionColumn<T extends GuideLaptop>(
+  label: string,
+  onClick: (id: string) => void,
+  disabled: boolean,
+): Column<T> {
+  return {
+    head: "",
+    cell: (l) => (
+      <Button size="sm" variant="ghost" disabled={disabled} onClick={() => onClick(l.id)}>
+        {label}
+      </Button>
+    ),
+  };
+}
+
 const BASE_CODE_COLUMNS: Array<Column<BaseCodeLaptop>> = [
   laptopColumn,
   matchedSkuColumn,
@@ -493,6 +533,9 @@ function OutcomeRows({
   onPageChange,
   selected,
   onSelectedChange,
+  onReview,
+  onUndo,
+  busy,
 }: {
   outcome: Outcome;
   preview: PriceGuidePreview;
@@ -500,7 +543,11 @@ function OutcomeRows({
   onPageChange: (page: number) => void;
   selected: Set<string>;
   onSelectedChange: (next: Set<string>) => void;
+  onReview: (ids: string[]) => void;
+  onUndo: (ids: string[]) => void;
+  busy: boolean;
 }) {
+  const review = actionColumn("Mark reviewed", (id) => onReview([id]), busy);
   const laptopId = (l: GuideLaptop) => l.id;
   const sku = (r: GuideRow) => r.sku;
   const paging = { page, onPageChange };
@@ -520,7 +567,7 @@ function OutcomeRows({
       return (
         <OutcomeTable
           rows={warnedFirst(preview.matched_by_suffix_rule)}
-          columns={SUFFIX_COLUMNS}
+          columns={[...SUFFIX_COLUMNS, review]}
           rowKey={laptopId}
           {...selection}
         />
@@ -529,7 +576,7 @@ function OutcomeRows({
       return (
         <OutcomeTable
           rows={warnedFirst(preview.matched_by_base_code)}
-          columns={BASE_CODE_COLUMNS}
+          columns={[...BASE_CODE_COLUMNS, review]}
           rowKey={laptopId}
           {...selection}
         />
@@ -564,7 +611,7 @@ function OutcomeRows({
       return (
         <OutcomeTable
           rows={warnedFirst(preview.differs_from_guide)}
-          columns={DIFFERS_COLUMNS}
+          columns={[...DIFFERS_COLUMNS, review]}
           rowKey={laptopId}
           {...selection}
         />
@@ -580,6 +627,15 @@ function OutcomeRows({
           columns={UNCOVERED_COLUMNS}
           rowKey={laptopId}
           {...paging}
+        />
+      );
+    case "reviewed":
+      return (
+        <OutcomeTable
+          rows={preview.reviewed}
+          columns={[...REVIEWED_COLUMNS, actionColumn<ReviewedLaptop>("Undo", (id) => onUndo([id]), busy)]}
+          rowKey={laptopId}
+          {...selection}
         />
       );
   }
@@ -772,6 +828,31 @@ export default function AdminPriceGuidesPage() {
     }
   }
 
+  async function setReviewed(ids: string[], undo: boolean) {
+    if (!token || !guideId) return;
+    setWriting(true);
+    try {
+      if (undo) {
+        const { removed } = await undoGuideReviewed(token, guideId, ids);
+        toast.success(`${removed} ${removed === 1 ? "row" : "rows"} back on their list.`);
+      } else {
+        const { reviewed } = await markGuideReviewed(token, guideId, ids);
+        toast.success(`${reviewed} marked reviewed. The current price stays.`);
+      }
+      setSelected((current) => new Set([...current].filter((id) => !ids.includes(id))));
+      setReloadTick((t) => t + 1);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409 && err.code !== "job_running") {
+        toast.error("Nothing was marked: a selected laptop has left the list. Check the refreshed list.");
+        setReloadTick((t) => t + 1);
+      } else {
+        toast.error(err instanceof ApiError ? err.message : "Couldn't save the review.");
+      }
+    } finally {
+      setWriting(false);
+    }
+  }
+
   async function deleteGuide() {
     if (!token || !deleteTarget) return;
     setDeleting(true);
@@ -802,7 +883,11 @@ export default function AdminPriceGuidesPage() {
     ...(preview?.differs_from_guide ?? []),
     ...(preview?.matched_by_suffix_rule ?? []),
     ...(preview?.matched_by_base_code ?? []),
+    ...(preview?.reviewed ?? []),
   ].filter((row) => selected.has(row.id));
+  const reviewedIds = new Set(preview?.reviewed.map((r) => r.id) ?? []);
+  const selectedReviewed = [...selected].filter((id) => reviewedIds.has(id));
+  const selectedOpen = [...selected].filter((id) => !reviewedIds.has(id));
 
   return (
     <div className="flex flex-col gap-4">
@@ -1053,6 +1138,8 @@ export default function AdminPriceGuidesPage() {
                       aria-pressed={active}
                       className={cn(
                         "focus-visible:ring-ring/50 flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] font-medium transition-colors outline-none focus-visible:ring-3",
+                        o.value === "reviewed" && "ml-auto",
+                        o.value === "reviewed" && !active && "text-muted-foreground border-dashed",
                         active
                           ? "bg-brand border-transparent text-white"
                           : "border-line bg-surface hover:bg-surface-2",
@@ -1091,6 +1178,26 @@ export default function AdminPriceGuidesPage() {
                       <Button size="sm" onClick={() => setConfirmUse(true)} disabled={busy}>
                         Use guide price ({selected.size})
                       </Button>
+                      {selectedOpen.length > 0 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => void setReviewed(selectedOpen, false)}
+                          disabled={busy}
+                        >
+                          Mark reviewed ({selectedOpen.length})
+                        </Button>
+                      )}
+                      {selectedReviewed.length > 0 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => void setReviewed(selectedReviewed, true)}
+                          disabled={busy}
+                        >
+                          Undo reviewed ({selectedReviewed.length})
+                        </Button>
+                      )}
                       <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
                         Clear
                       </Button>
@@ -1107,6 +1214,9 @@ export default function AdminPriceGuidesPage() {
                   onPageChange={query.setPage}
                   selected={selected}
                   onSelectedChange={setSelected}
+                  onReview={(ids) => void setReviewed(ids, false)}
+                  onUndo={(ids) => void setReviewed(ids, true)}
+                  busy={busy}
                 />
               </Card>
             </>

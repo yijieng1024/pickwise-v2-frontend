@@ -110,6 +110,18 @@ export interface PriceGuidePreview {
   unmatched_guide: GuideRow[];
   unpriced: GuideRow[];
   uncovered: GuideLaptop[];
+  /** Decided by an admin at this guide price; back on its list if the price changes. */
+  reviewed: ReviewedLaptop[];
+}
+
+export interface ReviewedLaptop extends GuideLaptop {
+  listed_on: "differs_from_guide" | "matched_by_suffix_rule" | "matched_by_base_code";
+  guide_sku: string;
+  guide_price_rm: number;
+  /** `kept`: the stored price stays. `used_guide`: "Use guide price" wrote the guide's. */
+  decision: "kept" | "used_guide";
+  reviewed_at: string;
+  reviewed_by: string | null;
 }
 
 export function listPriceGuides(token: string): Promise<PriceGuide[]> {
@@ -177,6 +189,38 @@ export function writeGuidePrices(
 ): Promise<{ guide_id: string; updated: number }> {
   return apiFetch(`/admin/price-guides/${guideId}/use-guide-price`, {
     method: "POST",
+    token,
+    body: JSON.stringify({ laptop_ids: laptopIds }),
+    next: { revalidate: 0 },
+  });
+}
+
+/**
+ * "Mark reviewed" for a selection: the stored price stays, and the laptops leave their
+ * list and the weekly email's counts until the guide price for them changes. All or
+ * nothing: 409 if any laptop is on none of the selectable lists, or while an apply runs.
+ */
+export function markGuideReviewed(
+  token: string,
+  guideId: string,
+  laptopIds: string[],
+): Promise<{ guide_id: string; reviewed: number }> {
+  return apiFetch(`/admin/price-guides/${guideId}/review`, {
+    method: "POST",
+    token,
+    body: JSON.stringify({ laptop_ids: laptopIds }),
+    next: { revalidate: 0 },
+  });
+}
+
+/** Undo "Mark reviewed" (or the mark "Use guide price" left): back on their list. */
+export function undoGuideReviewed(
+  token: string,
+  guideId: string,
+  laptopIds: string[],
+): Promise<{ guide_id: string; removed: number }> {
+  return apiFetch(`/admin/price-guides/${guideId}/review`, {
+    method: "DELETE",
     token,
     body: JSON.stringify({ laptop_ids: laptopIds }),
     next: { revalidate: 0 },
