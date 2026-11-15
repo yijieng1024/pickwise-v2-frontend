@@ -110,7 +110,12 @@ export function AdminShell({
           <SidebarRail />
         </Sidebar>
 
-        <SidebarInset className="bg-transparent">
+        {/* min-w-0: a flex item will not shrink below its content's width, so
+            without it a wide table makes this column wider than the space left
+            beside the sidebar, the page scrolls sideways, and the content
+            slides under the fixed island. With it the column always fits and
+            a wide table scrolls inside its own wrapper. */}
+        <SidebarInset className="min-w-0 bg-transparent">
           <AdminTopbar />
           {/* flex-1 on the content keeps the footer at the bottom of the inset on
             short screens instead of floating under a half-empty page. */}
@@ -155,7 +160,7 @@ function BrandLink() {
         <span className="truncate text-[13.5px] leading-tight font-bold tracking-tight">
           PickWise
         </span>
-        <span className="text-muted-foreground truncate text-[10.5px] leading-tight font-semibold tracking-[0.08em] uppercase">
+        <span className="text-muted-foreground truncate text-[11px] leading-tight font-semibold tracking-[0.08em] uppercase">
           Admin Portal
         </span>
       </span>

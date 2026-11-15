@@ -139,7 +139,7 @@ export function ReviewQueue({
                         {linked && (
                           <Badge
                             variant="outline"
-                            className="h-4 px-1 py-0 text-[10px] font-normal"
+                            className="h-4 px-1 py-0 text-[11px] font-normal"
                           >
                             {review.links.length} linked
                           </Badge>

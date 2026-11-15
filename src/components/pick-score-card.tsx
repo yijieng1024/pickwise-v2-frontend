@@ -177,7 +177,7 @@ export function PickScoreCard({
               {tabLabel(s.use_case)}
               <span
                 className={cn(
-                  "rounded-md px-1.5 py-0.5 text-[10.5px] tabular-nums",
+                  "rounded-md px-1.5 py-0.5 text-[11px] tabular-nums",
                   active
                     ? "bg-white/20"
                     : "bg-surface text-muted-foreground",
@@ -210,7 +210,7 @@ export function PickScoreCard({
               No score
             </span>
           ) : (
-            <PickScoreRing score={current.score} size={124} caption="inside" />
+            <PickScoreRing score={current.score} size={124} captionPosition="below" />
           )}
           <span className="text-[11.5px] font-medium text-muted-foreground">
             {tabLabel(current.use_case)}
@@ -238,7 +238,7 @@ export function PickScoreCard({
             mode={isPersonal ? "personalized" : "general"}
             benchmarksRefreshedAt={benchmarksRefreshedAt}
           />
-          <p className="mt-1.5 text-[10.5px] leading-relaxed text-muted-foreground">
+          <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
             {isPersonal
               ? "Each factor is scored 0-100 against the PickWise catalogue; the weights come from your Needs Wizard answers, and price scores against your own budget. Sorted by contribution."
               : "Each factor is scored 0-100 against the PickWise catalogue; the weight is how much it counts toward this use case. Sorted by contribution."}

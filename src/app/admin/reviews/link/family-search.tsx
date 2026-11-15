@@ -93,7 +93,7 @@ export function FamilySearch({
           aria-label="Search laptop families"
         />
         {loading && (
-          <Loader2 className="text-muted-foreground absolute top-1/2 right-3 size-4 -translate-y-1/2 motion-safe:animate-spin" />
+          <Loader2 className="text-muted-foreground absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin" />
         )}
       </div>
 

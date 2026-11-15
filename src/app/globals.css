@@ -12,7 +12,6 @@
 
   /* Motion */
   --animate-fade-in-up: fade-in-up 0.5s ease-out both;
-  --animate-float: float 5s ease-in-out infinite;
   --animate-shimmer: pw-shimmer 1.8s linear infinite;
   --animate-bounce-dot: pw-bounce 1.4s ease-in-out infinite;
   /* Streamed-word entrance: opacity only — transforms don't apply to inline
@@ -95,15 +94,6 @@
     }
   }
 
-  @keyframes float {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-10px);
-    }
-  }
 
   @keyframes pw-shimmer {
     0% {
@@ -127,7 +117,7 @@
     }
   }
 
-  --animate-island-in: pw-island-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-island-in: pw-island-in 0.6s cubic-bezier(0.32, 0.72, 0, 1) both;
 
   @keyframes pw-island-in {
     from {
@@ -224,7 +214,7 @@
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  --muted-foreground: oklch(0.5 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
@@ -450,4 +440,42 @@
 }
 .admin-glass {
   border-radius: 999px;
+}
+
+/* Accessibility settings (HIG accessibility.md, liquid-glass.md checklist).
+   Reduce Motion: one rule for every animation and transition, including the
+   tw-animate-css overlay zooms and hover scales that carry no motion-safe gate.
+   1ms, not none, so animationend/transitionend still fire for base-ui. */
+@media (prefers-reduced-motion: reduce) {
+  *:not(.animate-spin),
+  ::before,
+  ::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
+/* Reduce Transparency / Increase Contrast: glass and the 85% surfaces go
+   opaque and the blur goes (!important because GlassSurface sets it inline). */
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  :root,
+  .dark {
+    --glass: var(--surface-solid);
+    --surface: var(--surface-solid);
+    --card: var(--surface-solid);
+  }
+  * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+@media (prefers-contrast: more) {
+  :root {
+    --line: rgba(29, 29, 31, 0.35);
+    --glass-border: rgba(29, 29, 31, 0.35);
+  }
+  .dark {
+    --line: rgba(242, 244, 247, 0.4);
+    --glass-border: rgba(242, 244, 247, 0.4);
+  }
 }

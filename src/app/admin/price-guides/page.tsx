@@ -956,7 +956,7 @@ export default function AdminPriceGuidesPage() {
         <Card className="gap-0 p-4">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-2 text-[13.5px] font-semibold">
-              <Loader2 className="text-muted-foreground size-3.5 motion-safe:animate-spin" />
+              <Loader2 className="text-muted-foreground size-3.5 animate-spin" />
               {run?.status === "in_progress"
                 ? (run.step ?? "Running")
                 : "Waiting for GitHub to start the run"}

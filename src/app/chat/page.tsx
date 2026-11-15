@@ -328,7 +328,7 @@ function ThinkingFlow({ text, active }: { text: string; active: boolean }) {
         <Brain className="text-brand-text size-3.5" />
         Thinking
         {active && (
-          <span className="border-brand-tint border-t-brand size-3 motion-safe:animate-spin rounded-full border-2" />
+          <span className="border-brand-tint border-t-brand size-3 animate-spin rounded-full border-2" />
         )}
         <ChevronDown
           className={cn(
@@ -443,7 +443,7 @@ function ResultCard({
         {/* Pico's first result. --spark is the reserved Top Pick amber: icon and
             border only, the label stays in the text colour (DESIGN.md). */}
         {index === 0 && (
-          <span className="border-spark/60 bg-spark/10 text-foreground inline-flex w-fit items-center gap-1 rounded-full border px-2 py-px text-[10.5px] font-semibold whitespace-nowrap">
+          <span className="border-spark/60 bg-spark/10 text-foreground inline-flex w-fit items-center gap-1 rounded-full border px-2 py-px text-[11px] font-semibold whitespace-nowrap">
             <Sparkles aria-hidden className="text-spark size-3" />
             Top Pick
           </span>
@@ -983,7 +983,7 @@ export default function ChatPage() {
               </span>
             </div>
             {isStreaming && (
-              <span className="border-brand-tint border-t-brand ml-auto size-3.5 motion-safe:animate-spin rounded-full border-2" />
+              <span className="border-brand-tint border-t-brand ml-auto size-3.5 animate-spin rounded-full border-2" />
             )}
           </div>
 
@@ -1096,7 +1096,7 @@ export default function ChatPage() {
                       <div
                         className="motion-safe:animate-shimmer flex items-center gap-2 rounded-full border border-line bg-[linear-gradient(100deg,var(--glass)_40%,var(--brand-tint)_50%,var(--glass)_60%)] bg-[length:200%_100%] px-3.5 py-1.5 text-xs text-muted-foreground shadow-[0_4px_16px_var(--shadow)]"
                       >
-                        <span className="border-brand-tint border-t-brand size-3 motion-safe:animate-spin rounded-full border-2" />
+                        <span className="border-brand-tint border-t-brand size-3 animate-spin rounded-full border-2" />
                         {chip.label}…
                       </div>
                       </div>
@@ -1105,7 +1105,7 @@ export default function ChatPage() {
                   {activity.length === 0 && !streamText && !thinkingText && (
                     <div className={FADE}>
                     <div className="motion-safe:animate-shimmer flex items-center gap-2 rounded-full border border-line bg-[linear-gradient(100deg,var(--glass)_40%,var(--brand-tint)_50%,var(--glass)_60%)] bg-[length:200%_100%] px-3.5 py-1.5 text-xs text-muted-foreground shadow-[0_4px_16px_var(--shadow)]">
-                      <span className="border-brand-tint border-t-brand size-3 motion-safe:animate-spin rounded-full border-2" />
+                      <span className="border-brand-tint border-t-brand size-3 animate-spin rounded-full border-2" />
                       Pico is thinking…
                     </div>
                     </div>
@@ -1197,7 +1197,7 @@ export default function ChatPage() {
                   </button>
                 </form>
               </GlassSurface>
-              <p className="mt-2 text-center text-[10.5px] text-muted-foreground">
+              <p className="mt-2 text-center text-[11px] text-muted-foreground">
                 Pico can make mistakes. Consider verifying important specs.
               </p>
             </div>
@@ -1234,7 +1234,7 @@ export default function ChatPage() {
                     )}
                   >
                     {activeTool === tool ? (
-                      <span className="size-3 motion-safe:animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                      <span className="size-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />
                     ) : (
                       <Icon className="text-brand-text size-3.5" />
                     )}
@@ -1302,7 +1302,7 @@ export default function ChatPage() {
             {renameError && (
               <p className="text-negative text-[12px] font-medium">{renameError}</p>
             )}
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-3">
               <Button
                 type="button"
                 variant="outline"
