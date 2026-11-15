@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 const ACTIVE_LINK = '[aria-current="page"]';
-const SLIDE_MS = 500;
+const SLIDE_MS = 350;
 /** How long to wait for a link that is not mounted yet: the admin sidebar swaps
  * its page list 150 ms after a navigation into another group. */
 const AWAIT_LINK_MS = 300;

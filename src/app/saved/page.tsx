@@ -119,8 +119,8 @@ export default function SavedPage() {
         type="button"
         aria-label={`Remove ${laptop.name} from saved`}
         onClick={() => remove(laptop.id)}
-        // bg-white in both themes: it sits over the card's white photo panel.
-        className="absolute top-3 right-3 z-20 flex size-8 items-center justify-center rounded-full bg-white/85 text-negative shadow-sm backdrop-blur-sm transition-transform hover:scale-110"
+        // Solid, no blur (no glass in the content layer): white at 85%, and the dark surface at 85% in dark mode.
+        className="absolute top-3 right-3 z-20 flex size-8 items-center justify-center rounded-full bg-white/85 dark:bg-[color-mix(in_srgb,var(--surface-solid)_85%,transparent)] text-negative shadow-sm transition-transform hover:scale-110"
       >
         <Heart className="size-4 fill-current" />
       </button>

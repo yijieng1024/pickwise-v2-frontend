@@ -216,12 +216,6 @@ function Editor({ options, edu, initial, onDone }: { options: LaptopOptions; edu
           cornerRadius={24}
           fullWidth
           className="pointer-events-auto px-4 py-3 sm:px-5"
-          style={{
-            background: "color-mix(in oklch, var(--glass) 25%, transparent)",
-            backdropFilter: "blur(8px) saturate(170%)",
-            WebkitBackdropFilter: "blur(8px) saturate(170%)",
-            boxShadow: "0 16px 48px var(--shadow), inset 0 1px 0 var(--glass-edge), inset 0 -1px 0 rgba(255,255,255,0.08)",
-          }}
         >
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">

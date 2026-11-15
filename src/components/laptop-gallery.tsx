@@ -28,7 +28,7 @@ export function LaptopGallery({ images, name }: LaptopGalleryProps) {
           width={600}
           height={600}
           priority
-          className={cn("h-full w-full object-contain drop-shadow-2xl transition-transform duration-700 group-hover:scale-105 motion-safe:animate-float", blend)}
+          className={cn("h-full w-full object-contain drop-shadow-2xl transition-transform duration-700 group-hover:scale-105", blend)}
         />
       </div>
       {images.length > 1 && (

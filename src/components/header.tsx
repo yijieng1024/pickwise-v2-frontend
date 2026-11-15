@@ -42,7 +42,8 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
-const SPRING = "cubic-bezier(0.34, 1.56, 0.64, 1)";
+/** Soft ease-out, no overshoot: layout properties on a sticky element should not bounce. */
+const EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
 
 // Shared mobile-drawer row: 44px tap target, icon + label.
 const DRAWER_ITEM =
@@ -70,7 +71,7 @@ export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [entered, setEntered] = useState(false);
 
-  // Smart navbar: shrinks on scroll, springs in on first paint.
+  // Smart navbar: shrinks on scroll, eases in on first paint.
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
     onScroll();
@@ -102,7 +103,7 @@ export function Header() {
           boxShadow: scrolled
             ? "0 1px 3px var(--shadow), 0 10px 24px -6px var(--shadow), 0 32px 64px -18px var(--shadow), inset 0 1px 0 var(--glass-edge)"
             : "0 1px 2px var(--shadow), 0 6px 16px -6px var(--shadow), 0 20px 48px -20px var(--shadow), inset 0 1px 0 var(--glass-edge)",
-          transition: `gap 0.5s ${SPRING}, height 0.5s ${SPRING}, padding 0.5s ${SPRING}, box-shadow 0.5s ease`,
+          transition: `gap 0.5s ${EASE}, height 0.5s ${EASE}, padding 0.5s ${EASE}, box-shadow 0.5s ease`,
         }}
       >
         {/* Mark + wordmark composed live rather than shipping the lockup SVG:
